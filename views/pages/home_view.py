@@ -5,6 +5,10 @@ from ..base_view import BaseView
 class HomeView(BaseView):
     """Home page view"""
     
+    def __init__(self, page: ft.Page, theme_manager=None):
+        super().__init__(page)
+        self.theme_manager = theme_manager
+    
     def build(self) -> ft.Control:
         """Build the home page content"""
         return ft.Container(
@@ -103,12 +107,20 @@ class HomeView(BaseView):
     
     def _get_card_bg_color(self) -> str:
         """Get card background color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_card_bg_color(current_mode)
+        # Fallback
         if self.page.theme_mode == ft.ThemeMode.DARK:
             return ft.colors.GREY_700
         return ft.colors.WHITE
     
     def _get_card_border_color(self) -> str:
         """Get card border color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_card_border_color(current_mode)
+        # Fallback
         if self.page.theme_mode == ft.ThemeMode.DARK:
             return ft.colors.GREY_600
         return ft.colors.GREY_300

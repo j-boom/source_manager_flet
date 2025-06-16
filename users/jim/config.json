@@ -7,8 +7,8 @@
         "maximized": false
     },
     "theme": {
-        "mode": "dark",
-        "color": "red"
+        "mode": "light",
+        "color": "blue"
     },
     "last_page": "home"
 }

@@ -3,11 +3,9 @@ from typing import Optional, Callable
 
 
 class MainView:
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, theme_manager=None):
         self.page = page
-        self.page.title = "Source Manager"
-        self.page.theme_mode = ft.ThemeMode.LIGHT
-        self.page.padding = 0
+        self.theme_manager = theme_manager
         self.page.window_width = 1200
         self.page.window_height = 800
         self.page.window_min_width = 800
@@ -174,18 +172,30 @@ class MainView:
     
     def _get_sidebar_color(self) -> str:
         """Get sidebar background color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_sidebar_color(current_mode)
+        # Fallback
         if self.page.theme_mode == ft.ThemeMode.DARK:
             return ft.colors.GREY_900
         return ft.colors.GREY_100
     
     def _get_content_bg_color(self) -> str:
         """Get content area background color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_content_bg_color(current_mode)
+        # Fallback
         if self.page.theme_mode == ft.ThemeMode.DARK:
             return ft.colors.GREY_800
         return ft.colors.WHITE
     
     def _get_secondary_bg_color(self) -> str:
         """Get secondary background color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_secondary_bg_color(current_mode)
+        # Fallback
         if self.page.theme_mode == ft.ThemeMode.DARK:
             return ft.colors.GREY_700
         return ft.colors.GREY_50
