@@ -1,0 +1,14 @@
+{
+    "window": {
+        "width": 1200,
+        "height": 800,
+        "x": null,
+        "y": null,
+        "maximized": false
+    },
+    "theme": {
+        "mode": "dark",
+        "color": "red"
+    },
+    "last_page": "home"
+}
