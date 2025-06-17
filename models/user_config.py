@@ -17,8 +17,8 @@ class UserConfigManager:
         # Default configuration
         self.default_config = {
             "window": {
-                "width": 1200,
-                "height": 800,
+                "width": 1600,
+                "height": 900,
                 "x": None,  # Will center if None
                 "y": None,  # Will center if None
                 "maximized": False
@@ -163,6 +163,16 @@ class UserConfigManager:
         self.config["recent_sites"] = recent_sites
         self.save_config()
     
+    def update_recent_site_display_name(self, path: str, new_display_name: str):
+        """Update the display name for a specific recent site"""
+        recent_sites = self.get_recent_sites()
+        for site in recent_sites:
+            if site["path"] == path:
+                site["display_name"] = new_display_name
+                break
+        self.config["recent_sites"] = recent_sites
+        self.save_config()
+
     def clear_recent_sites(self):
         """Clear all recent sites"""
         self.config["recent_sites"] = []

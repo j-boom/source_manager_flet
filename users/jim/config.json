@@ -13,16 +13,20 @@
     "last_page": "home",
     "recent_sites": [
         {
-            "display_name": "Mobile App Backend",
-            "path": "/Users/jim/Documents/Projects/mobile-backend"
+            "display_name": "Sample Project",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund/1001678921 - DC123 - CCR - 2025.json"
+        },
+        {
+            "display_name": "1001678921 - DC123 - CCR - 2025",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund"
+        },
+        {
+            "display_name": "1001123456 Contract Template",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Business_Documents/1001/1001123456 Contract Template"
         },
         {
             "display_name": "Data Analysis Scripts",
             "path": "/Users/jim/Documents/Projects/data-analysis"
-        },
-        {
-            "display_name": "React Dashboard",
-            "path": "/Users/jim/Documents/Projects/react-dashboard"
         },
         {
             "display_name": "Python API Server",

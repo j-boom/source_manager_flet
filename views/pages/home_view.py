@@ -145,8 +145,10 @@ class HomeView(BaseView):
     
     def _on_new_project(self, e):
         """Handle new project action"""
-        # This would be handled by the controller
-        print("New project clicked")
+        if self.on_navigate:
+            self.on_navigate("new_project")
+        else:
+            print("New project clicked")
     
     def _on_import_sources(self, e):
         """Handle import sources action"""

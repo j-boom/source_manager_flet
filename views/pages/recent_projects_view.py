@@ -6,12 +6,13 @@ from typing import List, Dict, Any
 class RecentProjectsView(BaseView):
     """Recent projects view - displays list of recent sites"""
     
-    def __init__(self, page: ft.Page, theme_manager=None, user_config=None, on_open_project=None, on_back=None):
+    def __init__(self, page: ft.Page, theme_manager=None, user_config=None, on_open_project=None, on_back=None, on_navigate=None):
         super().__init__(page)
         self.theme_manager = theme_manager
         self.user_config = user_config
         self.on_open_project = on_open_project
         self.on_back = on_back
+        self.on_navigate = on_navigate
     
     def build(self) -> ft.Control:
         """Build the recent projects page content"""
@@ -25,7 +26,7 @@ class RecentProjectsView(BaseView):
                         ft.Row([
                             ft.IconButton(
                                 icon=ft.icons.ARROW_BACK,
-                                icon_color=ft.colors.BLUE_700,
+                                icon_color=self._get_accent_color(),
                                 on_click=self._on_back_clicked,
                                 tooltip="Back to Home"
                             ),
@@ -33,13 +34,13 @@ class RecentProjectsView(BaseView):
                                 "Recent Projects",
                                 size=28,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.colors.BLUE_700
+                                color=self._get_accent_color()
                             ),
                         ], alignment=ft.MainAxisAlignment.START),
                         ft.Text(
                             f"Your {len(recent_sites)} most recently accessed projects",
                             size=16,
-                            color=ft.colors.GREY_600
+                            color=self._get_secondary_text_color()
                         ),
                     ]),
                     padding=ft.padding.only(bottom=30)
@@ -67,18 +68,18 @@ class RecentProjectsView(BaseView):
                 ft.Icon(
                     ft.icons.HISTORY,
                     size=80,
-                    color=ft.colors.GREY_400
+                    color=self._get_secondary_text_color()
                 ),
                 ft.Text(
                     "No Recent Projects",
                     size=24,
                     weight=ft.FontWeight.BOLD,
-                    color=ft.colors.GREY_600
+                    color=self._get_text_color()
                 ),
                 ft.Text(
                     "You haven't opened any projects yet. Start by creating a new project or importing existing sources.",
                     size=16,
-                    color=ft.colors.GREY_500,
+                    color=self._get_secondary_text_color(),
                     text_align=ft.TextAlign.CENTER
                 ),
                 ft.Container(height=30),
@@ -88,7 +89,7 @@ class RecentProjectsView(BaseView):
                     on_click=self._on_new_project_clicked,
                     style=ft.ButtonStyle(
                         color=ft.colors.WHITE,
-                        bgcolor=ft.colors.BLUE_700,
+                        bgcolor=self._get_accent_color(),
                         padding=ft.padding.symmetric(horizontal=30, vertical=15)
                     )
                 )
@@ -100,7 +101,7 @@ class RecentProjectsView(BaseView):
         )
     
     def _build_recent_sites_list(self, recent_sites: List[Dict[str, str]]) -> ft.Control:
-        """Build list of recent sites as cards"""
+        """Build list of recent sites as vertical list"""
         return ft.Container(
             content=ft.Column([
                 # Action buttons row
@@ -126,24 +127,20 @@ class RecentProjectsView(BaseView):
                 
                 ft.Container(height=20),
                 
-                # Recent sites grid
-                ft.GridView(
+                # Recent sites vertical list
+                ft.ListView(
                     controls=[
-                        self._create_project_card(site) for site in recent_sites
+                        self._create_project_list_item(site) for site in recent_sites
                     ],
-                    runs_count=3,  # 3 cards per row
-                    max_extent=300,
-                    child_aspect_ratio=1.2,
-                    spacing=15,
-                    run_spacing=15,
+                    spacing=10,
                     expand=True
                 )
             ]),
             expand=True
         )
     
-    def _create_project_card(self, site: Dict[str, str]) -> ft.Container:
-        """Create a card for a recent project"""
+    def _create_project_list_item(self, site: Dict[str, str]) -> ft.Container:
+        """Create a list item for a recent project with editable display name"""
         display_name = site.get("display_name", "Unknown Project")
         path = site.get("path", "")
         
@@ -151,60 +148,94 @@ class RecentProjectsView(BaseView):
         import os
         dir_name = os.path.basename(path) if path else ""
         
+        # Create the display name text field for editing
+        display_name_field = ft.TextField(
+            value=display_name,
+            text_size=16,
+            border=ft.InputBorder.NONE,
+            content_padding=ft.padding.symmetric(horizontal=5, vertical=0),
+            on_submit=lambda e, p=path: self._on_display_name_updated(p, e.control.value),
+            on_blur=lambda e, p=path: self._on_display_name_updated(p, e.control.value),
+            text_style=ft.TextStyle(
+                weight=ft.FontWeight.BOLD,
+                color=self._get_text_color()
+            ),
+            cursor_color=self._get_accent_color(),
+            selection_color=self._get_accent_color() + "40",  # Semi-transparent
+            visible=False  # Start hidden
+        )
+        
+        # Create the display name text (shown by default)
+        display_name_text = ft.Text(
+            display_name,
+            size=16,
+            weight=ft.FontWeight.BOLD,
+            color=self._get_text_color(),
+            overflow=ft.TextOverflow.ELLIPSIS,
+            expand=True
+        )
+        
         return ft.Container(
-            content=ft.Column([
-                # Project icon and name
-                ft.Row([
-                    ft.Icon(
-                        ft.icons.FOLDER,
-                        size=24,
-                        color=ft.colors.BLUE_700
-                    ),
-                    ft.Text(
-                        display_name,
-                        size=16,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.colors.GREY_800,
-                        overflow=ft.TextOverflow.ELLIPSIS,
-                        expand=True
-                    )
-                ], spacing=10),
-                
-                # Path info
-                ft.Text(
-                    dir_name,
-                    size=12,
-                    color=ft.colors.GREY_600,
-                    overflow=ft.TextOverflow.ELLIPSIS
-                ),
-                ft.Text(
-                    path,
-                    size=10,
-                    color=ft.colors.GREY_500,
-                    overflow=ft.TextOverflow.ELLIPSIS,
-                    max_lines=2
+            content=ft.Row([
+                # Project icon
+                ft.Icon(
+                    ft.icons.FOLDER,
+                    size=24,
+                    color=self._get_accent_color()
                 ),
                 
-                ft.Container(expand=True),
+                # Project info column
+                ft.Column([
+                    # Display name (either text or editable field)
+                    ft.Stack([
+                        display_name_text,
+                        display_name_field
+                    ]),
+                    # Path info
+                    ft.Row([
+                        ft.Text(
+                            dir_name,
+                            size=12,
+                            color=self._get_secondary_text_color(),
+                            weight=ft.FontWeight.W_500
+                        ),
+                        ft.Text(" • ", size=12, color=self._get_secondary_text_color()),
+                        ft.Text(
+                            path,
+                            size=12,
+                            color=self._get_secondary_text_color(),
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                            expand=True
+                        )
+                    ], spacing=0)
+                ], spacing=4, expand=True),
                 
                 # Action buttons
                 ft.Row([
-                    ft.TextButton(
-                        text="Open",
+                    ft.IconButton(
+                        icon=ft.icons.EDIT,
+                        icon_color=self._get_secondary_text_color(),
+                        icon_size=18,
+                        tooltip="Edit display name",
+                        on_click=lambda e, txt=display_name_text, fld=display_name_field: self._toggle_edit_mode(txt, fld)
+                    ),
+                    ft.IconButton(
                         icon=ft.icons.OPEN_IN_NEW,
+                        icon_color=self._get_accent_color(),
+                        icon_size=18,
+                        tooltip="Open project",
                         on_click=lambda e, p=path, n=display_name: self._on_open_project_clicked(p, n)
                     ),
                     ft.IconButton(
                         icon=ft.icons.DELETE_OUTLINE,
                         icon_color=ft.colors.RED_400,
+                        icon_size=18,
                         tooltip="Remove from recent",
                         on_click=lambda e, p=path: self._on_remove_project_clicked(p)
                     )
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
-            ], spacing=8),
-            width=280,
-            height=150,
-            padding=15,
+                ], spacing=0)
+            ], spacing=8, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            padding=ft.padding.symmetric(horizontal=15, vertical=12),
             bgcolor=self._get_card_bg_color(),
             border=ft.border.all(1, self._get_card_border_color()),
             border_radius=8,
@@ -231,6 +262,65 @@ class RecentProjectsView(BaseView):
             return ft.colors.GREY_600
         return ft.colors.GREY_300
     
+    def _get_text_color(self) -> str:
+        """Get primary text color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_text_color(current_mode)
+        # Fallback
+        if self.page.theme_mode == ft.ThemeMode.DARK:
+            return ft.colors.WHITE
+        return ft.colors.GREY_800
+    
+    def _get_secondary_text_color(self) -> str:
+        """Get secondary text color based on theme"""
+        if self.theme_manager:
+            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
+            return self.theme_manager.get_secondary_text_color(current_mode)
+        # Fallback
+        if self.page.theme_mode == ft.ThemeMode.DARK:
+            return ft.colors.GREY_400
+        return ft.colors.GREY_600
+    
+    def _get_accent_color(self) -> str:
+        """Get accent color based on theme"""
+        if self.theme_manager:
+            return self.theme_manager.get_accent_color()
+        # Fallback
+        return ft.colors.BLUE_700
+    
+    def _toggle_edit_mode(self, text_control: ft.Text, field_control: ft.TextField):
+        """Toggle between display and edit mode for project name"""
+        text_control.visible = not text_control.visible
+        field_control.visible = not field_control.visible
+        if field_control.visible:
+            field_control.focus()
+        self.page.update()
+    
+    def _on_display_name_updated(self, path: str, new_display_name: str):
+        """Handle display name update"""
+        if self.user_config and new_display_name.strip():
+            old_display_name = None
+            # Find the old display name for comparison
+            recent_sites = self.user_config.get_recent_sites()
+            for site in recent_sites:
+                if site["path"] == path:
+                    old_display_name = site.get("display_name", "")
+                    break
+            
+            # Only update if the name actually changed
+            if old_display_name != new_display_name.strip():
+                self.user_config.update_recent_site_display_name(path, new_display_name.strip())
+                print(f"Updated display name for {path} to: {new_display_name.strip()}")
+                # Call the controller to refresh the view
+                if hasattr(self, 'on_navigate') and self.on_navigate:
+                    self.on_navigate("recent_projects")  # This will rebuild the view
+    
+    def refresh_theme(self):
+        """Refresh the view when theme changes"""
+        if hasattr(self, 'page') and self.page:
+            self.page.update()
+    
     def _on_back_clicked(self, e):
         """Handle back button click"""
         if self.on_back:
@@ -240,13 +330,19 @@ class RecentProjectsView(BaseView):
     
     def _on_new_project_clicked(self, e):
         """Handle new project button click"""
-        print("New project clicked from recent projects view")
+        if self.on_navigate:
+            self.on_navigate("new_project")
+        else:
+            print("New project clicked from recent projects view")
     
     def _on_clear_all_clicked(self, e):
         """Handle clear all button click"""
         if self.user_config:
             self.user_config.clear_recent_sites()
             print("All recent projects cleared")
+            # Call the controller to refresh the view
+            if hasattr(self, 'on_navigate') and self.on_navigate:
+                self.on_navigate("recent_projects")  # This will rebuild the view
     
     def _on_open_project_clicked(self, path: str, display_name: str):
         """Handle opening a project"""
@@ -260,6 +356,9 @@ class RecentProjectsView(BaseView):
         if self.user_config:
             self.user_config.remove_recent_site(path)
             print(f"Removed project from recent: {path}")
+            # Call the controller to refresh the view
+            if hasattr(self, 'on_navigate') and self.on_navigate:
+                self.on_navigate("recent_projects")  # This will rebuild the view
     
     def refresh(self):
         """Refresh the view content"""

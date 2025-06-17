@@ -1,6 +1,6 @@
 import flet as ft
 from typing import Dict
-from views import MainView, HomeView, RecentProjectsView
+from views import MainView, HomeView, RecentProjectsView, NewProjectView
 from models import (
     UserConfigManager, 
     ThemeManager, 
@@ -47,7 +47,15 @@ class AppController:
                 self.theme_manager, 
                 self.user_config,
                 on_open_project=self._handle_open_project,
-                on_back=lambda: self._handle_navigation("home")
+                on_back=lambda: self._handle_navigation("home"),
+                on_navigate=self._handle_navigation
+            ),
+            "new_project": NewProjectView(
+                page,
+                self.theme_manager,
+                self.user_config,
+                on_back=lambda: self._handle_navigation("home"),
+                on_project_selected=self._handle_project_selected
             ),
             # Add other views here as you create them
             # "projects": ProjectsView(page, self.theme_manager),
@@ -83,6 +91,13 @@ class AppController:
                 # Refresh the recent projects view to show latest data
                 content = self.views[page_name].refresh()
                 self.main_view.set_content(content)
+            elif page_name == "new_project":
+                # Get content first, then refresh theme
+                content = self.views[page_name].get_content()
+                self.main_view.set_content(content)
+                # Refresh theme for new project view after content is loaded
+                if hasattr(self.views[page_name], 'refresh_theme'):
+                    self.views[page_name].refresh_theme()
             else:
                 content = self.views[page_name].get_content()
                 self.main_view.set_content(content)
@@ -97,6 +112,18 @@ class AppController:
     def _handle_theme_change(self, new_mode: str):
         """Handle theme mode changes"""
         self.main_view.update_theme_colors()
+        
+        # Refresh current view to apply theme changes
+        current_page = self.navigation_manager.get_current_page()
+        if current_page == "new_project" and "new_project" in self.views:
+            # Specifically refresh the new project view
+            self.views["new_project"].refresh_theme()
+        
+        # You could add similar refresh calls for other views that need theme updates
+        # elif current_page == "recent_projects" and "recent_projects" in self.views:
+        #     self.views["recent_projects"].refresh_theme()
+        
+        self.page.update()
     
     def _handle_color_change(self, new_color: str):
         """Handle color theme changes"""
@@ -128,6 +155,17 @@ class AppController:
         
         # You could navigate to a project view or open the project files
         # self._handle_navigation("project_details")
+    
+    def _handle_project_selected(self, project_path: str, project_name: str):
+        """Handle project selection from new project view"""
+        # Add the selected project to recent sites
+        self.user_config.add_recent_site(project_name, project_path)
+        
+        # Here you would implement the actual project creation/opening logic
+        print(f"Project selected: {project_name} at {project_path}")
+        
+        # Navigate back to home or to a project details view
+        self._handle_navigation("home")
     
     def _show_help(self):
         """Show help page"""

@@ -17,8 +17,8 @@ class WindowManager:
         # Set window dimensions
         self.page.window_width = window_config["width"]
         self.page.window_height = window_config["height"]
-        self.page.window_min_width = 800
-        self.page.window_min_height = 600
+        self.page.window_min_width = 1200
+        self.page.window_min_height = 700
         
         # Set window position if saved
         if window_config["x"] is not None and window_config["y"] is not None:
@@ -33,8 +33,8 @@ class WindowManager:
         """Save current window configuration"""
         try:
             self.user_config.save_window_config(
-                width=int(self.page.window_width or 1200),
-                height=int(self.page.window_height or 800),
+                width=int(self.page.window_width or 1600),
+                height=int(self.page.window_height or 900),
                 x=int(self.page.window_left) if self.page.window_left is not None else None,
                 y=int(self.page.window_top) if self.page.window_top is not None else None,
                 maximized=self.page.window_maximized or False

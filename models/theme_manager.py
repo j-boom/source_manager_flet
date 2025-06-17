@@ -80,3 +80,19 @@ class ThemeManager:
         if mode == "dark":
             return ft.colors.GREY_600
         return ft.colors.GREY_300
+    
+    def get_accent_color(self) -> str:
+        """Get the current accent/primary color"""
+        return self.theme_colors[self.current_color]["primary"]
+    
+    def get_text_color(self, mode: str) -> str:
+        """Get primary text color based on theme mode"""
+        if mode == "dark":
+            return ft.colors.WHITE
+        return ft.colors.GREY_800
+    
+    def get_secondary_text_color(self, mode: str) -> str:
+        """Get secondary text color based on theme mode"""
+        if mode == "dark":
+            return ft.colors.GREY_400
+        return ft.colors.GREY_600
