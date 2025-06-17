@@ -1,9 +1,16 @@
 import json
 import os
+import sys
 import getpass
 from pathlib import Path
 from typing import Dict, Any, Optional
 import flet as ft
+
+# Add project root to path for config imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from config import USER_DATA_DIR, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, DEFAULT_THEME
 
 
 class UserConfigManager:
@@ -11,20 +18,20 @@ class UserConfigManager:
     
     def __init__(self):
         self.username = getpass.getuser()
-        self.config_dir = Path("users") / self.username
+        self.config_dir = USER_DATA_DIR / "users" / self.username
         self.config_file = self.config_dir / "config.json"
         
         # Default configuration
         self.default_config = {
             "window": {
-                "width": 1600,
-                "height": 900,
+                "width": DEFAULT_WINDOW_WIDTH,
+                "height": DEFAULT_WINDOW_HEIGHT,
                 "x": None,  # Will center if None
                 "y": None,  # Will center if None
                 "maximized": False
             },
             "theme": {
-                "mode": "light",  # "light" or "dark"
+                "mode": DEFAULT_THEME,  # "light" or "dark"
                 "color": "blue"   # "red", "blue", "orange", "green", "yellow", "purple", "indigo"
             },
             "last_page": "home",

@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from services import DirectoryService, ProjectCreationService
 from ..components.dialogs.project_creation_dialog import ProjectCreationDialog
 from ..components.dialogs.folder_creation_dialog import FolderCreationDialog
+from models.database_manager import DatabaseManager
 
 
 class NewProjectViewRefactored(BaseView):
@@ -21,10 +22,11 @@ class NewProjectViewRefactored(BaseView):
         # Services
         self.directory_service = DirectoryService()
         self.project_service = ProjectCreationService(user_config)
+        self.db_manager = DatabaseManager()  # Initialize database manager
         
         # Dialog components
         self.project_dialog = ProjectCreationDialog(
-            page, self.project_service, 
+            page, self.project_service, self.db_manager,  # Pass database manager
             on_success=self._on_project_created,
             on_cancel=self._on_dialog_cancelled
         )

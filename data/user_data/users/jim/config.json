@@ -1,0 +1,15 @@
+{
+    "window": {
+        "width": 1200,
+        "height": 800,
+        "x": null,
+        "y": null,
+        "maximized": false
+    },
+    "theme": {
+        "mode": "dark",
+        "color": "blue"
+    },
+    "last_page": "home",
+    "recent_sites": []
+}
