@@ -10,5 +10,27 @@
         "mode": "light",
         "color": "blue"
     },
-    "last_page": "home"
+    "last_page": "home",
+    "recent_sites": [
+        {
+            "display_name": "Mobile App Backend",
+            "path": "/Users/jim/Documents/Projects/mobile-backend"
+        },
+        {
+            "display_name": "Data Analysis Scripts",
+            "path": "/Users/jim/Documents/Projects/data-analysis"
+        },
+        {
+            "display_name": "React Dashboard",
+            "path": "/Users/jim/Documents/Projects/react-dashboard"
+        },
+        {
+            "display_name": "Python API Server",
+            "path": "/Users/jim/Documents/Projects/api-server"
+        },
+        {
+            "display_name": "My Website Project",
+            "path": "/Users/jim/Documents/Projects/website"
+        }
+    ]
 }

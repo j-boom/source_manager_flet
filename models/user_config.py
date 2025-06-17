@@ -27,7 +27,8 @@ class UserConfigManager:
                 "mode": "light",  # "light" or "dark"
                 "color": "blue"   # "red", "blue", "orange", "green", "yellow", "purple", "indigo"
             },
-            "last_page": "home"
+            "last_page": "home",
+            "recent_sites": []  # List of up to 10 recent sites
         }
         
         # Ensure user directory exists
@@ -127,3 +128,42 @@ class UserConfigManager:
     def get_username(self) -> str:
         """Get current username"""
         return self.username
+    
+    def get_recent_sites(self) -> list:
+        """Get list of recent sites"""
+        return self.config.get("recent_sites", [])
+    
+    def add_recent_site(self, display_name: str, path: str):
+        """Add a site to recent sites list (max 10 items)"""
+        recent_sites = self.get_recent_sites()
+        
+        # Create new site entry
+        new_site = {
+            "display_name": display_name,
+            "path": path
+        }
+        
+        # Remove if already exists (to move to top)
+        recent_sites = [site for site in recent_sites if site["path"] != path]
+        
+        # Add to beginning of list
+        recent_sites.insert(0, new_site)
+        
+        # Keep only the 10 most recent
+        recent_sites = recent_sites[:10]
+        
+        # Update config
+        self.config["recent_sites"] = recent_sites
+        self.save_config()
+    
+    def remove_recent_site(self, path: str):
+        """Remove a site from recent sites list"""
+        recent_sites = self.get_recent_sites()
+        recent_sites = [site for site in recent_sites if site["path"] != path]
+        self.config["recent_sites"] = recent_sites
+        self.save_config()
+    
+    def clear_recent_sites(self):
+        """Clear all recent sites"""
+        self.config["recent_sites"] = []
+        self.save_config()

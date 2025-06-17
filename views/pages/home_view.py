@@ -5,9 +5,10 @@ from ..base_view import BaseView
 class HomeView(BaseView):
     """Home page view"""
     
-    def __init__(self, page: ft.Page, theme_manager=None):
+    def __init__(self, page: ft.Page, theme_manager=None, on_navigate=None):
         super().__init__(page)
         self.theme_manager = theme_manager
+        self.on_navigate = on_navigate
     
     def build(self) -> ft.Control:
         """Build the home page content"""
@@ -154,5 +155,7 @@ class HomeView(BaseView):
     
     def _on_recent_projects(self, e):
         """Handle recent projects action"""
-        # This would be handled by the controller
-        print("Recent projects clicked")
+        if self.on_navigate:
+            self.on_navigate("recent_projects")
+        else:
+            print("Recent projects clicked")

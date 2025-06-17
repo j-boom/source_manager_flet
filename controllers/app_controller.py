@@ -1,6 +1,6 @@
 import flet as ft
 from typing import Dict
-from views import MainView, HomeView
+from views import MainView, HomeView, RecentProjectsView
 from models import (
     UserConfigManager, 
     ThemeManager, 
@@ -41,7 +41,14 @@ class AppController:
         
         # Initialize views
         self.views = {
-            "home": HomeView(page, self.theme_manager),
+            "home": HomeView(page, self.theme_manager, on_navigate=self._handle_navigation),
+            "recent_projects": RecentProjectsView(
+                page, 
+                self.theme_manager, 
+                self.user_config,
+                on_open_project=self._handle_open_project,
+                on_back=lambda: self._handle_navigation("home")
+            ),
             # Add other views here as you create them
             # "projects": ProjectsView(page, self.theme_manager),
             # "sources": SourcesView(page, self.theme_manager),
@@ -71,8 +78,14 @@ class AppController:
         
         # Load appropriate content
         if page_name in self.views:
-            content = self.views[page_name].get_content()
-            self.main_view.set_content(content)
+            # For certain views, we might want to refresh the content
+            if page_name == "recent_projects":
+                # Refresh the recent projects view to show latest data
+                content = self.views[page_name].refresh()
+                self.main_view.set_content(content)
+            else:
+                content = self.views[page_name].get_content()
+                self.main_view.set_content(content)
         elif page_name == "settings":
             settings_content = self.settings_manager.create_settings_view(self.page)
             self.main_view.set_content(settings_content)
@@ -93,6 +106,28 @@ class AppController:
         # Refresh current page to apply new colors
         current_page = self.navigation_manager.get_current_page()
         self._handle_navigation(current_page)
+    
+    def add_sample_recent_site(self, display_name: str, path: str):
+        """Add a sample recent site (for testing purposes)"""
+        self.user_config.add_recent_site(display_name, path)
+        
+        # If we're currently on the recent projects page, refresh it
+        current_page = self.navigation_manager.get_current_page()
+        if current_page == "recent_projects":
+            content = self.views["recent_projects"].refresh()
+            self.main_view.set_content(content)
+    
+    def _handle_open_project(self, path: str, display_name: str):
+        """Handle opening a project from recent projects"""
+        # Add the project to recent sites (moves it to top if already exists)
+        self.user_config.add_recent_site(display_name, path)
+        
+        # Here you would implement the actual project opening logic
+        # For now, just show a message
+        print(f"Opening project: {display_name} at {path}")
+        
+        # You could navigate to a project view or open the project files
+        # self._handle_navigation("project_details")
     
     def _show_help(self):
         """Show help page"""
