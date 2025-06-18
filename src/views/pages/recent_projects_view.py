@@ -1,6 +1,8 @@
 import flet as ft
-from ..base_view import BaseView
+from views.base_view import BaseView
 from typing import List, Dict, Any
+import os
+import json
 
 
 class RecentProjectsView(BaseView):
@@ -13,6 +15,26 @@ class RecentProjectsView(BaseView):
         self.on_open_project = on_open_project
         self.on_back = on_back
         self.on_navigate = on_navigate
+    
+    def _get_project_title_from_path(self, project_path: str) -> str:
+        """Get project title from the project.json file"""
+        try:
+            # Look for project.json in the project directory
+            json_files = [f for f in os.listdir(project_path) if f.endswith('.json')]
+            if json_files:
+                # Use the first JSON file found (should be project.json)
+                json_path = os.path.join(project_path, json_files[0])
+                with open(json_path, 'r') as f:
+                    project_data = json.load(f)
+                    # Try to get title from various possible fields
+                    title = project_data.get('project_title') or project_data.get('title') or project_data.get('projectTitle')
+                    if title:
+                        return title
+        except Exception:
+            pass  # If we can't read the file, fall back to directory name
+        
+        # Fallback to directory name
+        return os.path.basename(project_path) if project_path else "Unknown Project"
     
     def build(self) -> ft.Control:
         """Build the recent projects page content"""
@@ -140,17 +162,18 @@ class RecentProjectsView(BaseView):
         )
     
     def _create_project_list_item(self, site: Dict[str, str]) -> ft.Container:
-        """Create a list item for a recent project with editable display name"""
-        display_name = site.get("display_name", "Unknown Project")
+        """Create a list item for a recent project with project title as header"""
         path = site.get("path", "")
         
+        # Get project title from the JSON file instead of using display_name
+        project_title = self._get_project_title_from_path(path)
+        
         # Extract directory name from path for additional context
-        import os
         dir_name = os.path.basename(path) if path else ""
         
         # Create the display name text field for editing
         display_name_field = ft.TextField(
-            value=display_name,
+            value=project_title,
             text_size=16,
             border=ft.InputBorder.NONE,
             content_padding=ft.padding.symmetric(horizontal=5, vertical=0),
@@ -167,7 +190,7 @@ class RecentProjectsView(BaseView):
         
         # Create the display name text (shown by default)
         display_name_text = ft.Text(
-            display_name,
+            project_title,
             size=16,
             weight=ft.FontWeight.BOLD,
             color=self._get_text_color(),
@@ -224,7 +247,7 @@ class RecentProjectsView(BaseView):
                         icon_color=self._get_accent_color(),
                         icon_size=18,
                         tooltip="Open project",
-                        on_click=lambda e, p=path, n=display_name: self._on_open_project_clicked(p, n)
+                        on_click=lambda e, p=path, n=project_title: self._on_open_project_clicked(p, n)
                     ),
                     ft.IconButton(
                         icon=ft.icons.DELETE_OUTLINE,

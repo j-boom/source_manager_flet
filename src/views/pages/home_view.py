@@ -1,5 +1,5 @@
 import flet as ft
-from ..base_view import BaseView
+from views.base_view import BaseView
 
 
 class HomeView(BaseView):

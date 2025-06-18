@@ -8,8 +8,49 @@
     },
     "theme": {
         "mode": "dark",
-        "color": "blue"
+        "color": "green"
     },
-    "last_page": "home",
-    "recent_sites": []
+    "last_page": "project_view",
+    "recent_sites": [
+        {
+            "display_name": "1001123457 - CA001 - COM - 2025",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Legal_Records/1001/1001123457 Sample Project"
+        },
+        {
+            "display_name": "1001123457 - CA001 - STD - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001123457 Deceased Fund/1001123457 - CA001 - STD - 2025.json"
+        },
+        {
+            "display_name": "3001789012 - CA112 - CRS - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Marketing_Materials/3001/3001789012 Campaign Materials/3001789012 - CA112 - CRS - 2025.json"
+        },
+        {
+            "display_name": "1001678921 - DC123 - CCR - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund/1001678921 - DC123 - CCR - 2025.json"
+        },
+        {
+            "display_name": "asdfsaf",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001123457 Deceased Fund"
+        },
+        {
+            "display_name": "3001789012 - CA112 - CRS - 2025",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Marketing_Materials/3001/3001789012 Campaign Materials"
+        },
+        {
+            "display_name": "1234567835 - CA003 - STD - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Legal_Records/1001/1234567835/1234567835 - CA003 - STD - 2025.json"
+        },
+        {
+            "display_name": "1234567835 - CA003 - STD - 2025",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Legal_Records/1001/1234567835"
+        },
+        {
+            "display_name": "1001123457 - CA002 - STD - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Legal_Records/1001/1001123457 Sample Project/1001123457 - CA002 - STD - 2025.json"
+        },
+        {
+            "display_name": "1001123457 - CA002 - STD - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001123457 Deceased Fund/1001123457 - CA002 - STD - 2025.json"
+        }
+    ]
 }

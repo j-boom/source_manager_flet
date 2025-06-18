@@ -1,0 +1,27 @@
+{
+    "project_id": "1001123457",
+    "project_type": "Field Condition Report",
+    "suffix": "CA001",
+    "document_title": null,
+    "request_year": 2025,
+    "created_date": "2025-06-17T22:06:53.514002",
+    "status": "active",
+    "metadata": {
+        "folder_path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001123457 Deceased Fund",
+        "filename": "1001123457 - CA001 - FCR - 2025.json"
+    },
+    "uuid": "69ef1558-ab24-424a-86ce-781f7517dae1",
+    "customer": {
+        "key": "asdf",
+        "name": "sadfsad",
+        "number": "1001123457",
+        "suffix": "CA001"
+    },
+    "title": "asdfsaf",
+    "description": null,
+    "engineer": null,
+    "drafter": null,
+    "reviewer": null,
+    "architect": null,
+    "database_id": 19
+}

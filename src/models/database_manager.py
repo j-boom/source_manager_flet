@@ -44,6 +44,9 @@ class Project:
     title: Optional[str] = None
     description: Optional[str] = None
     status: str = 'active'
+    requestor_name: Optional[str] = None
+    request_date: Optional[str] = None  # Format: "FY25 Q2"
+    relook: bool = False
     id: Optional[int] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
@@ -100,11 +103,16 @@ class DatabaseManager:
         # Read and execute schema
         schema_path = DATABASE_SCHEMA
         if schema_path.exists():
-            with open(schema_path, 'r') as f:
-                schema = f.read()
-            if self.connection:
-                self.connection.executescript(schema)
-                self.connection.commit()
+            try:
+                with open(schema_path, 'r') as f:
+                    schema = f.read()
+                if self.connection:
+                    self.connection.executescript(schema)
+                    self.connection.commit()
+            except sqlite3.OperationalError as e:
+                # If tables already exist, that's fine
+                if "already exists" not in str(e):
+                    raise
     
     def connect(self) -> sqlite3.Connection:
         """Connect to the database"""
@@ -170,11 +178,13 @@ class DatabaseManager:
         cursor = self.connection.cursor()
         cursor.execute("""
             INSERT INTO projects (uuid, customer_id, engineer, drafter, reviewer, 
-                                architect, project_code, project_type, title, description, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                architect, project_code, project_type, title, description, status,
+                                requestor_name, request_date, relook)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (project.uuid, project.customer_id, project.engineer, project.drafter,
               project.reviewer, project.architect, project.project_code, project.project_type,
-              project.title, project.description, project.status))
+              project.title, project.description, project.status, project.requestor_name,
+              project.request_date, project.relook))
         self.connection.commit()
         return cursor.lastrowid or 0
     
@@ -188,6 +198,25 @@ class DatabaseManager:
         if row:
             return Project(**dict(row))
         return None
+    
+    def update_project(self, project: Project) -> bool:
+        """Update an existing project"""
+        if not self.connection:
+            raise RuntimeError("Database not connected")
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            UPDATE projects SET 
+                engineer = ?, drafter = ?, reviewer = ?, architect = ?,
+                project_code = ?, project_type = ?, title = ?, description = ?, 
+                status = ?, requestor_name = ?, request_date = ?, relook = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE uuid = ?
+        """, (project.engineer, project.drafter, project.reviewer, project.architect,
+              project.project_code, project.project_type, project.title, project.description,
+              project.status, project.requestor_name, project.request_date, project.relook,
+              project.uuid))
+        self.connection.commit()
+        return cursor.rowcount > 0
     
     def get_projects_by_customer(self, customer_key: str) -> List[Project]:
         """Get all projects for a customer"""

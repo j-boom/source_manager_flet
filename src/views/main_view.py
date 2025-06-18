@@ -57,9 +57,9 @@ class MainView:
                     label="Home"
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.icons.FOLDER_OUTLINED,
-                    selected_icon=ft.icons.FOLDER,
-                    label="Projects"
+                    icon=ft.icons.ASSIGNMENT_OUTLINED,
+                    selected_icon=ft.icons.ASSIGNMENT,
+                    label="Project View"
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.icons.CODE_OUTLINED,
@@ -126,7 +126,7 @@ class MainView:
         selected_index = e.control.selected_index
         
         # Map indices to page names
-        pages = ["home", "projects", "sources", "reports"]
+        pages = ["home", "project_view", "sources", "reports"]
         if 0 <= selected_index < len(pages):
             page_name = pages[selected_index]
             if self.on_navigation_change:
@@ -161,7 +161,7 @@ class MainView:
         """Update the selected navigation item"""
         page_mapping = {
             "home": 0,
-            "projects": 1,
+            "project_view": 1,
             "sources": 2,
             "reports": 3
         }

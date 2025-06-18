@@ -11,7 +11,7 @@ class NavigationManager:
         self.navigation_callback: Optional[Callable[[str], None]] = None
         
         # Define valid pages
-        self.valid_pages = ["home", "projects", "sources", "reports", "settings", "help"]
+        self.valid_pages = ["home", "project_view", "sources", "reports", "projects", "settings", "help"]
     
     def set_navigation_callback(self, callback: Callable[[str], None]):
         """Set the callback function for navigation changes"""
@@ -36,7 +36,7 @@ class NavigationManager:
         """Get the navigation index for a page"""
         page_mapping = {
             "home": 0,
-            "projects": 1,
+            "project_view": 1,
             "sources": 2,
             "reports": 3
         }
@@ -46,7 +46,7 @@ class NavigationManager:
         """Get page name from navigation index"""
         index_mapping = {
             0: "home",
-            1: "projects",
+            1: "project_view",
             2: "sources",
             3: "reports"
         }

@@ -1,23 +1,25 @@
 """Refactored New Project View using service and component architecture"""
 
 import flet as ft
-from ..base_view import BaseView
+from views.base_view import BaseView
 from typing import List, Dict, Any, Optional
 from services import DirectoryService, ProjectCreationService
-from ..components.dialogs.project_creation_dialog import ProjectCreationDialog
-from ..components.dialogs.folder_creation_dialog import FolderCreationDialog
+from views.components.dialogs.project_creation_dialog import ProjectCreationDialog
+from views.components.dialogs.folder_creation_dialog import FolderCreationDialog
 from models.database_manager import DatabaseManager
 
 
 class NewProjectViewRefactored(BaseView):
     """Refactored new project view with better separation of concerns"""
     
-    def __init__(self, page: ft.Page, theme_manager=None, user_config=None, on_back=None, on_project_selected=None):
+    def __init__(self, page: ft.Page, theme_manager=None, user_config=None, on_back=None, on_project_selected=None, project_state_manager=None, on_navigate=None):
         super().__init__(page)
         self.theme_manager = theme_manager
         self.user_config = user_config
         self.on_back = on_back
         self.on_project_selected = on_project_selected
+        self.project_state_manager = project_state_manager
+        self.on_navigate = on_navigate
         
         # Services
         self.directory_service = DirectoryService()
@@ -100,7 +102,17 @@ class NewProjectViewRefactored(BaseView):
                     )
                 ),
                 ft.Container(expand=True),
-                ft.Text("New Project", size=20, weight=ft.FontWeight.BOLD)
+                ft.Text("New Project", size=20, weight=ft.FontWeight.BOLD),
+                ft.Container(expand=True),
+                ft.ElevatedButton(
+                    "Recent Projects",
+                    icon=ft.icons.HISTORY,
+                    on_click=lambda e: self._on_recent_projects_clicked(),
+                    style=ft.ButtonStyle(
+                        bgcolor=ft.colors.BLUE_600,
+                        color=ft.colors.WHITE
+                    )
+                )
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             padding=ft.padding.all(20),
             bgcolor=header_bg,
@@ -297,11 +309,34 @@ class NewProjectViewRefactored(BaseView):
         if self.on_back:
             self.on_back()
     
+    def _on_recent_projects_clicked(self):
+        """Handle recent projects button click"""
+        if self.on_navigate:
+            self.on_navigate("recent_projects")
+    
     # Dialog Callbacks
-    def _on_project_created(self, message: str):
+    def _on_project_created(self, success_data):
         """Handle successful project creation"""
-        self._refresh_current_view()
-        self._show_success_dialog("Success", message)
+        if isinstance(success_data, dict):
+            # New format with project data
+            project = success_data.get('project')
+            project_data = success_data.get('project_data')
+            file_path = success_data.get('file_path')
+            message = success_data.get('message', 'Project created successfully')
+            
+            # Load project into app state if we have the manager
+            if self.project_state_manager and project:
+                self.project_state_manager.load_project(project, project_data, file_path)
+            
+            # Navigate to project view
+            if self.on_navigate:
+                self.on_navigate("project_view")  # Go directly to project view
+            
+            self._show_success_dialog("Success", message)
+        else:
+            # Fallback for old string format
+            self._refresh_current_view()
+            self._show_success_dialog("Success", str(success_data))
     
     def _on_folder_created(self, message: str):
         """Handle successful folder creation"""

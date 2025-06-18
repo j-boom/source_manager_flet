@@ -1,13 +1,16 @@
 import flet as ft
 from typing import Dict
-from views import MainView, HomeView, RecentProjectsView, NewProjectView
+from views import MainView, HomeView, RecentProjectsView, NewProjectView, ProjectView
 from models import (
     UserConfigManager, 
     ThemeManager, 
     WindowManager, 
     NavigationManager, 
-    SettingsManager
+    SettingsManager,
+    ProjectStateManager,
+    DatabaseManager
 )
+from models.database_manager import Project
 
 
 class AppController:
@@ -22,6 +25,8 @@ class AppController:
         self.window_manager = WindowManager(page, self.user_config)
         self.navigation_manager = NavigationManager(self.user_config)
         self.settings_manager = SettingsManager(self.user_config, self.theme_manager)
+        self.project_state_manager = ProjectStateManager()
+        self.database_manager = DatabaseManager()
         
         # Apply saved configurations
         self.window_manager.apply_saved_window_config()
@@ -42,6 +47,13 @@ class AppController:
         # Initialize views
         self.views = {
             "home": HomeView(page, self.theme_manager, on_navigate=self._handle_navigation),
+            "project_view": ProjectView(
+                page,
+                self.theme_manager,
+                self.database_manager,
+                self.project_state_manager,
+                on_navigate=self._handle_navigation
+            ),
             "recent_projects": RecentProjectsView(
                 page, 
                 self.theme_manager, 
@@ -55,10 +67,11 @@ class AppController:
                 self.theme_manager,
                 self.user_config,
                 on_back=lambda: self._handle_navigation("home"),
-                on_project_selected=self._handle_project_selected
+                on_project_selected=self._handle_project_selected,
+                project_state_manager=self.project_state_manager,
+                on_navigate=self._handle_navigation
             ),
             # Add other views here as you create them
-            # "projects": ProjectsView(page, self.theme_manager),
             # "sources": SourcesView(page, self.theme_manager),
             # "reports": ReportsView(page, self.theme_manager),
         }
@@ -75,6 +88,15 @@ class AppController:
     
     def _handle_navigation(self, page_name: str):
         """Handle navigation between pages"""
+        # Special handling for "projects" destination - context-aware
+        if page_name == "projects":
+            if self.project_state_manager.has_loaded_project():
+                # If a project is loaded, go to project view (to be implemented)
+                page_name = "current_project"
+            else:
+                # If no project is loaded, go to new project view
+                page_name = "new_project"
+        
         # Update navigation state without triggering callback to prevent recursion
         self.navigation_manager.current_page = page_name
         self.navigation_manager.user_config.save_last_page(page_name)
@@ -98,12 +120,24 @@ class AppController:
                 # Refresh theme for new project view after content is loaded
                 if hasattr(self.views[page_name], 'refresh_theme'):
                     self.views[page_name].refresh_theme()
+            elif page_name == "project_view":
+                # Check if a project is loaded
+                if self.project_state_manager.has_loaded_project():
+                    content = self.views[page_name].get_content()
+                    self.main_view.set_content(content)
+                else:
+                    # No project loaded, redirect to new project view
+                    self._handle_navigation("new_project")
+                    return
             else:
                 content = self.views[page_name].get_content()
                 self.main_view.set_content(content)
         elif page_name == "settings":
             settings_content = self.settings_manager.create_settings_view(self.page)
             self.main_view.set_content(settings_content)
+        elif page_name == "current_project":
+            # Show current project view
+            self._show_current_project()
         elif page_name == "help":
             self._show_help()
         else:
@@ -149,23 +183,44 @@ class AppController:
         # Add the project to recent sites (moves it to top if already exists)
         self.user_config.add_recent_site(display_name, path)
         
-        # Here you would implement the actual project opening logic
-        # For now, just show a message
+        # Load the project into the project state manager
+        # For now, we'll create a simple project object from the display name
+        # In a real implementation, you'd load from the JSON file or database
+        import uuid
+        project = Project(
+            uuid=str(uuid.uuid4()),
+            customer_id=1,  # Default customer ID
+            title=display_name,
+            project_code=display_name.split(' - ')[0] if ' - ' in display_name else display_name
+        )
+        self.project_state_manager.load_project(project)
+        
         print(f"Opening project: {display_name} at {path}")
         
-        # You could navigate to a project view or open the project files
-        # self._handle_navigation("project_details")
+        # Navigate to the project view
+        self._handle_navigation("project_view")
     
     def _handle_project_selected(self, project_path: str, project_name: str):
         """Handle project selection from new project view"""
         # Add the selected project to recent sites
         self.user_config.add_recent_site(project_name, project_path)
         
-        # Here you would implement the actual project creation/opening logic
-        print(f"Project selected: {project_name} at {project_path}")
+        # Load the project into the project state manager
+        # For now, we'll create a simple project object from the name
+        # In a real implementation, you'd load from the JSON file or database
+        import uuid
+        project = Project(
+            uuid=str(uuid.uuid4()),
+            customer_id=1,  # Default customer ID
+            title=project_name,
+            project_code=project_name.split(' - ')[0] if ' - ' in project_name else project_name
+        )
+        self.project_state_manager.load_project(project)
         
-        # Navigate back to home or to a project details view
-        self._handle_navigation("home")
+        print(f"Project loaded: {project_name} at {project_path}")
+        
+        # Navigate to the project view
+        self._handle_navigation("project_view")
     
     def _show_help(self):
         """Show help page"""
@@ -215,14 +270,70 @@ class AppController:
         )
         self.main_view.set_content(not_found_content)
     
+    def _show_current_project(self):
+        """Show the current project view"""
+        if self.project_state_manager.has_loaded_project():
+            # Create a simple current project view
+            project_info = self.project_state_manager.get_project_info()
+            
+            # Build project view content
+            project_content = ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.ElevatedButton(
+                            "Back to Home",
+                            icon=ft.icons.HOME,
+                            on_click=lambda e: self._handle_navigation("home")
+                        ),
+                        ft.Container(expand=True),
+                        ft.Text("Current Project", size=20, weight=ft.FontWeight.BOLD)
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    padding=ft.padding.all(20),
+                    bgcolor=ft.colors.GREY_800 if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.WHITE,
+                    border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.GREY_300))
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text(f"Project: {project_info.get('title', 'Unknown')}", size=18, weight=ft.FontWeight.BOLD),
+                        ft.Container(height=10),
+                        ft.Text(f"Type: {project_info.get('project_type', 'Unknown')}"),
+                        ft.Text(f"Code: {project_info.get('project_code', 'Unknown')}"),
+                        ft.Text(f"Engineer: {project_info.get('engineer', 'Not assigned')}"),
+                        ft.Text(f"Drafter: {project_info.get('drafter', 'Not assigned')}"),
+                        ft.Text(f"Reviewer: {project_info.get('reviewer', 'Not assigned')}"),
+                        ft.Text(f"Architect: {project_info.get('architect', 'Not assigned')}"),
+                        ft.Container(height=20),
+                        ft.ElevatedButton(
+                            "Close Project",
+                            icon=ft.icons.CLOSE,
+                            on_click=lambda e: self._close_current_project(),
+                            style=ft.ButtonStyle(
+                                bgcolor=ft.colors.RED_600,
+                                color=ft.colors.WHITE
+                            )
+                        )
+                    ], spacing=5),
+                    padding=ft.padding.all(20)
+                )
+            ])
+            
+            self.main_view.set_content(project_content)
+        else:
+            # No project loaded, redirect to new project
+            self._handle_navigation("new_project")
+    
+    def _close_current_project(self):
+        """Close the current project and return to home"""
+        self.project_state_manager.unload_project()
+        self._handle_navigation("home")
+    
     def run(self):
         """Start the application"""
         # Show the main view
         self.main_view.show()
         
-        # Navigate to the last opened page
-        last_page = self.navigation_manager.get_current_page()
-        self._handle_navigation(last_page)
+        # Always navigate to home page on startup
+        self._handle_navigation("home")
     
     def cleanup(self):
         """Clean up and save configuration before exit"""

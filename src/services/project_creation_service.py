@@ -10,7 +10,28 @@ from typing import Dict, Any, Optional, List
 class ProjectCreationService:
     """Handles project creation logic and validation"""
     
-    PROJECT_TYPES = ["CCR", "GSC", "STD", "FCR", "COM", "CRS", "OTH"]
+    # Display names for dropdown
+    PROJECT_TYPES = [
+        "Code Compliance Review",
+        "General Site Conditions", 
+        "Standard",
+        "Field Condition Report",
+        "Commercial",
+        "Code Review Summary",
+        "Other"
+    ]
+    
+    # Mapping from display names to codes for filename
+    PROJECT_TYPE_CODES = {
+        "Code Compliance Review": "CCR",
+        "General Site Conditions": "GSC", 
+        "Standard": "STD",
+        "Field Condition Report": "FCR",
+        "Commercial": "COM",
+        "Code Review Summary": "CRS",
+        "Other": "OTH"
+    }
+    
     SUFFIX_PATTERN = r'^[A-Z]{2}\d{3}$'
     
     def __init__(self, user_config=None):
@@ -30,32 +51,35 @@ class ProjectCreationService:
         elif not year.isdigit():
             errors.append("Year must be a valid number")
         
+        # Get the project type code for validation
+        project_code = self.PROJECT_TYPE_CODES.get(project_type, project_type)
+        
         # Suffix validation - required for all except GSC
-        if project_type != "GSC" and not suffix:
+        if project_code != "GSC" and not suffix:
             errors.append("Suffix is required for this project type")
         
         if suffix and not re.match(self.SUFFIX_PATTERN, suffix):
             errors.append("Suffix must be in format AB123 (2 letters + 3 digits)")
         
-        # Document title validation - required for OTH
-        if project_type == "OTH" and not document_title.strip():
-            errors.append("Document title is required for OTH projects")
+        # Document title validation - NO LONGER REQUIRED for OTH projects
+        # Removed the requirement that was causing issues
         
         return errors
     
     def generate_filename(self, ten_digit_number: str, project_type: str, suffix: str = "", 
                          year: str = "", document_title: str = "") -> str:
-        """Generate the project filename"""
+        """Generate the project filename using project type codes"""
         parts = [ten_digit_number]
         
         if suffix:
             parts.append(suffix)
         
-        if project_type:
-            parts.append(project_type)
+        # Convert display name to code for filename
+        project_code = self.PROJECT_TYPE_CODES.get(project_type, project_type)
+        if project_code:
+            parts.append(project_code)
         
-        if project_type == "OTH" and document_title:
-            parts.append(document_title)
+        # No longer adding document title to filename for OTH projects
         
         if year:
             parts.append(year)
@@ -124,7 +148,8 @@ class ProjectCreationService:
     
     def is_document_title_required(self, project_type: str) -> bool:
         """Check if document title is required for the given project type"""
-        return project_type == "OTH"
+        # Document title is no longer required for any project type
+        return False
     
     def get_current_year_options(self, years_ahead: int = 4) -> List[str]:
         """Get list of year options starting from current year"""
