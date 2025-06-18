@@ -1,0 +1,27 @@
+{
+    "project_id": "1001123457",
+    "project_type": "Standard",
+    "suffix": "CA001",
+    "document_title": null,
+    "request_year": 2025,
+    "created_date": "2025-06-18T16:02:34.910536",
+    "status": "active",
+    "metadata": {
+        "folder_path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Legal_Records/1001/1001123457 Sample Project",
+        "filename": "1001123457 - CA001 - STD - 2025.json"
+    },
+    "uuid": "46e27305-ff00-44d3-8689-bbc14c8fe7df",
+    "customer": {
+        "key": "12345567182",
+        "name": "Facility Name",
+        "number": "1001123457",
+        "suffix": "CA001"
+    },
+    "title": "Sample Project",
+    "description": null,
+    "engineer": null,
+    "drafter": null,
+    "reviewer": null,
+    "architect": null,
+    "database_id": 1
+}
