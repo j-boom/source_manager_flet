@@ -2,44 +2,76 @@
 Base class for Project View tabs
 """
 
-from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
 import flet as ft
+from abc import ABC, abstractmethod
+from typing import Optional
+from services.project_creation_service import ProjectCreationService
 
 
-class BaseTab(ABC):
+class BaseProjectTab(ABC):
     """Abstract base class for all project view tabs"""
     
-    def __init__(self, project_state_manager, database_manager):
-        self.project_state_manager = project_state_manager
+    def __init__(self, page: ft.Page, theme_manager=None, database_manager=None, project_state_manager=None):
+        self.page = page
+        self.theme_manager = theme_manager
         self.database_manager = database_manager
+        self.project_state_manager = project_state_manager
+        
+        # Edit mode state
         self.edit_mode = False
-        self.controls = {}
         
     @abstractmethod
-    def create_content(self) -> ft.Container:
-        """Create the tab content"""
+    def build(self) -> ft.Control:
+        """Build the tab content"""
         pass
         
-    @abstractmethod
-    def load_data(self, project_info: Optional[Dict[str, Any]] = None) -> None:
-        """Load data into the tab"""
+    def _get_theme_color(self) -> str:
+        """Get the current theme color"""
+        if self.theme_manager:
+            return self.theme_manager.get_current_color()
+        return ft.colors.BLUE_600
+        
+    def _get_project_info(self) -> dict:
+        """Get current project information"""
+        if self.project_state_manager and self.project_state_manager.has_loaded_project():
+            return self.project_state_manager.get_project_info()
+        return {}
+        
+    def _create_text_field(self, key: str, label: str, value: str, width: int = 300, hint_text: Optional[str] = None) -> ft.TextField:
+        """Create a text field with edit mode support"""
+        # Get theme-appropriate colors for edit mode
+        if self.edit_mode:
+            theme_color = self._get_theme_color()
+            border_color = theme_color
+            bgcolor = None
+        else:
+            bgcolor = None
+            border_color = ft.colors.GREY_400
+            
+        field = ft.TextField(
+            label=label,
+            value=value,
+            width=width,
+            hint_text=hint_text,
+            read_only=not self.edit_mode,
+            bgcolor=bgcolor,
+            border_color=border_color,
+            focused_border_color=self._get_theme_color() if self.edit_mode else None
+        )
+        
+        return field
+        
+    def _create_checkbox_field(self, key: str, label: str, value: bool) -> ft.Checkbox:
+        """Create a checkbox field with edit mode support"""
+        field = ft.Checkbox(
+            label=label,
+            value=value,
+            disabled=not self.edit_mode
+        )
+        
+        return field
+        
+    def refresh(self):
+        """Refresh the tab content"""
+        # Override in subclasses if needed
         pass
-        
-    @abstractmethod
-    def save_data(self) -> bool:
-        """Save tab data, return True if successful"""
-        pass
-        
-    def toggle_edit_mode(self) -> None:
-        """Toggle between edit and view mode"""
-        self.edit_mode = not self.edit_mode
-        self._update_controls_state()
-        
-    def _update_controls_state(self) -> None:
-        """Update control states based on edit mode"""
-        for control in self.controls.values():
-            if hasattr(control, 'disabled'):
-                control.disabled = not self.edit_mode
-        if hasattr(self, 'page') and self.page:
-            self.page.update()
