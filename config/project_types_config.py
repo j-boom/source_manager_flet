@@ -118,44 +118,44 @@ BASE_PROJECT_FIELDS = [
     ),
 ]
 
-# Team fields (common to all project types)
-TEAM_FIELDS = [
-    FieldConfig(
-        name="engineer",
-        label="Engineer",
-        field_type=FieldType.TEXT,
-        hint_text="Lead engineer name",
-        width=300
-    ),
-    FieldConfig(
-        name="drafter",
-        label="Drafter",
-        field_type=FieldType.TEXT,
-        hint_text="Drafter name",
-        width=300
-    ),
-    FieldConfig(
-        name="reviewer",
-        label="Reviewer",
-        field_type=FieldType.TEXT,
-        hint_text="Reviewer name",
-        width=300
-    ),
-    FieldConfig(
-        name="architect",
-        label="Architect",
-        field_type=FieldType.TEXT,
-        hint_text="Architect name",
-        width=300
-    ),
-    FieldConfig(
-        name="geologist",
-        label="Geologist",
-        field_type=FieldType.TEXT,
-        hint_text="Geologist name",
-        width=300
-    ),
-]
+# Team fields (commented out as per request - no longer used in dialog)
+# TEAM_FIELDS = [
+#     FieldConfig(
+#         name="engineer",
+#         label="Engineer",
+#         field_type=FieldType.TEXT,
+#         hint_text="Lead engineer name",
+#         width=300
+#     ),
+#     FieldConfig(
+#         name="drafter",
+#         label="Drafter",
+#         field_type=FieldType.TEXT,
+#         hint_text="Drafter name",
+#         width=300
+#     ),
+#     FieldConfig(
+#         name="reviewer",
+#         label="Reviewer",
+#         field_type=FieldType.TEXT,
+#         hint_text="Reviewer name",
+#         width=300
+#     ),
+#     FieldConfig(
+#         name="architect",
+#         label="Architect",
+#         field_type=FieldType.TEXT,
+#         hint_text="Architect name",
+#         width=300
+#     ),
+#     FieldConfig(
+#         name="geologist",
+#         label="Geologist",
+#         field_type=FieldType.TEXT,
+#         hint_text="Geologist name",
+#         width=300
+#     ),
+# ]
 
 # Project type specific configurations
 PROJECT_TYPES_CONFIG = {
@@ -189,7 +189,7 @@ PROJECT_TYPES_CONFIG = {
                 hint_text="Estimated cost in USD",
                 width=200
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
     
     "GSC": ProjectTypeConfig(
@@ -221,7 +221,7 @@ PROJECT_TYPES_CONFIG = {
                 hint_text="Investigation depth in feet",
                 width=200
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
     
     "STD": ProjectTypeConfig(
@@ -254,7 +254,7 @@ PROJECT_TYPES_CONFIG = {
                 hint_text="List applicable design codes and standards",
                 width=400
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
     
     "FCR": ProjectTypeConfig(
@@ -288,7 +288,7 @@ PROJECT_TYPES_CONFIG = {
                 hint_text="Justification for the facility change",
                 width=400
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
     
     "COM": ProjectTypeConfig(
@@ -321,7 +321,7 @@ PROJECT_TYPES_CONFIG = {
                 hint_text="List systems to be commissioned",
                 width=400
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
     
     "CRS": ProjectTypeConfig(
@@ -355,7 +355,7 @@ PROJECT_TYPES_CONFIG = {
                 options=["Critical", "High", "Medium", "Low"],
                 width=150
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
     
     "OTH": ProjectTypeConfig(
@@ -387,7 +387,7 @@ PROJECT_TYPES_CONFIG = {
                 hint_text="List expected project deliverables",
                 width=400
             ),
-        ] + TEAM_FIELDS
+        ]
     ),
 }
 

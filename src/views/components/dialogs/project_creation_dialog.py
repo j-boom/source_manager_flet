@@ -56,7 +56,7 @@ class ProjectCreationDialog:
         self.customer_key_field = ft.TextField(
             label="Facility Number *",
             value=self.ten_digit_number,
-            width=200,
+            width=250,
             read_only=True,  # Derived from folder structure
             helper_text="10-digit folder number"
         )
@@ -71,7 +71,7 @@ class ProjectCreationDialog:
         self.customer_number_field = ft.TextField(
             label="Building Number",
             value=self.existing_customer.number if self.existing_customer else "",
-            width=200,
+            width=250,
             hint_text=r"Format: [A-Z]{2}\d{3} (e.g., DC123)"
         )
         
@@ -100,7 +100,7 @@ class ProjectCreationDialog:
         self.project_type_dropdown = ft.Dropdown(
             label="Project Type *",
             options=[ft.dropdown.Option(ptype) for ptype in self.project_service.PROJECT_TYPES],
-            width=200,
+            width=180,
             on_change=self._on_project_type_change
         )
         
@@ -108,7 +108,7 @@ class ProjectCreationDialog:
         self.suffix_field = ft.TextField(
             label="Suffix *",
             hint_text="ABC123 format",
-            width=200,
+            width=180,
             max_length=6,
             on_change=self._on_suffix_change
         )
@@ -119,7 +119,7 @@ class ProjectCreationDialog:
             label="Request Year *",
             options=[ft.dropdown.Option(year) for year in year_options],
             value=year_options[0],  # Current year as default
-            width=200,
+            width=160,
             on_change=self._on_field_change
         )
         
@@ -130,37 +130,6 @@ class ProjectCreationDialog:
             width=400,
             visible=False,
             on_change=self._on_field_change
-        )
-        
-        # Team Information Section
-        self.engineer_field = ft.TextField(
-            label="Engineer",
-            width=300,
-            hint_text="Lead engineer name"
-        )
-        
-        self.drafter_field = ft.TextField(
-            label="Drafter",
-            width=300,
-            hint_text="Drafter name"
-        )
-        
-        self.reviewer_field = ft.TextField(
-            label="Reviewer",
-            width=300,
-            hint_text="Reviewer name"
-        )
-        
-        self.architect_field = ft.TextField(
-            label="Architect",
-            width=300,
-            hint_text="Architect name"
-        )
-        
-        self.geologist_field = ft.TextField(
-            label="Geologist",
-            width=300,
-            hint_text="Geologist name"
         )
         
         # Error and preview text
@@ -176,12 +145,10 @@ class ProjectCreationDialog:
                 ft.Row([
                     self.customer_key_field,
                     self.customer_number_field,
+                    self.customer_suffix_field,
                 ], spacing=10),
                 ft.Row([
                     self.customer_name_field,
-                ]),
-                ft.Row([
-                    self.customer_suffix_field,
                 ], spacing=10),
             ], spacing=8),
             padding=ft.padding.all(10),
@@ -211,27 +178,6 @@ class ProjectCreationDialog:
             border_radius=5
         )
         
-        # Team section
-        team_section = ft.Container(
-            content=ft.Column([
-                ft.Text("Project Team", size=14, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_700),
-                ft.Row([
-                    self.engineer_field,
-                    self.drafter_field,
-                ], spacing=10),
-                ft.Row([
-                    self.reviewer_field,
-                    self.architect_field,
-                ], spacing=10),
-                ft.Row([
-                    self.geologist_field,
-                ], spacing=10),
-            ], spacing=8),
-            padding=ft.padding.all(10),
-            border=ft.border.all(1, ft.colors.GREY_300),
-            border_radius=5
-        )
-        
         # Create scrollable content
         dialog_content = ft.Column([
             ft.Text(f"Create New Project: {self.ten_digit_number}", 
@@ -241,8 +187,6 @@ class ProjectCreationDialog:
             customer_section,
             ft.Container(height=10),
             project_section,
-            ft.Container(height=10),
-            team_section,
             
             ft.Container(height=15),
             self.error_text,
@@ -355,12 +299,6 @@ class ProjectCreationDialog:
             project_title = self.project_title_field.value.strip() if self.project_title_field.value else ""
             project_description = self.project_description_field.value.strip() if self.project_description_field.value else ""
             
-            engineer = self.engineer_field.value.strip() if self.engineer_field.value else ""
-            drafter = self.drafter_field.value.strip() if self.drafter_field.value else ""
-            reviewer = self.reviewer_field.value.strip() if self.reviewer_field.value else ""
-            architect = self.architect_field.value.strip() if self.architect_field.value else ""
-            geologist = self.geologist_field.value.strip() if self.geologist_field.value else ""
-            
             # Validate required fields
             errors = []
             if not project_type:
@@ -406,11 +344,11 @@ class ProjectCreationDialog:
             project = Project(
                 uuid=project_uuid,
                 customer_id=customer_id,
-                engineer=engineer if engineer else None,
-                drafter=drafter if drafter else None,
-                reviewer=reviewer if reviewer else None,
-                architect=architect if architect else None,
-                geologist=geologist if geologist else None,
+                engineer=None,
+                drafter=None,
+                reviewer=None,
+                architect=None,
+                geologist=None,
                 project_code=project_code,
                 project_type=project_type,
                 title=project_title,
@@ -430,11 +368,6 @@ class ProjectCreationDialog:
                 'customer': customer_data,
                 'title': project_title,
                 'description': project_description,
-                'engineer': engineer,
-                'drafter': drafter,
-                'reviewer': reviewer,
-                'architect': architect,
-                'geologist': geologist,
                 'database_id': project_id
             })
             
