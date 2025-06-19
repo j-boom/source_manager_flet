@@ -46,7 +46,7 @@ class AppController:
                 page, 
                 self.theme_manager, 
                 self.user_config,
-                on_open_project=self._handle_open_project,
+                on_open_project=self._handle_project_selected,
                 on_back=lambda: self._handle_navigation("home"),
                 on_navigate=self._handle_navigation
             ),
@@ -144,28 +144,50 @@ class AppController:
             content = self.views["recent_projects"].refresh()
             self.main_view.set_content(content)
     
-    def _handle_open_project(self, path: str, display_name: str):
-        """Handle opening a project from recent projects"""
-        # Add the project to recent sites (moves it to top if already exists)
-        self.user_config.add_recent_site(display_name, path)
-        
-        # Here you would implement the actual project opening logic
-        # For now, just show a message
-        print(f"Opening project: {display_name} at {path}")
-        
-        # You could navigate to a project view or open the project files
-        # self._handle_navigation("project_details")
-    
     def _handle_project_selected(self, project_path: str, project_name: str):
         """Handle project selection from new project view"""
         # Add the selected project to recent sites
         self.user_config.add_recent_site(project_name, project_path)
         
-        # Here you would implement the actual project creation/opening logic
+        # Log project selection
         print(f"Project selected: {project_name} at {project_path}")
         
-        # Navigate back to home or to a project details view
-        self._handle_navigation("home")
+        # Initialize the project state manager directly with a simple implementation
+        # instead of importing the class that's having issues
+        if not hasattr(self, 'project_state_manager'):
+            self.project_state_manager = self._create_project_state_manager()
+        
+        # Load the selected project
+        self.project_state_manager.loaded_project_path = project_path
+        self.project_state_manager.project_data = {"path": project_path, "name": project_name}
+        
+        print(f"Project loaded: {project_path}")
+        
+        # Check if we need to initialize the project view
+        if "project_view" not in self.views:
+            # Import here to avoid circular imports
+            from views.pages.project_view import ProjectView
+            from models.database_manager import DatabaseManager
+            
+            # Initialize the database manager if needed
+            db_manager = DatabaseManager()
+            
+            # Initialize the project view with the project state manager
+            self.views["project_view"] = ProjectView(
+                self.page,
+                self.theme_manager,
+                database_manager=db_manager,
+                project_state_manager=self.project_state_manager,
+                on_navigate=self._handle_navigation
+            )
+        else:
+            # Update existing project view with new project data
+            self.views["project_view"].project_state_manager = self.project_state_manager
+            if hasattr(self.views["project_view"], 'refresh_project_data'):
+                self.views["project_view"].refresh_project_data()
+        
+        # Navigate to the project view
+        self._handle_navigation("project_view")
     
     def _show_help(self):
         """Show help page"""
@@ -215,6 +237,46 @@ class AppController:
         )
         self.main_view.set_content(not_found_content)
     
+    def _show_error(self, title: str, message: str):
+        """Show an error dialog"""
+        error_dialog = ft.AlertDialog(
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("OK", on_click=lambda e: self._close_dialog(error_dialog))
+            ]
+        )
+        self.page.dialog = error_dialog
+        error_dialog.open = True
+        self.page.update()
+    
+    def _close_dialog(self, dialog):
+        """Close a dialog"""
+        dialog.open = False
+        self.page.update()
+
+    def _create_project_state_manager(self):
+        """Create a simple project state manager"""
+        class SimpleProjectStateManager:
+            def __init__(self):
+                self.loaded_project_path = None
+                self.project_data = None
+            
+            def has_loaded_project(self):
+                return self.loaded_project_path is not None
+            
+            def get_project_title(self):
+                if not self.has_loaded_project():
+                    return "No Project Loaded"
+                if self.project_data and "name" in self.project_data:
+                    return self.project_data["name"]
+                if self.loaded_project_path:
+                    import os
+                    return os.path.basename(self.loaded_project_path)
+                return "Untitled Project"
+        
+        return SimpleProjectStateManager()
+
     def run(self):
         """Start the application"""
         # Show the main view

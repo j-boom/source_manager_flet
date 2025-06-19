@@ -97,14 +97,21 @@ class DatabaseManager:
         """Initialize database with schema"""
         self.connect()
         
-        # Read and execute schema
-        schema_path = DATABASE_SCHEMA
-        if schema_path.exists():
-            with open(schema_path, 'r') as f:
-                schema = f.read()
-            if self.connection:
-                self.connection.executescript(schema)
-                self.connection.commit()
+        # Check if database tables already exist
+        if self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'")
+            table_exists = cursor.fetchone() is not None
+            
+            # Only create tables if they don't exist
+            if not table_exists:
+                # Read and execute schema
+                schema_path = DATABASE_SCHEMA
+                if schema_path.exists():
+                    with open(schema_path, 'r') as f:
+                        schema = f.read()
+                    self.connection.executescript(schema)
+                    self.connection.commit()
     
     def connect(self) -> sqlite3.Connection:
         """Connect to the database"""

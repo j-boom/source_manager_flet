@@ -1,15 +1,15 @@
 """Refactored New Project View using service and component architecture"""
 
 import flet as ft
-from ..base_view import BaseView
+from ...base_view import BaseView
 from typing import List, Dict, Any, Optional
 from services import DirectoryService, ProjectCreationService
-from ..components.dialogs.project_creation_dialog import ProjectCreationDialog
-from ..components.dialogs.folder_creation_dialog import FolderCreationDialog
+from ...components.dialogs.project_creation_dialog import ProjectCreationDialog
+from ...components.dialogs.folder_creation_dialog import FolderCreationDialog
 from models.database_manager import DatabaseManager
 
 
-class NewProjectViewRefactored(BaseView):
+class NewProjectView(BaseView):
     """Refactored new project view with better separation of concerns"""
     
     def __init__(self, page: ft.Page, theme_manager=None, user_config=None, on_back=None, on_project_selected=None):
