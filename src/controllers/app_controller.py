@@ -282,9 +282,8 @@ class AppController:
         # Show the main view
         self.main_view.show()
         
-        # Navigate to the last opened page
-        last_page = self.navigation_manager.get_current_page()
-        self._handle_navigation(last_page)
+        # Always navigate to home page on startup
+        self._handle_navigation("home")
     
     def cleanup(self):
         """Clean up and save configuration before exit"""
