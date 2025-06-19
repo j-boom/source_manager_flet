@@ -39,6 +39,7 @@ class Project:
     drafter: Optional[str] = None
     reviewer: Optional[str] = None
     architect: Optional[str] = None
+    geologist: Optional[str] = None
     project_code: Optional[str] = None
     project_type: Optional[str] = None
     title: Optional[str] = None
@@ -177,10 +178,10 @@ class DatabaseManager:
         cursor = self.connection.cursor()
         cursor.execute("""
             INSERT INTO projects (uuid, customer_id, engineer, drafter, reviewer, 
-                                architect, project_code, project_type, title, description, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                architect, geologist, project_code, project_type, title, description, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (project.uuid, project.customer_id, project.engineer, project.drafter,
-              project.reviewer, project.architect, project.project_code, project.project_type,
+              project.reviewer, project.architect, project.geologist, project.project_code, project.project_type,
               project.title, project.description, project.status))
         self.connection.commit()
         return cursor.lastrowid or 0

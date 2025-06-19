@@ -4,10 +4,10 @@
 -- Customers table
 CREATE TABLE customers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT UNIQUE NOT NULL,           -- Customer key (e.g., "1001")
-    number TEXT NOT NULL,               -- Customer number
+    key TEXT UNIQUE NOT NULL,           -- Facility Number (10-digit folder number, e.g., "1001678921")
+    number TEXT NOT NULL,               -- Building Number (pattern: [A-Z]{2}\d{3}, e.g., "DC123")
     suffix TEXT,                        -- Customer suffix
-    name TEXT NOT NULL,                 -- Customer name
+    name TEXT NOT NULL,                 -- Facility Name
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,6 +21,7 @@ CREATE TABLE projects (
     drafter TEXT,                       -- Drafter name
     reviewer TEXT,                      -- Reviewer name
     architect TEXT,                     -- Architect name
+    geologist TEXT,                     -- Geologist name
     project_code TEXT,                  -- Project code (e.g., "DC123")
     project_type TEXT,                  -- Project type (e.g., "Design", "Construction", "Analysis")
     title TEXT,                         -- Project title

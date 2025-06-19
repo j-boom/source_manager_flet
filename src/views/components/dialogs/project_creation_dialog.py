@@ -54,25 +54,25 @@ class ProjectCreationDialog:
         """Create all form fields"""
         # Customer Information Section
         self.customer_key_field = ft.TextField(
-            label="Customer Key *",
-            value=self.ten_digit_number[:4],
+            label="Facility Number *",
+            value=self.ten_digit_number,
             width=200,
             read_only=True,  # Derived from folder structure
-            helper_text="Derived from folder structure"
+            helper_text="10-digit folder number"
         )
         
         self.customer_name_field = ft.TextField(
-            label="Customer Name *",
+            label="Facility Name *",
             value=self.existing_customer.name if self.existing_customer else "",
             width=400,
-            hint_text="Full customer/client name"
+            hint_text="Full facility name"
         )
         
         self.customer_number_field = ft.TextField(
-            label="Customer Number",
-            value=self.existing_customer.number if self.existing_customer else self.ten_digit_number[:4],
+            label="Building Number",
+            value=self.existing_customer.number if self.existing_customer else "",
             width=200,
-            hint_text="Customer number"
+            hint_text=r"Format: [A-Z]{2}\d{3} (e.g., DC123)"
         )
         
         self.customer_suffix_field = ft.TextField(
@@ -157,6 +157,12 @@ class ProjectCreationDialog:
             hint_text="Architect name"
         )
         
+        self.geologist_field = ft.TextField(
+            label="Geologist",
+            width=300,
+            hint_text="Geologist name"
+        )
+        
         # Error and preview text
         self.error_text = ft.Text("", color=ft.colors.RED_400, size=12, visible=False)
         self.preview_text = ft.Text("", size=12, color=ft.colors.BLUE_700, weight=ft.FontWeight.BOLD)
@@ -216,6 +222,9 @@ class ProjectCreationDialog:
                 ft.Row([
                     self.reviewer_field,
                     self.architect_field,
+                ], spacing=10),
+                ft.Row([
+                    self.geologist_field,
                 ], spacing=10),
             ], spacing=8),
             padding=ft.padding.all(10),
@@ -350,6 +359,7 @@ class ProjectCreationDialog:
             drafter = self.drafter_field.value.strip() if self.drafter_field.value else ""
             reviewer = self.reviewer_field.value.strip() if self.reviewer_field.value else ""
             architect = self.architect_field.value.strip() if self.architect_field.value else ""
+            geologist = self.geologist_field.value.strip() if self.geologist_field.value else ""
             
             # Validate required fields
             errors = []
@@ -358,9 +368,16 @@ class ProjectCreationDialog:
             if not year:
                 errors.append("Request year is required")
             if not customer_name:
-                errors.append("Customer name is required")
+                errors.append("Facility name is required")
             if not project_title:
                 errors.append("Project title is required")
+            
+            # Validate building number pattern if provided
+            if customer_number:
+                import re
+                building_pattern = r'^[A-Z]{2}\d{3}$'
+                if not re.match(building_pattern, customer_number):
+                    errors.append("Building number must follow pattern: two letters followed by three digits (e.g., DC123)")
             
             # Add existing validation
             validation_errors = self.project_service.validate_project_data(project_type, suffix, year, doc_title)
@@ -393,6 +410,7 @@ class ProjectCreationDialog:
                 drafter=drafter if drafter else None,
                 reviewer=reviewer if reviewer else None,
                 architect=architect if architect else None,
+                geologist=geologist if geologist else None,
                 project_code=project_code,
                 project_type=project_type,
                 title=project_title,
@@ -416,6 +434,7 @@ class ProjectCreationDialog:
                 'drafter': drafter,
                 'reviewer': reviewer,
                 'architect': architect,
+                'geologist': geologist,
                 'database_id': project_id
             })
             

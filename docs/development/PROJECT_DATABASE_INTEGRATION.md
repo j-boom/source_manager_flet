@@ -14,9 +14,9 @@ We have successfully implemented full database integration for the "Add Project"
 The dialog now captures ALL required database fields:
 
 #### **Customer Information:**
-- Customer Key (auto-filled from folder structure)
-- Customer Name *
-- Customer Number
+- Facility Number (auto-filled from 10-digit folder structure)
+- Facility Name *
+- Building Number (pattern: [A-Z]{2}\d{3}, e.g., DC123)
 - Customer Suffix
 
 #### **Project Information:**
@@ -32,6 +32,7 @@ The dialog now captures ALL required database fields:
 - Drafter
 - Reviewer
 - Architect
+- Geologist
 
 ### **🔄 Complete Workflow Integration**
 
