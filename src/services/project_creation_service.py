@@ -5,37 +5,31 @@ import json
 import datetime
 import re
 from typing import Dict, Any, Optional, List
+from config.app_config import PROJECT_TYPE_DISPLAY_NAMES, PROJECT_TYPE_CODES
 
 
 class ProjectCreationService:
     """Handles project creation logic and validation"""
     
-    PROJECT_TYPES = ["CCR", "GSC", "STD", "FCR", "COM", "CRS", "OTH"]
-    SUFFIX_PATTERN = r'^[A-Z]{2}\d{3}$'
+    PROJECT_TYPES = list(PROJECT_TYPE_DISPLAY_NAMES.keys())  # Keep codes for backend
+    PROJECT_TYPE_DISPLAY_NAMES = PROJECT_TYPE_DISPLAY_NAMES
+    PROJECT_TYPE_CODES = PROJECT_TYPE_CODES
     
     def __init__(self, user_config=None):
         self.user_config = user_config
     
-    def validate_project_data(self, project_type: str, suffix: str, year: str, document_title: str = "") -> List[str]:
+    def validate_project_data(self, project_type: str, document_title: str = "") -> List[str]:
         """Validate project creation data and return list of errors"""
         errors = []
+        
+        # Convert display name to code if needed
+        if project_type in self.PROJECT_TYPE_CODES:
+            project_type = self.PROJECT_TYPE_CODES[project_type]
         
         if not project_type:
             errors.append("Project type is required")
         elif project_type not in self.PROJECT_TYPES:
-            errors.append(f"Invalid project type. Must be one of: {', '.join(self.PROJECT_TYPES)}")
-        
-        if not year:
-            errors.append("Request year is required")
-        elif not year.isdigit():
-            errors.append("Year must be a valid number")
-        
-        # Suffix validation - required for all except GSC
-        if project_type != "GSC" and not suffix:
-            errors.append("Suffix is required for this project type")
-        
-        if suffix and not re.match(self.SUFFIX_PATTERN, suffix):
-            errors.append("Suffix must be in format AB123 (2 letters + 3 digits)")
+            errors.append(f"Invalid project type. Must be one of: {', '.join(self.get_project_type_options())}")
         
         # Document title validation - required for OTH
         if project_type == "OTH" and not document_title.strip():
@@ -43,13 +37,10 @@ class ProjectCreationService:
         
         return errors
     
-    def generate_filename(self, ten_digit_number: str, project_type: str, suffix: str = "", 
-                         year: str = "", document_title: str = "") -> str:
+    def generate_filename(self, ten_digit_number: str, project_type: str, year: str = "", 
+                         document_title: str = "") -> str:
         """Generate the project filename"""
         parts = [ten_digit_number]
-        
-        if suffix:
-            parts.append(suffix)
         
         if project_type:
             parts.append(project_type)
@@ -62,15 +53,14 @@ class ProjectCreationService:
         
         return " - ".join(parts) + ".json"
     
-    def create_project_data(self, ten_digit_number: str, project_type: str, suffix: str = "",
-                           year: str = "", document_title: str = "", folder_path: str = "") -> Dict[str, Any]:
+    def create_project_data(self, ten_digit_number: str, project_type: str, year: str = "",
+                           document_title: str = "", folder_path: str = "") -> Dict[str, Any]:
         """Create the project data structure"""
-        filename = self.generate_filename(ten_digit_number, project_type, suffix, year, document_title)
+        filename = self.generate_filename(ten_digit_number, project_type, year, document_title)
         
         return {
             "project_id": ten_digit_number,
             "project_type": project_type,
-            "suffix": suffix if suffix else None,
             "document_title": document_title if document_title else None,
             "request_year": int(year) if year else None,
             "created_date": datetime.datetime.now().isoformat(),
@@ -81,7 +71,7 @@ class ProjectCreationService:
             }
         }
     
-    def save_project_file(self, project_data: Dict[str, Any], folder_path: str) -> tuple[bool, str]:
+    def save_project_file(self, project_data: Dict[str, Any], folder_path: str, project_title: str = "") -> tuple[bool, str]:
         """Save the project file and return (success, message)"""
         try:
             # Ensure the folder path exists
@@ -108,7 +98,8 @@ class ProjectCreationService:
             
             # Add to recent projects if user_config is available
             if self.user_config:
-                display_name = filename.replace(".json", "")
+                # Use project title if provided, otherwise fall back to filename
+                display_name = project_title if project_title.strip() else filename.replace(".json", "")
                 self.user_config.add_recent_site(display_name, folder_path)
             
             return True, f"Project '{filename}' created successfully!"
@@ -118,10 +109,6 @@ class ProjectCreationService:
         except Exception as ex:
             return False, f"Error creating file: {str(ex)}"
     
-    def is_suffix_required(self, project_type: str) -> bool:
-        """Check if suffix is required for the given project type"""
-        return project_type != "GSC"
-    
     def is_document_title_required(self, project_type: str) -> bool:
         """Check if document title is required for the given project type"""
         return project_type == "OTH"
@@ -130,7 +117,15 @@ class ProjectCreationService:
         """Get list of year options starting from current year"""
         current_year = datetime.datetime.now().year
         return [str(year) for year in range(current_year, current_year + years_ahead + 1)]
+
+    def get_project_type_options(self) -> List[str]:
+        """Get list of project type display names for dropdown"""
+        return list(self.PROJECT_TYPE_DISPLAY_NAMES.values())
     
-    def format_suffix(self, suffix: str) -> str:
-        """Format suffix to uppercase"""
-        return suffix.strip().upper() if suffix else ""
+    def get_project_type_code(self, display_name: str) -> str:
+        """Get project type code from display name"""
+        return self.PROJECT_TYPE_CODES.get(display_name, display_name)
+    
+    def get_project_type_display_name(self, code: str) -> str:
+        """Get project type display name from code"""
+        return self.PROJECT_TYPE_DISPLAY_NAMES.get(code, code)

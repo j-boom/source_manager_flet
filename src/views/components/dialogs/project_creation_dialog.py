@@ -46,163 +46,125 @@ class ProjectCreationDialog:
         if self.dialog:
             self.dialog.open = True
         self.page.update()
-        
-        # Initial preview update
-        self._update_preview()
     
     def _create_form_fields(self):
         """Create all form fields"""
         # Customer Information Section
         self.customer_key_field = ft.TextField(
-            label="Facility Number *",
+            hint_text="Facility Number *",
             value=self.ten_digit_number,
-            width=250,
-            read_only=True,  # Derived from folder structure
-            helper_text="10-digit folder number"
+            width=330,
+            read_only=True
         )
         
         self.customer_name_field = ft.TextField(
-            label="Facility Name *",
+            hint_text="Facility Name *",
             value=self.existing_customer.name if self.existing_customer else "",
-            width=400,
-            hint_text="Full facility name"
+            width=660
         )
         
         self.customer_number_field = ft.TextField(
-            label="Building Number",
+            hint_text="Building Number (e.g., DC123)",
             value=self.existing_customer.number if self.existing_customer else "",
-            width=250,
-            hint_text=r"Format: [A-Z]{2}\d{3} (e.g., DC123)"
-        )
-        
-        self.customer_suffix_field = ft.TextField(
-            label="Customer Suffix",
-            value=self.existing_customer.suffix if self.existing_customer else "",
-            width=200,
-            hint_text="Optional suffix"
+            width=330,
+            on_change=self._on_building_number_change
         )
         
         # Project Information Section
         self.project_title_field = ft.TextField(
-            label="Project Title *",
-            width=400,
-            hint_text="Descriptive project title"
+            hint_text="Project Title *",
+            width=660
         )
         
-        self.project_description_field = ft.TextField(
-            label="Project Description",
-            width=400,
-            max_lines=3,
-            hint_text="Optional project description"
-        )
-        
-        # Project type dropdown (existing)
+        # Project type dropdown (moved to top)
         self.project_type_dropdown = ft.Dropdown(
             label="Project Type *",
-            options=[ft.dropdown.Option(ptype) for ptype in self.project_service.PROJECT_TYPES],
-            width=180,
+            options=[ft.dropdown.Option(display_name) for display_name in self.project_service.get_project_type_options()],
+            width=300,
             on_change=self._on_project_type_change
         )
         
-        # Suffix field (existing)
-        self.suffix_field = ft.TextField(
-            label="Suffix *",
-            hint_text="ABC123 format",
-            width=180,
-            max_length=6,
-            on_change=self._on_suffix_change
-        )
-        
-        # Year dropdown (existing)
-        year_options = self.project_service.get_current_year_options()
-        self.year_dropdown = ft.Dropdown(
-            label="Request Year *",
-            options=[ft.dropdown.Option(year) for year in year_options],
-            value=year_options[0],  # Current year as default
-            width=160,
-            on_change=self._on_field_change
-        )
-        
-        # Document title field (existing)
+        # Document title field 
         self.document_title_field = ft.TextField(
-            label="Document Title",
-            hint_text="Required for OTH projects",
-            width=400,
+            hint_text="Document Title",
+            width=660,
             visible=False,
             on_change=self._on_field_change
         )
         
-        # Error and preview text
+        # Error text
         self.error_text = ft.Text("", color=ft.colors.RED_400, size=12, visible=False)
-        self.preview_text = ft.Text("", size=12, color=ft.colors.BLUE_700, weight=ft.FontWeight.BOLD)
     
     def _create_dialog(self):
         """Create the dialog with organized sections"""
-        # Customer section
-        customer_section = ft.Container(
+        # Project type selection at the top (for future functionality)
+        project_type_section = ft.Container(
+            content=ft.Column([
+                ft.Text("Project Type", size=14, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_700),
+                ft.Container(height=5),
+                # Row 1: Project Type dropdown
+                ft.Row([
+                    self.project_type_dropdown,
+                ], spacing=10),
+                # Row 2: Document title field (conditional visibility)
+                ft.Row([
+                    self.document_title_field,
+                ], spacing=10),
+            ], spacing=5),
+            padding=ft.padding.all(5),
+            border=ft.border.all(1, ft.colors.GREY_300),
+            border_radius=5
+        )
+
+        # Customer section - two rows, no customer suffix
+        self.customer_section = ft.Container(
             content=ft.Column([
                 ft.Text("Customer Information", size=14, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_700),
+                ft.Container(height=5),
+                # Row 1: Facility Number and Building Number
                 ft.Row([
                     self.customer_key_field,
                     self.customer_number_field,
-                    self.customer_suffix_field,
                 ], spacing=10),
+                # Row 2: Facility Name (full width)
                 ft.Row([
                     self.customer_name_field,
                 ], spacing=10),
-            ], spacing=8),
-            padding=ft.padding.all(10),
+            ], spacing=5),
+            padding=ft.padding.all(5),
             border=ft.border.all(1, ft.colors.GREY_300),
             border_radius=5
         )
-        
-        # Project section
-        project_section = ft.Container(
+
+        # Project section - single row with just title
+        self.project_section = ft.Container(
             content=ft.Column([
                 ft.Text("Project Information", size=14, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_700),
+                ft.Container(height=5),
+                # Row 1: Project Title (full width)
                 ft.Row([
                     self.project_title_field,
-                ]),
-                ft.Row([
-                    self.project_description_field,
-                ]),
-                ft.Row([
-                    self.project_type_dropdown,
-                    self.suffix_field,
-                    self.year_dropdown,
                 ], spacing=10),
-                self.document_title_field,
-            ], spacing=8),
-            padding=ft.padding.all(10),
+            ], spacing=5),
+            padding=ft.padding.all(5),
             border=ft.border.all(1, ft.colors.GREY_300),
             border_radius=5
         )
-        
+
         # Create scrollable content
         dialog_content = ft.Column([
-            ft.Text(f"Create New Project: {self.ten_digit_number}", 
-                   size=16, weight=ft.FontWeight.BOLD),
-            ft.Container(height=10),
-            
-            customer_section,
-            ft.Container(height=10),
-            project_section,
-            
-            ft.Container(height=15),
+            project_type_section,
+            self.customer_section,
+            self.project_section,
             self.error_text,
-            
-            ft.Container(height=10),
-            ft.Text("File Preview:", size=12, weight=ft.FontWeight.BOLD),
-            self.preview_text,
-            
-        ], spacing=5, scroll=ft.ScrollMode.AUTO, height=600)
+        ], spacing=10, scroll=ft.ScrollMode.AUTO, height=450)
         
         self.dialog = ft.AlertDialog(
             title=ft.Text("Add New Project"),
             content=ft.Container(
                 content=dialog_content,
                 width=700,
-                height=600
+                height=450
             ),
             actions=[
                 ft.TextButton("Cancel", on_click=self._on_cancel_clicked),
@@ -220,106 +182,118 @@ class ProjectCreationDialog:
     
     def _on_project_type_change(self, e):
         """Handle project type changes"""
-        project_type = e.control.value
+        display_name = e.control.value
+        project_type_code = self.project_service.get_project_type_code(display_name)
         
         # Show/hide document title field
         if self.document_title_field:
-            self.document_title_field.visible = self.project_service.is_document_title_required(project_type)
+            self.document_title_field.visible = self.project_service.is_document_title_required(project_type_code)
         
-        # Update suffix field label
-        if self.suffix_field:
-            if self.project_service.is_suffix_required(project_type):
-                self.suffix_field.label = "Suffix *"
-            else:
-                self.suffix_field.label = "Suffix (Optional)"
+        # For "Other" type, hide customer and project sections, only show document title
+        is_other_type = project_type_code == "OTH"
         
-        self._update_preview()
+        if hasattr(self, 'customer_section'):
+            self.customer_section.visible = not is_other_type
+        if hasattr(self, 'project_section'):
+            self.project_section.visible = not is_other_type
+        
         self.page.update()
     
-    def _on_suffix_change(self, e):
-        """Handle suffix field changes with validation"""
-        suffix = self.project_service.format_suffix(e.control.value)
+    def _on_building_number_change(self, e):
+        """Handle building number field changes with validation"""
+        building_number = e.control.value.upper() if e.control.value else ""
         
-        if suffix:
+        if building_number:
             import re
-            if re.match(self.project_service.SUFFIX_PATTERN, suffix):
-                e.control.value = suffix
+            building_pattern = r'^[A-Z]{2}\d{3}$'
+            if re.match(building_pattern, building_number):
+                e.control.value = building_number
                 e.control.error_text = None
             else:
-                e.control.error_text = "Format: ABC123"
+                e.control.error_text = "Format: Two letters + three digits (e.g., DC123)"
         else:
             e.control.error_text = None
         
-        self._update_preview()
         self.page.update()
     
     def _on_field_change(self, e):
         """Handle any field change"""
-        self._update_preview()
-    
-    def _update_preview(self):
-        """Update filename preview"""
-        if not (self.project_type_dropdown and self.suffix_field and self.year_dropdown):
-            return
-            
-        project_type = self.project_type_dropdown.value
-        suffix = self.project_service.format_suffix(self.suffix_field.value) if self.suffix_field.value else ""
-        year = self.year_dropdown.value
-        doc_title = self.document_title_field.value.strip() if self.document_title_field and self.document_title_field.value else ""
-        
-        if not project_type or not year:
-            if self.preview_text:
-                self.preview_text.value = "Please fill required fields"
-                self.preview_text.color = ft.colors.GREY_500
-        else:
-            filename = self.project_service.generate_filename(
-                self.ten_digit_number, project_type, suffix, year, doc_title
-            )
-            if self.preview_text:
-                self.preview_text.value = f"Filename: {filename}"
-                self.preview_text.color = ft.colors.BLUE_700
-        
-        self.page.update()
+        pass
     
     def _on_create_clicked(self, e):
         """Handle create project button click with database integration"""
         try:
             # Get form values with proper null checks
-            project_type = self.project_type_dropdown.value if self.project_type_dropdown.value else ""
-            suffix = self.project_service.format_suffix(self.suffix_field.value) if self.suffix_field.value else ""
-            year = self.year_dropdown.value if self.year_dropdown.value else ""
+            project_type_display = self.project_type_dropdown.value if self.project_type_dropdown.value else ""
+            project_type = self.project_service.get_project_type_code(project_type_display)
             doc_title = self.document_title_field.value.strip() if self.document_title_field.value else ""
             
+            # Use current year automatically
+            import datetime
+            current_year = str(datetime.datetime.now().year)
+            
+            # For "Other" type, we only need document title
+            if project_type == "OTH":
+                # Validate required fields for Other type
+                errors = []
+                if not project_type:
+                    errors.append("Project type is required")
+                if not doc_title:
+                    errors.append("Document title is required for Other projects")
+                
+                if errors:
+                    self.error_text.value = "; ".join(errors)
+                    self.error_text.visible = True
+                    self.page.update()
+                    return
+                
+                # For Other type, create minimal project data
+                project_data = self.project_service.create_project_data(
+                    self.ten_digit_number, project_type, current_year, doc_title, self.folder_path
+                )
+                
+                # Save project file
+                success, message = self.project_service.save_project_file(project_data, self.folder_path, doc_title)
+                
+                if success:
+                    self._close_dialog()
+                    if self.on_success:
+                        self.on_success(f"Other project created successfully: {message}")
+                else:
+                    self.error_text.value = f"Failed to create project: {message}"
+                    self.error_text.visible = True
+                    self.page.update()
+                return
+            
+            # For all other project types, require customer and project information
             # Get database fields
             customer_key = self.customer_key_field.value if self.customer_key_field.value else ""
             customer_name = self.customer_name_field.value.strip() if self.customer_name_field.value else ""
             customer_number = self.customer_number_field.value if self.customer_number_field.value else ""
-            customer_suffix = self.customer_suffix_field.value if self.customer_suffix_field.value else ""
             
             project_title = self.project_title_field.value.strip() if self.project_title_field.value else ""
-            project_description = self.project_description_field.value.strip() if self.project_description_field.value else ""
             
             # Validate required fields
             errors = []
             if not project_type:
                 errors.append("Project type is required")
-            if not year:
-                errors.append("Request year is required")
             if not customer_name:
                 errors.append("Facility name is required")
+            if not customer_number:
+                errors.append("Building number is required")
             if not project_title:
                 errors.append("Project title is required")
             
-            # Validate building number pattern if provided
+            # Validate building number pattern
             if customer_number:
                 import re
                 building_pattern = r'^[A-Z]{2}\d{3}$'
                 if not re.match(building_pattern, customer_number):
                     errors.append("Building number must follow pattern: two letters followed by three digits (e.g., DC123)")
             
-            # Add existing validation
-            validation_errors = self.project_service.validate_project_data(project_type, suffix, year, doc_title)
-            errors.extend(validation_errors)
+            # Add existing validation (simplified for no suffix/year)
+            if self.project_service.is_document_title_required(project_type) and not doc_title:
+                errors.append("Document title is required for this project type")
             
             if errors:
                 self.error_text.value = "; ".join(errors)
@@ -332,12 +306,12 @@ class ProjectCreationDialog:
                 'key': customer_key,
                 'name': customer_name,
                 'number': customer_number,
-                'suffix': customer_suffix if customer_suffix else None
+                'suffix': None
             }
             customer_id = self.db_manager.get_or_create_customer(customer_data)
             
-            # Generate project code from suffix and year
-            project_code = f"{suffix}" if suffix else None
+            # No project code since we removed suffix
+            project_code = None
             
             # Create project in database
             project_uuid = str(uuid.uuid4())
@@ -352,14 +326,14 @@ class ProjectCreationDialog:
                 project_code=project_code,
                 project_type=project_type,
                 title=project_title,
-                description=project_description if project_description else None
+                description=None
             )
             
             project_id = self.db_manager.create_project(project)
             
-            # Create legacy JSON file for compatibility
+            # Create legacy JSON file for compatibility (with current year appended)
             project_data = self.project_service.create_project_data(
-                self.ten_digit_number, project_type, suffix, year, doc_title, self.folder_path
+                self.ten_digit_number, project_type, current_year, doc_title, self.folder_path
             )
             
             # Add database fields to JSON for compatibility
@@ -367,12 +341,12 @@ class ProjectCreationDialog:
                 'uuid': project_uuid,
                 'customer': customer_data,
                 'title': project_title,
-                'description': project_description,
+                'description': None,
                 'database_id': project_id
             })
             
             # Save project file
-            success, message = self.project_service.save_project_file(project_data, self.folder_path)
+            success, message = self.project_service.save_project_file(project_data, self.folder_path, project_title)
             
             if success:
                 self._close_dialog()

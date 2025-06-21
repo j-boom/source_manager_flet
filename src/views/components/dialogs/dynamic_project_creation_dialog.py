@@ -249,8 +249,9 @@ class DynamicProjectCreationDialog:
             }
             
             # Save project file
+            project_title = values.get('project_title', '') or values.get('title', '') or values.get('document_title', '')
             success, message = self.project_service.save_project_file(
-                project_json_data, self.folder_path
+                project_json_data, self.folder_path, project_title
             )
             
             if success:

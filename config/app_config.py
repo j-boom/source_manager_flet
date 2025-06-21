@@ -39,6 +39,20 @@ MIN_WINDOW_HEIGHT = 600
 RECENT_PROJECTS_LIMIT = 10
 RECENT_SITES_LIMIT = 10
 
+# Project type mappings (code -> display name)
+PROJECT_TYPE_DISPLAY_NAMES = {
+    "CCR": "Change Control Request",
+    "GSC": "Government Specification Check", 
+    "STD": "Standard Drawing",
+    "FCR": "Field Change Request",
+    "COM": "Commissioning",
+    "CRS": "Correspondence",
+    "OTH": "Other"
+}
+
+# Reverse mapping for getting codes from display names
+PROJECT_TYPE_CODES = {v: k for k, v in PROJECT_TYPE_DISPLAY_NAMES.items()}
+
 # Create directories if they don't exist
 for directory in [DATA_DIR, LOGS_DIR, TEMP_DIR, DATABASE_DIR, USER_DATA_DIR, PROJECTS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
