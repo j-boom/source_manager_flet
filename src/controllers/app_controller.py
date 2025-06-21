@@ -85,7 +85,39 @@ class AppController:
             self.main_view.update_selected_navigation(page_name)
         
         # Load appropriate content
-        if page_name in self.views:
+        if page_name == "projects":
+            # Special handling for projects route
+            # Ensure project state manager exists
+            if not hasattr(self, 'project_state_manager'):
+                self.project_state_manager = self._create_project_state_manager()
+            
+            if self.project_state_manager and hasattr(self.project_state_manager, 'loaded_project_path') and self.project_state_manager.loaded_project_path:
+                # If a project is loaded, show the project view
+                if "project_view" not in self.views:
+                    # Initialize project view if not already created
+                    from views.pages.project_view import ProjectView
+                    from models.database_manager import DatabaseManager
+                    
+                    db_manager = DatabaseManager()
+                    self.views["project_view"] = ProjectView(
+                        self.page,
+                        self.theme_manager,
+                        database_manager=db_manager,
+                        project_state_manager=self.project_state_manager,
+                        on_navigate=self._handle_navigation
+                    )
+                else:
+                    # Update existing project view with current project data
+                    if hasattr(self.views["project_view"], 'refresh_project_data'):
+                        self.views["project_view"].refresh_project_data()
+                
+                content = self.views["project_view"].get_content()
+                self.main_view.set_content(content)
+            else:
+                # No project loaded, redirect to new project view
+                self._handle_navigation("new_project")
+                return
+        elif page_name in self.views:
             # For certain views, we might want to refresh the content
             if page_name == "recent_projects":
                 # Refresh the recent projects view to show latest data
