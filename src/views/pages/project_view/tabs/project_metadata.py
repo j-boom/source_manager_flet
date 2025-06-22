@@ -264,12 +264,17 @@ class ProjectMetadataTab:
         # Initialize form fields based on configuration
         self._init_configurable_fields()
         
-        # Load data from database and check if complete
+        # Load data from database and JSON
         self._load_project_data()
         
-        # Determine initial mode
+        # Update form fields with loaded data
+        self._update_form_fields()
+        
+        # Determine initial mode - always check completeness after loading data
         self.is_fully_populated = self._check_data_completeness()
         self.is_edit_mode = not self.is_fully_populated
+        
+        print(f"Initial mode check: fully_populated={self.is_fully_populated}, edit_mode={self.is_edit_mode}")
         
         # Create action button (Edit or Save)
         self.action_button = ft.ElevatedButton(
@@ -359,21 +364,34 @@ class ProjectMetadataTab:
                 # Determine if field should be read-only
                 is_readonly = is_always_readonly or not self.is_edit_mode
                 
-                # Define colors based on edit mode
+                # Define colors based on edit mode and theme
                 if is_readonly:
-                    # Read-only styling - muted colors
-                    bgcolor = ft.colors.GREY_50
-                    border_color = ft.colors.GREY_300
-                    text_color = ft.colors.GREY_700
+                    # Read-only styling - background color, invisible borders
+                    if self.page.theme_mode == ft.ThemeMode.DARK:
+                        bgcolor = ft.colors.GREY_900  # Same as dark background
+                        border_color = ft.colors.GREY_900
+                        text_color = ft.colors.GREY_400
+                        focused_border_color = ft.colors.GREY_900
+                    else:
+                        bgcolor = ft.colors.GREY_50  # Same as light background
+                        border_color = ft.colors.GREY_50
+                        text_color = ft.colors.GREY_600
+                        focused_border_color = ft.colors.GREY_50
                     cursor_color = None
-                    focused_border_color = ft.colors.GREY_400
                 else:
-                    # Editable styling - active colors
-                    bgcolor = ft.colors.WHITE
-                    border_color = ft.colors.BLUE_400
-                    text_color = ft.colors.BLACK
-                    cursor_color = ft.colors.BLUE_600
-                    focused_border_color = ft.colors.BLUE_600
+                    # Editable styling - theme-appropriate colors
+                    if self.page.theme_mode == ft.ThemeMode.DARK:
+                        bgcolor = ft.colors.GREY_800
+                        border_color = ft.colors.BLUE_400
+                        text_color = ft.colors.WHITE
+                        cursor_color = ft.colors.BLUE_400
+                        focused_border_color = ft.colors.BLUE_300
+                    else:
+                        bgcolor = ft.colors.WHITE
+                        border_color = ft.colors.BLUE_400
+                        text_color = ft.colors.BLACK
+                        cursor_color = ft.colors.BLUE_600
+                        focused_border_color = ft.colors.BLUE_600
                 
                 # Update widget properties based on type
                 if isinstance(widget, ft.TextField):
@@ -834,9 +852,11 @@ class ProjectMetadataTab:
         # Update form fields with new data
         self._update_form_fields()
         
-        # Re-check data completeness and update mode
+        # Re-check data completeness and update mode - force edit mode if incomplete
         self.is_fully_populated = self._check_data_completeness()
         self.is_edit_mode = not self.is_fully_populated
+        
+        print(f"Updated mode check: fully_populated={self.is_fully_populated}, edit_mode={self.is_edit_mode}")
         
         # Update action button
         self.action_button.text = "Edit" if self.is_fully_populated else "Save Changes"

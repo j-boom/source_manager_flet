@@ -335,7 +335,7 @@ class AppController:
                     flattened_data['customer_name'] = customer.get('name', '')
                     flattened_data['customer_number'] = customer.get('number', '')
                     flattened_data['customer_key'] = customer.get('key', '')
-                    flattened_data['client'] = customer.get('name', '')  # Map to client field
+                    # Don't automatically map customer name to client - they're different fields
                 
                 # Add any other fields that might be in the JSON
                 for key, value in project_data.items():
