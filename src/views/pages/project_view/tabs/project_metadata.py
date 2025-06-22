@@ -718,11 +718,16 @@ class ProjectMetadataTab:
             
             # Save to database if available
             if self.database_manager and self.project_data.get('uuid'):
+                print(f"Attempting database save for project: {self.project_data.get('uuid')}")
                 # Update project in database
                 success = self._update_database_project(updated_data)
                 if not success:
                     self._show_error("Failed to update project in database")
                     return
+                else:
+                    print("Database save successful")
+            else:
+                print(f"Skipping database save - manager: {bool(self.database_manager)}, uuid: {self.project_data.get('uuid')}")
             
             # Save to JSON file if available
             if self.project_path:
@@ -782,19 +787,34 @@ class ProjectMetadataTab:
         """Update project in database"""
         try:
             if not self.database_manager:
+                print("No database manager available")
                 return False
             
             # Get project by UUID
             project_uuid = self.project_data.get('uuid')
             if not project_uuid:
+                print("No project UUID found in project data")
                 return False
+            
+            print(f"Attempting to update project with UUID: {project_uuid}")
+            
+            # First check if project exists in database
+            existing_project = self.database_manager.get_project(project_uuid)
+            if not existing_project:
+                print(f"Project with UUID {project_uuid} not found in database")
+                return False
+            
+            print(f"Found existing project: {existing_project.title}")
             
             # Update project in database using the new update_project method
             success = self.database_manager.update_project(project_uuid, updated_data)
+            print(f"Database update result: {success}")
             return success
             
         except Exception as ex:
             print(f"Database update error: {ex}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def _save_json_file(self) -> bool:
