@@ -17,6 +17,20 @@
         "suffix": null
     },
     "title": "ANother sample projedkR",
-    "description": null,
-    "database_id": 3
+    "description": "",
+    "database_id": 3,
+    "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund/1001678921 - FCR - 2025.json",
+    "name": "1001678921 - FCR - 2025.json",
+    "customer_name": "Facility Name",
+    "customer_number": "CA123",
+    "customer_key": "1001678921",
+    "location": "Facility Name",
+    "client": "Facility Name",
+    "created_at": "2025-06-22 02:16:55",
+    "updated_at": "2025-06-22T10:31:24.313613",
+    "engineer": "",
+    "drafter": "",
+    "reviewer": "",
+    "architect": "",
+    "geologist": ""
 }

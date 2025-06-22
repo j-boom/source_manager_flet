@@ -5,6 +5,7 @@ Project View with Tabs
 import flet as ft
 from views.base_view import BaseView
 from .tabs.project_metadata import ProjectMetadataTab
+from .tabs.project_sources import ProjectSourcesTab
 
 
 class ProjectView(BaseView):
@@ -36,6 +37,13 @@ class ProjectView(BaseView):
             project_path=self.loaded_project_path
         )
         
+        self.sources_tab = ProjectSourcesTab(
+            page=page,
+            database_manager=database_manager,
+            project_data=self.loaded_project_data,
+            project_path=self.loaded_project_path
+        )
+        
         # Track previous tab for navigation restrictions
         self._previous_tab = 0  # Start on metadata tab
         
@@ -52,7 +60,7 @@ class ProjectView(BaseView):
                 ft.Tab(
                     text="Manage Sources",
                     icon=ft.icons.SOURCE,
-                    content=self._build_placeholder_tab("Sources", "Manage project source documents")
+                    content=self.sources_tab.build()
                 ),
                 ft.Tab(
                     text="Cite Slides",
