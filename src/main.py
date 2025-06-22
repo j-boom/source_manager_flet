@@ -5,13 +5,13 @@ import sys
 import logging
 from pathlib import Path
 
-# Add project root to Python path
-project_root = Path(__file__).parent
+# Add parent directory to Python path to access config
+project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import flet as ft
 from config import setup_logging, APP_NAME, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
-from src.controllers import AppController
+from controllers import AppController
 
 def main(page: ft.Page):
     """Main application entry point."""

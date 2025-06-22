@@ -586,10 +586,7 @@ class ProjectMetadataTab:
     
     def can_navigate_away(self) -> bool:
         """Check if user can navigate away from this tab"""
-        if not self.is_fully_populated:
-            # If data is not complete, don't allow navigation
-            self._show_error("Please complete all required fields before continuing.")
-            return False
+        # Always allow navigation in UI-only mode
         return True
     
     def _init_configurable_fields(self):
