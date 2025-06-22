@@ -7,7 +7,8 @@ class NavigationManager:
     
     def __init__(self, user_config: UserConfigManager):
         self.user_config = user_config
-        self.current_page = user_config.get_last_page()
+        # Always start with home page, ignore saved last page for startup
+        self.current_page = "home"
         self.navigation_callback: Optional[Callable[[str], None]] = None
         
         # Define valid pages

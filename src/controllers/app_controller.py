@@ -314,7 +314,7 @@ class AppController:
         # Show the main view
         self.main_view.show()
         
-        # Always navigate to home page on startup
+        # Always navigate to home page on startup (ignore saved last page)
         self._handle_navigation("home")
     
     def cleanup(self):
