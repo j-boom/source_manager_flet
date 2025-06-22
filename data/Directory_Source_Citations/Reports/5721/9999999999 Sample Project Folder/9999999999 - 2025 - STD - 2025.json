@@ -16,6 +16,21 @@
         "suffix": null
     },
     "title": "This is the project title.",
-    "description": null,
-    "database_id": 12
+    "description": "",
+    "database_id": 12,
+    "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Reports/5721/9999999999 Sample Project Folder/9999999999 - 2025 - STD - 2025.json",
+    "name": "9999999999 - 2025 - STD - 2025.json",
+    "customer_name": "Sample Facility",
+    "customer_number": "CA123",
+    "customer_key": "9999999999",
+    "location": "Sample Facility",
+    "client": "Sample Facility",
+    "status": "active",
+    "created_at": "2025-06-22 13:58:20",
+    "updated_at": "2025-06-22T10:05:00.468590",
+    "engineer": "Jim Bergren",
+    "drafter": "",
+    "reviewer": "",
+    "architect": "",
+    "geologist": ""
 }

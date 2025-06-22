@@ -527,16 +527,6 @@ class ProjectMetadataTab:
                         # Mode indicator
                         ft.Container(
                             content=ft.Row([
-                                ft.Icon(
-                                    ft.icons.EDIT_NOTE if self.is_edit_mode else ft.icons.VISIBILITY,
-                                    size=16,
-                                    color=ft.colors.BLUE_600 if self.is_edit_mode else ft.colors.GREEN_600
-                                ),
-                                ft.Text(
-                                    "Edit Mode - Make changes and save" if self.is_edit_mode else "View Mode - Click Edit to modify",
-                                    size=12,
-                                    color=ft.colors.BLUE_600 if self.is_edit_mode else ft.colors.GREEN_600
-                                ),
                                 ft.Container(expand=True),  # Spacer
                                 self.action_button
                             ]),
@@ -779,7 +769,6 @@ class ProjectMetadataTab:
                 )
                 self._update_field_states()  # This will rebuild the layout
             
-            self._show_message("Project metadata saved successfully!")
             # No need to call page.update() here as _rebuild_layout() handles it
             
         except Exception as ex:

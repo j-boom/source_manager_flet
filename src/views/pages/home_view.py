@@ -48,13 +48,15 @@ class HomeView(BaseView):
                         ft.colors.GREEN,
                         self._on_new_project
                     ),
+                    ft.Container(width=50),  # 50px spacing
                     self._create_action_card(
                         "Import Sources",
                         "Import existing source files",
-                        ft.icons.FILE_UPLOAD,
+                        ft.icons.UPLOAD_FILE,
                         ft.colors.BLUE,
                         self._on_import_sources
                     ),
+                    ft.Container(width=50),  # 50px spacing
                     self._create_action_card(
                         "Recent Projects",
                         "View recently accessed projects",
@@ -62,25 +64,7 @@ class HomeView(BaseView):
                         ft.colors.ORANGE,
                         self._on_recent_projects
                     ),
-                ], spacing=20, wrap=True),
-                
-                # Statistics Section
-                ft.Container(
-                    content=ft.Column([
-                        ft.Text(
-                            "Statistics",
-                            size=20,
-                            weight=ft.FontWeight.BOLD,
-                            color=ft.colors.GREY_800
-                        ),
-                        ft.Row([
-                            self._create_stat_card("Total Projects", "0", ft.icons.FOLDER),
-                            self._create_stat_card("Source Files", "0", ft.icons.CODE),
-                            self._create_stat_card("Last Modified", "Never", ft.icons.ACCESS_TIME),
-                        ], spacing=20, wrap=True),
-                    ]),
-                    padding=ft.padding.only(top=30)
-                ),
+                ], alignment=ft.MainAxisAlignment.CENTER),
             ]),
             padding=20,
             expand=True,
@@ -91,8 +75,8 @@ class HomeView(BaseView):
         return ft.Container(
             content=ft.Column([
                 ft.Icon(icon, size=40, color=color),
-                ft.Text(title, size=16, weight=ft.FontWeight.BOLD),
-                ft.Text(description, size=12, color=ft.colors.GREY_600, text_align=ft.TextAlign.CENTER),
+                ft.Text(title, size=16, weight=ft.FontWeight.BOLD, color=self._get_card_title_color()),
+                ft.Text(description, size=12, color=self._get_card_description_color(), text_align=ft.TextAlign.CENTER),
             ], 
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=10),
@@ -126,23 +110,18 @@ class HomeView(BaseView):
             return ft.colors.GREY_600
         return ft.colors.GREY_300
 
-    def _create_stat_card(self, title: str, value: str, icon: str) -> ft.Container:
-        """Create a statistics card"""
-        return ft.Container(
-            content=ft.Row([
-                ft.Icon(icon, size=30, color=ft.colors.BLUE_700),
-                ft.Column([
-                    ft.Text(value, size=20, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_700),
-                    ft.Text(title, size=12, color=ft.colors.GREY_600),
-                ], spacing=2),
-            ], spacing=15),
-            width=180,
-            padding=15,
-            bgcolor=ft.colors.BLUE_50,
-            border_radius=8,
-            border=ft.border.all(1, ft.colors.BLUE_200),
-        )
+    def _get_card_title_color(self) -> str:
+        """Get card title text color based on theme"""
+        if self.page.theme_mode == ft.ThemeMode.DARK:
+            return ft.colors.WHITE
+        return ft.colors.BLACK
     
+    def _get_card_description_color(self) -> str:
+        """Get card description text color based on theme"""
+        if self.page.theme_mode == ft.ThemeMode.DARK:
+            return ft.colors.GREY_400
+        return ft.colors.GREY_700
+
     def _on_new_project(self, e):
         """Handle new project action"""
         if self.on_navigate:
@@ -151,10 +130,9 @@ class HomeView(BaseView):
             print("New project clicked")
     
     def _on_import_sources(self, e):
-        """Handle import sources action"""
-        # This would be handled by the controller
-        print("Import sources clicked")
-    
+        """Handle import sources action (placeholder)"""
+        print("Import sources clicked - functionality to be implemented")
+
     def _on_recent_projects(self, e):
         """Handle recent projects action"""
         if self.on_navigate:
