@@ -50,20 +50,15 @@ class ProjectView(BaseView):
                     content=self.metadata_tab.build()
                 ),
                 ft.Tab(
-                    text="Sources",
+                    text="Manage Sources",
                     icon=ft.icons.SOURCE,
                     content=self._build_placeholder_tab("Sources", "Manage project source documents")
                 ),
                 ft.Tab(
-                    text="Analysis",
-                    icon=ft.icons.ANALYTICS,
-                    content=self._build_placeholder_tab("Analysis", "Project analysis and reports")
+                    text="Cite Slides",
+                    icon=ft.icons.COMPARE_ARROWS,
+                    content=self._build_placeholder_tab("Cite Slides", "Add references to project slides")
                 ),
-                ft.Tab(
-                    text="Deliverables",
-                    icon=ft.icons.DESCRIPTION,
-                    content=self._build_placeholder_tab("Deliverables", "Project deliverables and outputs")
-                )
             ],
             on_change=self._on_tab_change
         )

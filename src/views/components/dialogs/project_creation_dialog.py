@@ -1,6 +1,7 @@
 """Project creation dialog component"""
 
 import flet as ft
+import os
 from typing import Callable, Optional
 from services import ProjectCreationService
 from models.database_manager import DatabaseManager, Customer, Project
@@ -256,9 +257,18 @@ class ProjectCreationDialog:
                 success, message = self.project_service.save_project_file(project_data, self.folder_path, doc_title)
                 
                 if success:
+                    # Get the created file path
+                    filename = project_data["metadata"]["filename"]
+                    file_path = os.path.join(self.folder_path, filename)
+                    
+                    print(f"Project created successfully. File path: {file_path}")
+                    
                     self._close_dialog()
                     if self.on_success:
-                        self.on_success(f"Other project created successfully: {message}")
+                        print(f"Calling success callback with message and file_path")
+                        self.on_success(f"Other project created successfully: {message}", file_path)
+                    else:
+                        print("No success callback defined")
                 else:
                     self.error_text.value = f"Failed to create project: {message}"
                     self.error_text.visible = True
@@ -349,9 +359,18 @@ class ProjectCreationDialog:
             success, message = self.project_service.save_project_file(project_data, self.folder_path, project_title)
             
             if success:
+                # Get the created file path
+                filename = project_data["metadata"]["filename"]
+                file_path = os.path.join(self.folder_path, filename)
+                
+                print(f"Regular project created successfully. File path: {file_path}")
+                
                 self._close_dialog()
                 if self.on_success:
-                    self.on_success(f"Project created successfully in database (ID: {project_id}) and file saved: {message}")
+                    print(f"Calling success callback with message and file_path")
+                    self.on_success(f"Project created successfully in database (ID: {project_id}) and file saved: {message}", file_path)
+                else:
+                    print("No success callback defined")
             else:
                 # If file save failed, we might want to remove the database entry
                 self.error_text.value = f"Database entry created but file save failed: {message}"

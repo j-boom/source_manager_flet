@@ -37,34 +37,33 @@ class ProjectCreationService:
         
         return errors
     
-    def generate_filename(self, ten_digit_number: str, project_type: str, year: str = "", 
+    def generate_filename(self, ten_digit_number: str, project_type: str, suffix: str, 
                          document_title: str = "") -> str:
         """Generate the project filename"""
-        parts = [ten_digit_number]
-        
-        if project_type:
-            parts.append(project_type)
+        parts = [ten_digit_number, suffix]
         
         if project_type == "OTH" and document_title:
-            parts.append(document_title)
+            parts = [document_title]
         
-        if year:
-            parts.append(year)
+        else:
+            parts.append(project_type)
+
+        year = str(datetime.datetime.now().year)
+        parts.append(year)
         
         return " - ".join(parts) + ".json"
     
-    def create_project_data(self, ten_digit_number: str, project_type: str, year: str = "",
+    def create_project_data(self, ten_digit_number: str, project_type: str, suffix: str,
                            document_title: str = "", folder_path: str = "") -> Dict[str, Any]:
         """Create the project data structure"""
-        filename = self.generate_filename(ten_digit_number, project_type, year, document_title)
+        filename = self.generate_filename(ten_digit_number, project_type, suffix, document_title)
         
         return {
             "project_id": ten_digit_number,
+            "project_suffix": suffix,
             "project_type": project_type,
             "document_title": document_title if document_title else None,
-            "request_year": int(year) if year else None,
             "created_date": datetime.datetime.now().isoformat(),
-            "status": "active",
             "metadata": {
                 "folder_path": folder_path,
                 "filename": filename

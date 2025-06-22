@@ -298,10 +298,29 @@ class NewProjectView(BaseView):
             self.on_back()
     
     # Dialog Callbacks
-    def _on_project_created(self, message: str):
+    def _on_project_created(self, message: str, file_path: Optional[str] = None):
         """Handle successful project creation"""
+        print(f"Project created callback: message='{message}', file_path='{file_path}'")
+        
         self._refresh_current_view()
-        self._show_success_dialog("Success", message)
+        
+        # If we have a file path and project selection callback, navigate to the project view
+        if file_path and self.on_project_selected:
+            print(f"Navigating to project: {file_path}")
+            # Extract project name from file path
+            import os
+            project_name = os.path.splitext(os.path.basename(file_path))[0]
+            print(f"Extracted project name: {project_name}")
+            
+            # Use the project selection callback to navigate to the created project
+            self.on_project_selected(file_path, project_name)
+            
+            # Show success message after navigation
+            self._show_success_dialog("Success", message)
+        else:
+            # Fallback to just showing success dialog
+            print("Showing success dialog (no file path or callback)")
+            self._show_success_dialog("Success", message)
     
     def _on_folder_created(self, message: str):
         """Handle successful folder creation"""

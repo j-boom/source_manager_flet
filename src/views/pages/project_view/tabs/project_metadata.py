@@ -295,42 +295,71 @@ class ProjectMetadataTab:
         self._update_field_states()
     
     def _load_project_data(self):
-        """Load project data from database if available"""
-        if not self.database_manager or not self.project_data.get('uuid'):
-            return
-        
+        """Load project data from JSON and database"""
         try:
-            # Get project from database
-            project_uuid = self.project_data.get('uuid')
-            db_project = self.database_manager.get_project(project_uuid)
+            # First, map data from JSON that's already loaded in project_data
+            if self.project_data:
+                print(f"Initial project_data keys: {list(self.project_data.keys())}")
+                
+                # Map customer data to location and client fields if not already set
+                if 'customer_name' in self.project_data and not self.project_data.get('location'):
+                    self.project_data['location'] = self.project_data['customer_name']
+                
+                if 'customer_name' in self.project_data and not self.project_data.get('client'):
+                    self.project_data['client'] = self.project_data['customer_name']
+                
+                # Set default status if not present
+                if not self.project_data.get('status'):
+                    self.project_data['status'] = 'active'
+                
+                # Ensure created_at field exists for display
+                if 'created_date' in self.project_data and not self.project_data.get('created_at'):
+                    self.project_data['created_at'] = self.project_data['created_date']
+                
+                print(f"Project data after JSON mapping: {self.project_data}")
             
-            if db_project:
-                # Convert database project to dictionary and merge with existing data
-                db_data = {
-                    'uuid': db_project.uuid,
-                    'title': db_project.title,
-                    'project_type': db_project.project_type,
-                    'engineer': db_project.engineer,
-                    'drafter': db_project.drafter,
-                    'reviewer': db_project.reviewer,
-                    'architect': db_project.architect,
-                    'geologist': db_project.geologist,
-                    'project_code': db_project.project_code,
-                    'description': db_project.description,
-                    'status': db_project.status,
-                    'created_at': db_project.created_at,
-                    'updated_at': db_project.updated_at
-                }
+            # Then load additional data from database if available
+            if self.database_manager and self.project_data.get('uuid'):
+                project_uuid = self.project_data.get('uuid')
+                db_project = self.database_manager.get_project(project_uuid)
                 
-                # Remove None values and merge with existing project data
-                db_data = {k: v for k, v in db_data.items() if v is not None}
-                self.project_data.update(db_data)
-                
-                # Update field values with database data
-                self._update_form_fields()
+                if db_project:
+                    print(f"Loading additional data from database for UUID: {project_uuid}")
+                    # Convert database project to dictionary and merge with existing data
+                    db_data = {
+                        'uuid': db_project.uuid,
+                        'title': db_project.title,
+                        'project_type': db_project.project_type,
+                        'engineer': db_project.engineer,
+                        'drafter': db_project.drafter,
+                        'reviewer': db_project.reviewer,
+                        'architect': db_project.architect,
+                        'geologist': db_project.geologist,
+                        'project_code': db_project.project_code,
+                        'description': db_project.description,
+                        'status': db_project.status,
+                        'created_at': db_project.created_at,
+                        'updated_at': db_project.updated_at
+                    }
+                    
+                    # Only update with database values that are not None and not empty
+                    for key, value in db_data.items():
+                        if value is not None and str(value).strip():
+                            self.project_data[key] = value
+                    
+                    print(f"Project data after database merge: {self.project_data}")
+            
+            # Update form fields with all loaded data
+            self._update_form_fields()
+            
+            # Update the page to reflect the changes
+            if hasattr(self, 'page'):
+                self.page.update()
                 
         except Exception as e:
-            print(f"Error loading project data from database: {e}")
+            print(f"Error loading project data: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _check_data_completeness(self) -> bool:
         """Check if all required fields have data"""
@@ -892,6 +921,9 @@ class ProjectMetadataTab:
     def _update_form_fields(self):
         """Update form fields with current project data using configurable fields"""
         try:
+            print(f"Updating form fields with data: {self.project_data}")
+            updated_count = 0
+            
             for field_key, widget in self.field_widgets.items():
                 if hasattr(widget, 'value'):
                     # Get the value from project data
@@ -904,10 +936,18 @@ class ProjectMetadataTab:
                         if field_value not in options and options:
                             field_value = options[0]  # Default to first option
                     
-                    widget.value = field_value
+                    # Only update if the value has changed
+                    if widget.value != field_value:
+                        widget.value = field_value
+                        updated_count += 1
+                        print(f"Updated field '{field_key}' with value: '{field_value}'")
+            
+            print(f"Updated {updated_count} form fields")
                     
         except Exception as e:
             print(f"Error updating form fields: {e}")
+            import traceback
+            traceback.print_exc()
     
     def refresh_data(self):
         """Refresh the tab data"""
