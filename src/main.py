@@ -21,9 +21,14 @@ def main(page: ft.Page):
     
     # Configure page
     page.title = APP_NAME
-    page.window_width = DEFAULT_WINDOW_WIDTH
-    page.window_height = DEFAULT_WINDOW_HEIGHT
-    page.window_resizable = True
+    page.window.width = DEFAULT_WINDOW_WIDTH
+    page.window.height = DEFAULT_WINDOW_HEIGHT
+    page.window.resizable = True
+    
+    # Set application icon
+    icon_path = project_root / "sm_icon.png"
+    if icon_path.exists():
+        page.window.icon = str(icon_path)
     
     # Initialize and run application
     try:

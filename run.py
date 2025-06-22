@@ -14,4 +14,6 @@ from main import main
 import flet as ft
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    # Set up app assets path for icon
+    assets_dir = Path(__file__).parent
+    ft.app(target=main, assets_dir=str(assets_dir))

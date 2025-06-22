@@ -210,6 +210,49 @@ class DatabaseManager:
         """, (customer_key,))
         return [Project(**dict(row)) for row in cursor.fetchall()]
     
+    def update_project(self, project_uuid: str, project_data: Dict[str, Any]) -> bool:
+        """Update an existing project"""
+        if not self.connection:
+            raise RuntimeError("Database not connected")
+        
+        try:
+            cursor = self.connection.cursor()
+            
+            # Build update query dynamically based on provided fields
+            update_fields = []
+            values = []
+            
+            # Define which fields can be updated
+            updatable_fields = [
+                'engineer', 'drafter', 'reviewer', 'architect', 'geologist',
+                'project_code', 'project_type', 'title', 'description', 'status'
+            ]
+            
+            for field in updatable_fields:
+                if field in project_data:
+                    update_fields.append(f"{field} = ?")
+                    values.append(project_data[field])
+            
+            # Always update the updated_at timestamp
+            update_fields.append("updated_at = ?")
+            values.append(datetime.now().isoformat())
+            
+            if not update_fields:
+                return True  # Nothing to update
+            
+            # Add UUID for WHERE clause
+            values.append(project_uuid)
+            
+            query = f"UPDATE projects SET {', '.join(update_fields)} WHERE uuid = ?"
+            cursor.execute(query, values)
+            self.connection.commit()
+            
+            return cursor.rowcount > 0
+            
+        except Exception as e:
+            print(f"Error updating project {project_uuid}: {e}")
+            return False
+
     # Source operations
     def create_source(self, source: Source) -> int:
         """Create a new source"""
