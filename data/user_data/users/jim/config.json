@@ -13,12 +13,12 @@
     "last_page": "projects",
     "recent_sites": [
         {
-            "display_name": "1001678921 - DC123 - CCR - 2025.json",
-            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund/1001678921 - DC123 - CCR - 2025.json"
-        },
-        {
             "display_name": "1234567890 - STD - 2025.json",
             "path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Reports/5721/1234567890 Sample/1234567890 - STD - 2025.json"
+        },
+        {
+            "display_name": "1001678921 - DC123 - CCR - 2025.json",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund/1001678921 - DC123 - CCR - 2025.json"
         },
         {
             "display_name": "CA123",

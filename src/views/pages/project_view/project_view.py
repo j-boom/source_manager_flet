@@ -6,6 +6,7 @@ import flet as ft
 from views.base_view import BaseView
 from .tabs.project_metadata import ProjectMetadataTab
 from .tabs.project_sources import ProjectSourcesTab
+from .tabs.cite_sources import CiteSourcesTab
 
 
 class ProjectView(BaseView):
@@ -45,6 +46,14 @@ class ProjectView(BaseView):
             theme_manager=theme_manager
         )
         
+        self.cite_sources_tab = CiteSourcesTab(
+            page=page,
+            database_manager=database_manager,
+            project_data=self.loaded_project_data,
+            project_path=self.loaded_project_path,
+            theme_manager=theme_manager
+        )
+        
         # Track previous tab for navigation restrictions
         self._previous_tab = 0  # Start on metadata tab
         
@@ -66,7 +75,7 @@ class ProjectView(BaseView):
                 ft.Tab(
                     text="Cite Slides",
                     icon=ft.icons.COMPARE_ARROWS,
-                    content=self._build_placeholder_tab("Cite Slides", "Add references to project slides")
+                    content=self.cite_sources_tab.build()
                 ),
             ],
             on_change=self._on_tab_change
