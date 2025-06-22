@@ -83,11 +83,11 @@ class SourceUIFactory:
             ft.Text(
                 source.title, 
                 weight=ft.FontWeight.BOLD, 
-                size=14
+                size=13  # Slightly smaller title
             ),
             ft.Text(
                 f"{source.source_type} - {source.description}", 
-                size=12, 
+                size=11,  # Smaller description text
                 color=ft.colors.GREY_600
             )
         ]
@@ -97,7 +97,7 @@ class SourceUIFactory:
             content_rows.append(
                 ft.Text(
                     f"Usage: {source.usage_notes}",
-                    size=11,
+                    size=10,  # Smaller usage notes
                     color=ft.colors.BLUE_600,
                     italic=True
                 )
@@ -106,7 +106,7 @@ class SourceUIFactory:
         # Create the main content column
         content_column = ft.Column(
             content_rows,
-            spacing=3,
+            spacing=2,  # Reduced spacing for compactness
             expand=True
         )
         
@@ -148,9 +148,10 @@ class SourceUIFactory:
         return ft.Card(
             content=ft.Container(
                 content=main_row,
-                padding=ft.padding.all(10)
+                padding=ft.padding.all(8)  # Reduced padding for compactness
             ),
-            elevation=2
+            elevation=1,  # Slightly reduced elevation
+            margin=ft.margin.only(bottom=6)  # Reduced margin between cards
         )
     
     @staticmethod
@@ -173,62 +174,21 @@ class SourceUIFactory:
     def create_add_source_button(
         on_add_source: Callable[[], None],
         theme_color: str = ft.colors.BLUE_600
-    ) -> ft.Container:
-        """Create an add source button"""
-        return ft.Container(
-            content=ft.ElevatedButton(
-                content=ft.Row([
-                    ft.Icon(ft.icons.ADD, size=16),
-                    ft.Text("Add New Source")
-                ], spacing=8, tight=True),
-                style=ft.ButtonStyle(
-                    bgcolor=theme_color,
-                    color=ft.colors.WHITE
-                ),
-                on_click=lambda _: on_add_source()
+    ) -> ft.ElevatedButton:
+        """Create a compact add source button for inline placement"""
+        return ft.ElevatedButton(
+            content=ft.Row([
+                ft.Icon(ft.icons.ADD, size=14),
+                ft.Text("Add New Source", size=12)
+            ], spacing=4, tight=True),
+            style=ft.ButtonStyle(
+                bgcolor=theme_color,
+                color=ft.colors.WHITE,
+                padding=ft.padding.symmetric(horizontal=12, vertical=6),  # More compact for inline
+                shape=ft.RoundedRectangleBorder(radius=6)
             ),
-            padding=ft.padding.all(10)
-        )
-        if on_edit_usage:
-            action_buttons.append(
-                ft.IconButton(
-                    icon=ft.icons.EDIT,
-                    icon_size=16,
-                    tooltip="Edit usage notes",
-                    on_click=lambda _: on_edit_usage(source.id)
-                )
-            )
-        if on_remove_from_project:
-            action_buttons.append(
-                ft.IconButton(
-                    icon=ft.icons.REMOVE_CIRCLE_OUTLINE,
-                    icon_size=16,
-                    tooltip="Remove from project",
-                    on_click=lambda _: on_remove_from_project(source.id)
-                )
-            )
-        
-        # Build the row content
-        row_content: List[ft.Control] = [ft.Icon(ft.icons.DRAG_INDICATOR, color=ft.colors.GREY_400)]
-        row_content.append(content_column)
-        
-        if action_buttons:
-            row_content.append(
-                ft.Row(
-                    action_buttons,
-                    spacing=5
-                )
-            )
-        
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Row(
-                    row_content,
-                    spacing=10
-                ),
-                padding=ft.padding.all(15)
-            ),
-            elevation=3
+            height=32,  # Fixed compact height
+            on_click=lambda _: on_add_source()
         )
     
     @staticmethod

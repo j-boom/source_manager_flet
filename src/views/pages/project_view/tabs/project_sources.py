@@ -103,7 +103,7 @@ class ProjectSourcesTab:
         # Project Sources - main right column with reorderable list
         self.project_sources_list = ft.Column(
             controls=[],  # Will be populated with sources
-            spacing=10,
+            spacing=5,  # Reduced spacing for compactness
             scroll=ft.ScrollMode.AUTO
         )
         
@@ -130,12 +130,6 @@ class ProjectSourcesTab:
                         padding=ft.padding.all(10),
                         height=400,  # Fixed height for scrolling
                         expand=False
-                    ),
-                    ft.Container(height=10),  # Spacer
-                    # Add source button
-                    self.ui_factory.create_add_source_button(
-                        on_add_source=self._on_add_source_clicked,
-                        theme_color=self._get_theme_color()
                     )
                 ], expand=True),
                 width=280,  # Slightly reduced width for compactness
@@ -148,23 +142,38 @@ class ProjectSourcesTab:
             # Right column - Project Sources (70% width)
             ft.Container(
                 content=ft.Column([
+                    # Header row with title and add button inline
                     ft.Container(
-                        content=ft.Text(
-                            "Project Sources",
-                            size=16,
-                            weight=ft.FontWeight.BOLD,
-                            color=self._get_theme_color()
-                        ),
-                        padding=ft.padding.only(bottom=10)
+                        content=ft.Row([
+                            ft.Text(
+                                "Project Sources",
+                                size=16,
+                                weight=ft.FontWeight.BOLD,
+                                color=self._get_theme_color()
+                            ),
+                            # Add source button inline with the title
+                            self.ui_factory.create_add_source_button(
+                                on_add_source=self._on_add_source_clicked,
+                                theme_color=self._get_theme_color()
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        padding=ft.padding.only(bottom=15)
                     ),
-                    ft.Text(
-                        "Drag sources to reorder them",
-                        size=12,
-                        color=ft.colors.GREY_600,
-                        italic=True
-                    ),
-                    ft.Container(height=5),  # Small spacer
-                    self.project_sources_list
+                    # Container for project sources list with better borders
+                    ft.Container(
+                        content=self.project_sources_list,
+                        bgcolor=ft.colors.WHITE,  # White background for better contrast
+                        border_radius=8,
+                        border=ft.border.all(1, ft.colors.GREY_300),
+                        padding=ft.padding.all(12),
+                        expand=True,
+                        shadow=ft.BoxShadow(
+                            spread_radius=0,
+                            blur_radius=2,
+                            color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                            offset=ft.Offset(0, 1)
+                        )
+                    )
                 ], expand=True),
                 expand=True,
                 padding=ft.padding.all(15)
@@ -206,7 +215,7 @@ class ProjectSourcesTab:
         
         # Populate project sources with draggable cards and drag targets
         for i, source in enumerate(self.project_sources):
-            # Add drag target before each source (for reordering)
+            # Add minimal drag target before each source (for reordering)
             self.project_sources_list.controls.append(
                 ft.DragTarget(
                     content=ft.Container(
@@ -215,10 +224,10 @@ class ProjectSourcesTab:
                             text_align=ft.TextAlign.CENTER,
                             color=ft.colors.TRANSPARENT
                         ),
-                        height=5,
+                        height=3,  # Much smaller drag target
                         bgcolor=ft.colors.TRANSPARENT,
                         border=ft.border.all(1, ft.colors.TRANSPARENT),
-                        border_radius=3
+                        border_radius=2
                     ),
                     on_accept=lambda e, index=i: self._on_reorder_source(e, index)
                 )
@@ -232,20 +241,22 @@ class ProjectSourcesTab:
             )
             self.project_sources_list.controls.append(draggable_card)
         
-        # Add final drag target at the end for adding sources
+        # Add compact final drag target at the end for adding sources
         self.project_sources_list.controls.append(
             ft.DragTarget(
                 content=ft.Container(
                     content=ft.Text(
-                        "Drop here to add to project or reorder",
+                        "Drop sources here to add to project",
                         text_align=ft.TextAlign.CENTER,
-                        color=ft.colors.GREY_500
+                        color=ft.colors.GREY_500,
+                        size=11
                     ),
-                    height=50,
+                    height=35,  # Reduced height for compactness
                     bgcolor=ft.colors.GREY_100,
-                    border=ft.border.all(2, ft.colors.GREY_300),
-                    border_radius=5,
-                    alignment=ft.alignment.center
+                    border=ft.border.all(1, ft.colors.GREY_400),
+                    border_radius=6,
+                    alignment=ft.alignment.center,
+                    margin=ft.margin.only(top=8)
                 ),
                 on_accept=self._on_drag_to_project
             )
