@@ -11,7 +11,7 @@ sys.path.insert(0, str(project_root))
 
 import flet as ft
 from config import setup_logging, APP_NAME, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT
-from controllers import AppController
+from src.controllers import AppController
 
 def main(page: ft.Page):
     """Main application entry point."""

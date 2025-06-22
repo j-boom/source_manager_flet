@@ -3,6 +3,14 @@
 import flet as ft
 import os
 from typing import Callable, Optional
+import sys
+from pathlib import Path
+
+# Add src to path so we can import services and models directly
+src_dir = Path(__file__).parent.parent.parent.parent / "src"
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
+
 from services import ProjectCreationService
 from models.database_manager import DatabaseManager, Customer, Project
 import uuid

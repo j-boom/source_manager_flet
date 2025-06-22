@@ -1,0 +1,22 @@
+{
+    "project_id": "1001678921",
+    "project_type": "FCR",
+    "document_title": null,
+    "request_year": 2025,
+    "created_date": "2025-06-21T22:16:55.573014",
+    "status": "active",
+    "metadata": {
+        "folder_path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Financial_Reports/1001/1001678921 Survivor Fund",
+        "filename": "1001678921 - FCR - 2025.json"
+    },
+    "uuid": "3ce8752d-1dfb-4759-9cb7-4160073ff679",
+    "customer": {
+        "key": "1001678921",
+        "name": "Facility Name",
+        "number": "CA123",
+        "suffix": null
+    },
+    "title": "ANother sample projedkR",
+    "description": null,
+    "database_id": 3
+}

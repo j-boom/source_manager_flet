@@ -1,0 +1,22 @@
+{
+    "project_id": "1234908574",
+    "project_type": "CRS",
+    "document_title": null,
+    "request_year": 2025,
+    "created_date": "2025-06-22T07:23:27.229054",
+    "status": "active",
+    "metadata": {
+        "folder_path": "/Users/jim/Documents/Development/source_manager_flet/Directory_Source_Citations/Business_Documents/1001/1234908574 Folder Description",
+        "filename": "1234908574 - CRS - 2025.json"
+    },
+    "uuid": "6eaa2fac-2b4d-4ef8-a2b9-7c8496d6e72c",
+    "customer": {
+        "key": "1234908574",
+        "name": "jlkhygkutgv",
+        "number": "CA123",
+        "suffix": null
+    },
+    "title": "hkjhv",
+    "description": null,
+    "database_id": 7
+}

@@ -1,0 +1,21 @@
+{
+    "project_id": "9999999999",
+    "project_suffix": "2025",
+    "project_type": "STD",
+    "document_title": null,
+    "created_date": "2025-06-22T09:58:20.438219",
+    "metadata": {
+        "folder_path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Reports/5721/9999999999 Sample Project Folder",
+        "filename": "9999999999 - 2025 - STD - 2025.json"
+    },
+    "uuid": "141f9a1d-c46e-47bf-90da-ffeaa2b65073",
+    "customer": {
+        "key": "9999999999",
+        "name": "Sample Facility",
+        "number": "CA123",
+        "suffix": null
+    },
+    "title": "This is the project title.",
+    "description": null,
+    "database_id": 12
+}

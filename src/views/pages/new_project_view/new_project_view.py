@@ -3,6 +3,14 @@
 import flet as ft
 from ...base_view import BaseView
 from typing import List, Dict, Any, Optional
+import sys
+from pathlib import Path
+
+# Add src to path so we can import services and models directly
+src_dir = Path(__file__).parent.parent.parent.parent / "src"
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
+
 from services import DirectoryService, ProjectCreationService
 from ...components.dialogs.project_creation_dialog import ProjectCreationDialog
 from ...components.dialogs.folder_creation_dialog import FolderCreationDialog
