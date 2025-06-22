@@ -189,9 +189,12 @@ class AppController:
         if not hasattr(self, 'project_state_manager'):
             self.project_state_manager = self._create_project_state_manager()
         
+        # Load the project data from JSON file
+        project_data = self._load_project_json(project_path, project_name)
+        
         # Load the selected project
         self.project_state_manager.loaded_project_path = project_path
-        self.project_state_manager.project_data = {"path": project_path, "name": project_name}
+        self.project_state_manager.project_data = project_data
         
         print(f"Project loaded: {project_path}")
         
@@ -308,6 +311,46 @@ class AppController:
                 return "Untitled Project"
         
         return SimpleProjectStateManager()
+
+    def _load_project_json(self, project_path: str, project_name: str) -> Dict:
+        """Load project data from JSON file"""
+        try:
+            # If the project_path is a JSON file, load it directly
+            if project_path.endswith('.json'):
+                import json
+                with open(project_path, 'r') as f:
+                    project_data = json.load(f)
+                    
+                # Flatten nested data for metadata form
+                flattened_data = {"path": project_path, "name": project_name}
+                
+                # Add top-level fields
+                for key in ['uuid', 'title', 'project_type', 'description', 'status', 'created_date', 'database_id']:
+                    if key in project_data:
+                        flattened_data[key] = project_data[key]
+                
+                # Add customer fields if they exist
+                if 'customer' in project_data and isinstance(project_data['customer'], dict):
+                    customer = project_data['customer']
+                    flattened_data['customer_name'] = customer.get('name', '')
+                    flattened_data['customer_number'] = customer.get('number', '')
+                    flattened_data['customer_key'] = customer.get('key', '')
+                    flattened_data['client'] = customer.get('name', '')  # Map to client field
+                
+                # Add any other fields that might be in the JSON
+                for key, value in project_data.items():
+                    if key not in ['customer', 'metadata'] and key not in flattened_data:
+                        flattened_data[key] = value
+                
+                print(f"Loaded project data: {flattened_data}")
+                return flattened_data
+            else:
+                # If it's not a JSON file, return basic data
+                return {"path": project_path, "name": project_name}
+                
+        except Exception as e:
+            print(f"Error loading project JSON: {e}")
+            return {"path": project_path, "name": project_name}
 
     def run(self):
         """Start the application"""
