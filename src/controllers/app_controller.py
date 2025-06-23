@@ -1,6 +1,8 @@
 import flet as ft
 from typing import Dict
 from views import MainView, HomeView, RecentProjectsView, NewProjectView
+from views.pages.sources_view import SourcesView
+from views.pages.reports_view import ReportsView
 from models import (
     UserConfigManager,
     ThemeManager,
@@ -59,10 +61,20 @@ class AppController:
                 on_back=lambda: self._handle_navigation("home"),
                 on_project_selected=self._handle_project_selected,
             ),
+            "sources": SourcesView(
+                page,
+                theme_manager=self.theme_manager,
+                user_config=self.user_config,
+                on_navigate=self._handle_navigation
+            ),
+            "reports": ReportsView(
+                page,
+                theme_manager=self.theme_manager,
+                user_config=self.user_config,
+                on_navigate=self._handle_navigation
+            ),
             # Add other views here as you create them
             # "projects": ProjectsView(page, self.theme_manager),
-            # "sources": SourcesView(page, self.theme_manager),
-            # "reports": ReportsView(page, self.theme_manager),
         }
 
     def _setup_callbacks(self):
