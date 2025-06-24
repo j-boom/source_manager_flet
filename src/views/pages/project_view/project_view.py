@@ -12,11 +12,10 @@ from .tabs.cite_sources import CiteSourcesTab
 class ProjectView(BaseView):
     """Project view with tabbed interface for different project aspects"""
     
-    def __init__(self, page: ft.Page, theme_manager=None, database_manager=None, 
+    def __init__(self, page: ft.Page, theme_manager=None, 
                  project_state_manager=None, on_navigate=None):
         super().__init__(page)
         self.theme_manager = theme_manager
-        self.database_manager = database_manager
         self.project_state_manager = project_state_manager
         self.on_navigate = on_navigate
         self.loaded_project_path = None
@@ -33,14 +32,12 @@ class ProjectView(BaseView):
         # Initialize tabs
         self.metadata_tab = ProjectMetadataTab(
             page=page,
-            database_manager=database_manager,
             project_data=self.loaded_project_data,
             project_path=self.loaded_project_path
         )
         
         self.sources_tab = ProjectSourcesTab(
             page=page,
-            database_manager=database_manager,
             project_data=self.loaded_project_data,
             project_path=self.loaded_project_path,
             theme_manager=theme_manager
@@ -48,7 +45,6 @@ class ProjectView(BaseView):
         
         self.cite_sources_tab = CiteSourcesTab(
             page=page,
-            database_manager=database_manager,
             project_data=self.loaded_project_data,
             project_path=self.loaded_project_path,
             theme_manager=theme_manager

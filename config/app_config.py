@@ -11,11 +11,6 @@ DATA_DIR = PROJECT_ROOT / "data"
 LOGS_DIR = PROJECT_ROOT / "logs"
 TEMP_DIR = PROJECT_ROOT / "temp"
 
-# Database configuration
-DATABASE_DIR = DATA_DIR / "databases"
-DEFAULT_DATABASE = DATABASE_DIR / "source_manager.db"
-DATABASE_SCHEMA = DATABASE_DIR / "database_schema.sql"
-
 # User data paths
 USER_DATA_DIR = DATA_DIR / "user_data"
 PROJECTS_DIR = DATA_DIR / "projects"
@@ -54,5 +49,5 @@ PROJECT_TYPE_DISPLAY_NAMES = {
 PROJECT_TYPE_CODES = {v: k for k, v in PROJECT_TYPE_DISPLAY_NAMES.items()}
 
 # Create directories if they don't exist
-for directory in [DATA_DIR, LOGS_DIR, TEMP_DIR, DATABASE_DIR, USER_DATA_DIR, PROJECTS_DIR]:
+for directory in [DATA_DIR, LOGS_DIR, TEMP_DIR, USER_DATA_DIR, PROJECTS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)

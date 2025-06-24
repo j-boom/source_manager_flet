@@ -118,13 +118,9 @@ class AppController:
                 if "project_view" not in self.views:
                     # Initialize project view if not already created
                     from views.pages.project_view import ProjectView
-                    from models.database_manager import DatabaseManager
-
-                    db_manager = DatabaseManager()
                     self.views["project_view"] = ProjectView(
                         self.page,
                         self.theme_manager,
-                        database_manager=db_manager,
                         project_state_manager=self.project_state_manager,
                         on_navigate=self._handle_navigation,
                     )
@@ -229,16 +225,11 @@ class AppController:
         if "project_view" not in self.views:
             # Import here to avoid circular imports
             from views.pages.project_view import ProjectView
-            from models.database_manager import DatabaseManager
-
-            # Initialize the database manager if needed
-            db_manager = DatabaseManager()
 
             # Initialize the project view with the project state manager
             self.views["project_view"] = ProjectView(
                 self.page,
                 self.theme_manager,
-                database_manager=db_manager,
                 project_state_manager=self.project_state_manager,
                 on_navigate=self._handle_navigation,
             )

@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "region": "ROW",
+    "total_sources": 4,
+    "last_updated": "2025-06-23T20:45:09.031390",
+    "version": "1.0"
+  },
+  "sources": [
+    {
+      "title": "ROW Acquisition Manual",
+      "source_type": "manual",
+      "authors": [
+        "State DOT"
+      ],
+      "year": 2023,
+      "id": "src_9a8fe9a0",
+      "region": "ROW",
+      "date_created": "2025-06-23T20:14:34.822057",
+      "created_by": "john.doe",
+      "project_usage": [
+        {
+          "project_path": "/network/projects/ROW/Highway_101/project.json",
+          "project_title": "Highway 101 ROW Acquisition",
+          "usage_notes": "Primary reference for acquisition procedures and legal requirements",
+          "user_description": "Comprehensive manual covering all aspects of ROW acquisition",
+          "date_added": "2025-06-23T20:14:34.822067",
+          "added_by": "john.doe"
+        }
+      ],
+      "last_modified": "2025-06-23T20:14:34.822069",
+      "modified_by": "john.doe"
+    },
+    {
+      "title": "Environmental Impact Guidelines",
+      "source_type": "standard",
+      "authors": [
+        "EPA"
+      ],
+      "year": 2022,
+      "id": "src_b913fdb9",
+      "region": "ROW",
+      "date_created": "2025-06-23T20:14:34.822365",
+      "created_by": "jane.smith",
+      "project_usage": [
+        {
+          "project_path": "/network/projects/ROW/Highway_101/project.json",
+          "project_title": "Highway 101 ROW Acquisition",
+          "usage_notes": "Environmental compliance requirements for ROW projects",
+          "user_description": "Guidelines for environmental assessment and mitigation",
+          "date_added": "2025-06-23T20:14:34.822368",
+          "added_by": "jane.smith"
+        }
+      ],
+      "last_modified": "2025-06-23T20:14:34.822369",
+      "modified_by": "jane.smith"
+    },
+    {
+      "title": "ROW Acquisition Manual",
+      "source_type": "manual",
+      "authors": [
+        "State DOT"
+      ],
+      "year": 2023,
+      "id": "src_a27e0080",
+      "region": "ROW",
+      "date_created": "2025-06-23T20:45:09.030289",
+      "created_by": "john.doe",
+      "project_usage": [
+        {
+          "project_path": "/network/projects/ROW/Highway_101/project.json",
+          "project_title": "Highway 101 ROW Acquisition",
+          "usage_notes": "Primary reference for acquisition procedures and legal requirements",
+          "user_description": "Comprehensive manual covering all aspects of ROW acquisition",
+          "date_added": "2025-06-23T20:45:09.030297",
+          "added_by": "john.doe"
+        }
+      ],
+      "last_modified": "2025-06-23T20:45:09.030298",
+      "modified_by": "john.doe"
+    },
+    {
+      "title": "Environmental Impact Guidelines",
+      "source_type": "standard",
+      "authors": [
+        "EPA"
+      ],
+      "year": 2022,
+      "id": "src_ced36c31",
+      "region": "ROW",
+      "date_created": "2025-06-23T20:45:09.031381",
+      "created_by": "jane.smith",
+      "project_usage": [
+        {
+          "project_path": "/network/projects/ROW/Highway_101/project.json",
+          "project_title": "Highway 101 ROW Acquisition",
+          "usage_notes": "Environmental compliance requirements for ROW projects",
+          "user_description": "Guidelines for environmental assessment and mitigation",
+          "date_added": "2025-06-23T20:45:09.031383",
+          "added_by": "jane.smith"
+        }
+      ],
+      "last_modified": "2025-06-23T20:45:09.031384",
+      "modified_by": "jane.smith"
+    }
+  ]
+}

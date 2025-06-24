@@ -5,11 +5,24 @@ Project Metadata Tab with Configurable Fields
 import flet as ft
 import json
 import uuid
+import sys
 from datetime import datetime
 from typing import Optional, Dict, Any, List
+from pathlib import Path
 
-# Inline metadata configuration (avoiding import issues)
-DEFAULT_METADATA_CONFIG = {
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from config.project_types_config import (
+    get_project_type_config, 
+    get_fields_by_column_group, 
+    create_field_widget as create_typed_field_widget,
+    validate_field_value
+)
+
+# Simple fallback configuration for backward compatibility
+FALLBACK_METADATA_CONFIG = {
     'default': {
         'columns': [
             {
@@ -18,93 +31,7 @@ DEFAULT_METADATA_CONFIG = {
                     {'key': 'title', 'label': 'Project Title', 'type': 'text', 'required': True, 'tab_order': 1},
                     {'key': 'project_type', 'label': 'Project Type', 'type': 'text', 'required': True, 'tab_order': 2},
                     {'key': 'status', 'label': 'Status', 'type': 'dropdown', 'options': ['active', 'on_hold', 'completed', 'cancelled'], 'required': True, 'tab_order': 3},
-                    {'key': 'created_at', 'label': 'Created Date', 'type': 'readonly', 'tab_order': 4}
-                ]
-            },
-            {
-                'name': 'Team Members',
-                'fields': [
-                    {'key': 'engineer', 'label': 'Engineer', 'type': 'text', 'tab_order': 5},
-                    {'key': 'drafter', 'label': 'Drafter', 'type': 'text', 'tab_order': 6},
-                    {'key': 'reviewer', 'label': 'Reviewer', 'type': 'text', 'tab_order': 7},
-                    {'key': 'architect', 'label': 'Architect', 'type': 'text', 'tab_order': 8},
-                    {'key': 'geologist', 'label': 'Geologist', 'type': 'text', 'tab_order': 9}
-                ]
-            },
-            {
-                'name': 'Project Details',
-                'fields': [
-                    {'key': 'description', 'label': 'Project Description', 'type': 'multiline', 'min_lines': 3, 'max_lines': 6, 'tab_order': 10},
-                    {'key': 'location', 'label': 'Project Location', 'type': 'text', 'tab_order': 11},
-                    {'key': 'client', 'label': 'Client', 'type': 'text', 'tab_order': 12}
-                ]
-            }
-        ]
-    },
-    'commercial': {
-        'columns': [
-            {
-                'name': 'Basic Information',
-                'fields': [
-                    {'key': 'title', 'label': 'Project Title', 'type': 'text', 'required': True, 'tab_order': 1},
-                    {'key': 'project_type', 'label': 'Project Type', 'type': 'text', 'required': True, 'tab_order': 2},
-                    {'key': 'status', 'label': 'Status', 'type': 'dropdown', 'options': ['active', 'on_hold', 'completed', 'cancelled'], 'required': True, 'tab_order': 3},
-                    {'key': 'building_code', 'label': 'Building Code', 'type': 'text', 'tab_order': 4},
-                    {'key': 'created_at', 'label': 'Created Date', 'type': 'readonly', 'tab_order': 5}
-                ]
-            },
-            {
-                'name': 'Team & Compliance',
-                'fields': [
-                    {'key': 'engineer', 'label': 'Lead Engineer', 'type': 'text', 'required': True, 'tab_order': 6},
-                    {'key': 'architect', 'label': 'Architect', 'type': 'text', 'required': True, 'tab_order': 7},
-                    {'key': 'reviewer', 'label': 'Code Reviewer', 'type': 'text', 'tab_order': 8},
-                    {'key': 'drafter', 'label': 'CAD Drafter', 'type': 'text', 'tab_order': 9},
-                    {'key': 'permit_status', 'label': 'Permit Status', 'type': 'dropdown', 'options': ['not_started', 'in_progress', 'approved', 'rejected'], 'tab_order': 10}
-                ]
-            },
-            {
-                'name': 'Project Details',
-                'fields': [
-                    {'key': 'client', 'label': 'Client/Owner', 'type': 'text', 'required': True, 'tab_order': 11},
-                    {'key': 'location', 'label': 'Project Address', 'type': 'text', 'required': True, 'tab_order': 12},
-                    {'key': 'square_footage', 'label': 'Square Footage', 'type': 'number', 'tab_order': 13},
-                    {'key': 'description', 'label': 'Project Scope', 'type': 'multiline', 'min_lines': 3, 'max_lines': 6, 'tab_order': 14}
-                ]
-            }
-        ]
-    },
-    'residential': {
-        'columns': [
-            {
-                'name': 'Basic Information',
-                'fields': [
-                    {'key': 'title', 'label': 'Project Title', 'type': 'text', 'required': True, 'tab_order': 1},
-                    {'key': 'project_type', 'label': 'Project Type', 'type': 'text', 'required': True, 'tab_order': 2},
-                    {'key': 'status', 'label': 'Status', 'type': 'dropdown', 'options': ['active', 'on_hold', 'completed', 'cancelled'], 'required': True, 'tab_order': 3},
-                    {'key': 'home_type', 'label': 'Home Type', 'type': 'dropdown', 'options': ['single_family', 'townhouse', 'duplex', 'custom'], 'tab_order': 4},
-                    {'key': 'created_at', 'label': 'Created Date', 'type': 'readonly', 'tab_order': 5}
-                ]
-            },
-            {
-                'name': 'Team Members',
-                'fields': [
-                    {'key': 'engineer', 'label': 'Structural Engineer', 'type': 'text', 'tab_order': 6},
-                    {'key': 'architect', 'label': 'Architect', 'type': 'text', 'tab_order': 7},
-                    {'key': 'drafter', 'label': 'Drafter', 'type': 'text', 'tab_order': 8},
-                    {'key': 'geologist', 'label': 'Geotechnical Engineer', 'type': 'text', 'tab_order': 9},
-                    {'key': 'reviewer', 'label': 'Plan Reviewer', 'type': 'text', 'tab_order': 10}
-                ]
-            },
-            {
-                'name': 'Property Details',
-                'fields': [
-                    {'key': 'client', 'label': 'Homeowner', 'type': 'text', 'tab_order': 11},
-                    {'key': 'location', 'label': 'Property Address', 'type': 'text', 'tab_order': 12},
-                    {'key': 'lot_size', 'label': 'Lot Size (sq ft)', 'type': 'number', 'tab_order': 13},
-                    {'key': 'bedrooms', 'label': 'Bedrooms', 'type': 'number', 'tab_order': 14},
-                    {'key': 'bathrooms', 'label': 'Bathrooms', 'type': 'number', 'tab_order': 15},
-                    {'key': 'description', 'label': 'Project Description', 'type': 'multiline', 'min_lines': 3, 'max_lines': 6, 'tab_order': 16}
+                    {'key': 'description', 'label': 'Project Description', 'type': 'multiline', 'min_lines': 3, 'max_lines': 6, 'tab_order': 4}
                 ]
             }
         ]
@@ -112,10 +39,50 @@ DEFAULT_METADATA_CONFIG = {
 }
 
 def get_metadata_config(project_type: str) -> Dict[str, Any]:
-    """Get metadata configuration for a specific project type"""
-    return DEFAULT_METADATA_CONFIG.get(project_type, DEFAULT_METADATA_CONFIG['default'])
+    """Get metadata configuration for a specific project type using the new project types config"""
+    try:
+        # Try to use the new project types config
+        project_config = get_project_type_config(project_type)
+        if project_config:
+            # Convert to the old format for backward compatibility
+            field_groups = get_fields_by_column_group(project_config.fields)
+            
+            columns = []
+            for group_name, fields in field_groups.items():
+                column = {
+                    'name': group_name,
+                    'fields': []
+                }
+                
+                for field in fields:
+                    field_dict = {
+                        'key': field.name,
+                        'label': field.label,
+                        'type': field.field_type.value,
+                        'required': field.required,
+                        'tab_order': field.tab_order
+                    }
+                    
+                    if field.options:
+                        field_dict['options'] = field.options
+                    if field.min_lines:
+                        field_dict['min_lines'] = field.min_lines
+                    if field.max_lines:
+                        field_dict['max_lines'] = field.max_lines
+                    
+                    column['fields'].append(field_dict)
+                
+                columns.append(column)
+            
+            return {'columns': columns}
+    
+    except Exception as e:
+        print(f"Warning: Could not load project type config for {project_type}: {e}")
+    
+    # Fallback to simple default config
+    return FALLBACK_METADATA_CONFIG.get(project_type, FALLBACK_METADATA_CONFIG['default'])
 
-def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_mode: bool = True) -> ft.Control:
+def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_mode: bool = True, page: Optional[ft.Page] = None) -> ft.Control:
     """Create a Flet widget based on field configuration with proper styling"""
     field_type = field_config.get('type', 'text')
     label = field_config.get('label', '')
@@ -129,19 +96,35 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
     # Determine if field should be read-only
     is_readonly = is_always_readonly or not is_edit_mode
     
-    # Define colors based on edit mode
+    # Define colors based on edit mode and theme
+    is_dark = page and page.theme_mode == ft.ThemeMode.DARK
+    
     if is_readonly:
         # Read-only styling - muted colors
-        bgcolor = ft.colors.GREY_50
-        border_color = ft.colors.GREY_300
-        text_color = ft.colors.GREY_700
+        if is_dark:
+            bgcolor = ft.colors.GREY_800
+            border_color = ft.colors.GREY_700
+            text_color = ft.colors.GREY_400
+        else:
+            bgcolor = ft.colors.GREY_50
+            border_color = ft.colors.GREY_300
+            text_color = ft.colors.GREY_700
         cursor_color = None
+        focused_border_color = border_color
     else:
         # Editable styling - active colors
-        bgcolor = ft.colors.WHITE
-        border_color = ft.colors.BLUE_400
-        text_color = ft.colors.BLACK
-        cursor_color = ft.colors.BLUE_600
+        if is_dark:
+            bgcolor = ft.colors.GREY_900
+            border_color = ft.colors.BLUE_400
+            text_color = ft.colors.WHITE
+            cursor_color = ft.colors.BLUE_400
+            focused_border_color = ft.colors.BLUE_300
+        else:
+            bgcolor = ft.colors.WHITE
+            border_color = ft.colors.BLUE_400
+            text_color = ft.colors.BLACK
+            cursor_color = ft.colors.BLUE_600
+            focused_border_color = ft.colors.BLUE_600
     
     if field_type == 'text':
         return ft.TextField(
@@ -153,7 +136,7 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
             border_color=border_color,
             color=text_color,
             cursor_color=cursor_color,
-            focused_border_color=ft.colors.BLUE_600 if not is_readonly else ft.colors.GREY_400,
+            focused_border_color=focused_border_color,
             autofocus=False
         )
     elif field_type == 'multiline':
@@ -169,7 +152,7 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
             border_color=border_color,
             color=text_color,
             cursor_color=cursor_color,
-            focused_border_color=ft.colors.BLUE_600 if not is_readonly else ft.colors.GREY_400,
+            focused_border_color=focused_border_color,
             autofocus=False
         )
     elif field_type == 'dropdown':
@@ -187,7 +170,7 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
                 bgcolor=bgcolor,
                 border_color=border_color,
                 color=text_color,
-                focused_border_color=ft.colors.GREY_400
+                focused_border_color=focused_border_color
             )
         else:
             # In edit mode, use normal dropdown
@@ -199,18 +182,28 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
                 bgcolor=bgcolor,
                 border_color=border_color,
                 color=text_color,
-                focused_border_color=ft.colors.BLUE_600
+                focused_border_color=focused_border_color
             )
     elif field_type == 'readonly':
+        # Theme-aware readonly colors
+        if is_dark:
+            readonly_bgcolor = ft.colors.GREY_800
+            readonly_border_color = ft.colors.GREY_700
+            readonly_text_color = ft.colors.GREY_400
+        else:
+            readonly_bgcolor = ft.colors.GREY_100
+            readonly_border_color = ft.colors.GREY_300
+            readonly_text_color = ft.colors.GREY_600
+            
         return ft.TextField(
             label=label, 
             value=value, 
             read_only=True, 
             expand=True,
-            bgcolor=ft.colors.GREY_100,
-            border_color=ft.colors.GREY_300,
-            color=ft.colors.GREY_600,
-            focused_border_color=ft.colors.GREY_400
+            bgcolor=readonly_bgcolor,
+            border_color=readonly_border_color,
+            color=readonly_text_color,
+            focused_border_color=readonly_border_color
         )
     elif field_type == 'number':
         return ft.TextField(
@@ -223,7 +216,7 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
             border_color=border_color,
             color=text_color,
             cursor_color=cursor_color,
-            focused_border_color=ft.colors.BLUE_600 if not is_readonly else ft.colors.GREY_400,
+            focused_border_color=focused_border_color,
             autofocus=False
         )
     else:  # Default to text
@@ -236,7 +229,7 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
             border_color=border_color,
             color=text_color,
             cursor_color=cursor_color,
-            focused_border_color=ft.colors.BLUE_600 if not is_readonly else ft.colors.GREY_400,
+            focused_border_color=focused_border_color,
             autofocus=False
         )
 
@@ -244,9 +237,8 @@ def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_m
 class ProjectMetadataTab:
     """Tab for viewing and editing project metadata with configurable fields"""
     
-    def __init__(self, page: ft.Page, database_manager=None, project_data=None, project_path=None):
+    def __init__(self, page: ft.Page, project_data=None, project_path=None):
         self.page = page
-        self.database_manager = database_manager
         self.project_data = project_data or {}
         self.project_path = project_path
         
@@ -264,7 +256,7 @@ class ProjectMetadataTab:
         # Initialize form fields based on configuration
         self._init_configurable_fields()
         
-        # Load data from database and JSON
+        # Load data from JSON
         self._load_project_data()
         
         # Update form fields with loaded data
@@ -295,7 +287,7 @@ class ProjectMetadataTab:
         self._update_field_states()
     
     def _load_project_data(self):
-        """Load project data from JSON and database"""
+        """Load project data from JSON"""
         try:
             # First, map data from JSON that's already loaded in project_data
             if self.project_data:
@@ -317,37 +309,6 @@ class ProjectMetadataTab:
                     self.project_data['created_at'] = self.project_data['created_date']
                 
                 print(f"Project data after JSON mapping: {self.project_data}")
-            
-            # Then load additional data from database if available
-            if self.database_manager and self.project_data.get('uuid'):
-                project_uuid = self.project_data.get('uuid')
-                db_project = self.database_manager.get_project(project_uuid)
-                
-                if db_project:
-                    print(f"Loading additional data from database for UUID: {project_uuid}")
-                    # Convert database project to dictionary and merge with existing data
-                    db_data = {
-                        'uuid': db_project.uuid,
-                        'title': db_project.title,
-                        'project_type': db_project.project_type,
-                        'engineer': db_project.engineer,
-                        'drafter': db_project.drafter,
-                        'reviewer': db_project.reviewer,
-                        'architect': db_project.architect,
-                        'geologist': db_project.geologist,
-                        'project_code': db_project.project_code,
-                        'description': db_project.description,
-                        'status': db_project.status,
-                        'created_at': db_project.created_at,
-                        'updated_at': db_project.updated_at
-                    }
-                    
-                    # Only update with database values that are not None and not empty
-                    for key, value in db_data.items():
-                        if value is not None and str(value).strip():
-                            self.project_data[key] = value
-                    
-                    print(f"Project data after database merge: {self.project_data}")
             
             # Update form fields with all loaded data
             self._update_form_fields()
@@ -383,63 +344,32 @@ class ProjectMetadataTab:
             return False
     
     def _update_field_states(self):
-        """Update field styling and states based on current mode by modifying existing widgets"""
+        """Update field styling and states based on current mode by recreating widgets"""
         try:
-            # Update existing widgets instead of recreating them
-            for field_key, widget in self.field_widgets.items():
-                field_config = self.field_configs.get(field_key, {})
-                is_always_readonly = field_config.get('type') == 'readonly'
-                
-                # Determine if field should be read-only
-                is_readonly = is_always_readonly or not self.is_edit_mode
-                
-                # Define colors based on edit mode and theme
-                if is_readonly:
-                    # Read-only styling - background color, invisible borders
-                    if self.page.theme_mode == ft.ThemeMode.DARK:
-                        bgcolor = ft.colors.GREY_900  # Same as dark background
-                        border_color = ft.colors.GREY_900
-                        text_color = ft.colors.GREY_400
-                        focused_border_color = ft.colors.GREY_900
-                    else:
-                        bgcolor = ft.colors.GREY_50  # Same as light background
-                        border_color = ft.colors.GREY_50
-                        text_color = ft.colors.GREY_600
-                        focused_border_color = ft.colors.GREY_50
-                    cursor_color = None
-                else:
-                    # Editable styling - theme-appropriate colors
-                    if self.page.theme_mode == ft.ThemeMode.DARK:
-                        bgcolor = ft.colors.GREY_800
-                        border_color = ft.colors.BLUE_400
-                        text_color = ft.colors.WHITE
-                        cursor_color = ft.colors.BLUE_400
-                        focused_border_color = ft.colors.BLUE_300
-                    else:
-                        bgcolor = ft.colors.WHITE
-                        border_color = ft.colors.BLUE_400
-                        text_color = ft.colors.BLACK
-                        cursor_color = ft.colors.BLUE_600
-                        focused_border_color = ft.colors.BLUE_600
-                
-                # Update widget properties based on type
-                if isinstance(widget, ft.TextField):
-                    widget.read_only = is_readonly
-                    widget.bgcolor = bgcolor
-                    widget.border_color = border_color
-                    widget.color = text_color
-                    widget.cursor_color = cursor_color
-                    widget.focused_border_color = focused_border_color
-                elif isinstance(widget, ft.Dropdown):
-                    widget.disabled = is_readonly
-                    widget.bgcolor = bgcolor
-                    widget.border_color = border_color
-                    widget.color = text_color
-                    widget.focused_border_color = focused_border_color
+            # Recreate all field widgets with proper styling for current mode
+            config = get_metadata_config(self.project_type)
             
-            # Update the page to reflect changes
-            if hasattr(self, 'page'):
-                self.page.update()
+            for column in config.get('columns', []):
+                for field_config in column.get('fields', []):
+                    field_key = field_config.get('key')
+                    if field_key in self.field_widgets:
+                        # Get current value from existing widget
+                        current_value = ''
+                        old_widget = self.field_widgets[field_key]
+                        
+                        if isinstance(old_widget, ft.TextField):
+                            current_value = old_widget.value or ''
+                        elif isinstance(old_widget, ft.Dropdown):
+                            current_value = old_widget.value or ''
+                        
+                        # Create new widget with current mode styling
+                        new_widget = create_field_widget(field_config, current_value, self.is_edit_mode, self.page)
+                        
+                        # Replace the widget
+                        self.field_widgets[field_key] = new_widget
+            
+            # Rebuild the layout with new widgets
+            self._rebuild_layout()
             
             print(f"Updated field states: edit_mode={self.is_edit_mode}")
             
@@ -448,8 +378,18 @@ class ProjectMetadataTab:
     
     def _rebuild_layout(self):
         """Rebuild the entire layout with updated field widgets"""
-        # Not needed with the new approach - we update widgets in place
-        pass
+        try:
+            if hasattr(self, 'layout_container') and self.layout_container:
+                # Clear and rebuild the layout content
+                new_content = self._build_layout_content()
+                self.layout_container.content = new_content
+                
+                # Update the page
+                if hasattr(self, 'page') and self.page:
+                    self.page.update()
+                    
+        except Exception as e:
+            print(f"Error rebuilding layout: {e}")
     
     def _build_layout_content(self) -> ft.Control:
         """Build the layout content with current field widgets"""
@@ -458,109 +398,120 @@ class ProjectMetadataTab:
             config = get_metadata_config(self.project_type)
             columns = config.get('columns', [])
             
-            # Create column layout
+            # Create column layout with proper sizing
             column_controls = []
             
             for i, column_config in enumerate(columns):
                 column_name = column_config.get('name', f'Column {i+1}')
                 column_fields = column_config.get('fields', [])
                 
-                # Create field containers for this column - wrap in GestureDetector for better click handling
+                # Create field containers for this column
                 field_containers = []
                 for field_config in column_fields:
                     field_key = field_config.get('key')
                     if field_key in self.field_widgets:
                         widget = self.field_widgets[field_key]
-                        
-                        # Wrap in GestureDetector to handle clicks properly
-                        if not getattr(widget, 'read_only', False) and not getattr(widget, 'disabled', False):
-                            gesture_detector = ft.GestureDetector(
+                        # Add spacing container around each field
+                        field_containers.append(
+                            ft.Container(
                                 content=widget,
-                                on_tap=lambda e, w=widget: w.focus()
+                                margin=ft.margin.only(bottom=10)
                             )
-                            field_containers.append(gesture_detector)
-                        else:
-                            field_containers.append(widget)
+                        )
                 
-                # Create column card with equal height - minimal nesting and no click interference
-                column_card = ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            ft.Text(column_name, size=16, weight=ft.FontWeight.BOLD, color=ft.colors.BLUE_700),
-                            ft.Container(height=10),
-                            *field_containers,
-                            # Add flexible spacer to fill remaining height
-                            ft.Container(expand=True)
-                        ], spacing=10, expand=True),  # Add spacing between fields
-                        padding=ft.padding.all(15),
-                        expand=True,
-                        # Ensure container doesn't interfere with child clicks
-                        ink=False
-                    ),
-                    expand=True,
-                    # Ensure card doesn't interfere with child clicks
-                    elevation=1,
-                    surface_tint_color=None
+                # Create column with fixed width and theme-aware styling
+                # Theme-aware colors
+                if self.page.theme_mode == ft.ThemeMode.DARK:
+                    card_bgcolor = ft.colors.GREY_800
+                    card_border_color = ft.colors.GREY_600
+                    title_color = ft.colors.BLUE_300
+                    divider_color = ft.colors.GREY_600
+                else:
+                    card_bgcolor = ft.colors.WHITE
+                    card_border_color = ft.colors.GREY_300
+                    title_color = ft.colors.BLUE_700
+                    divider_color = ft.colors.GREY_300
+                
+                column_card = ft.Container(
+                    content=ft.Column([
+                        ft.Text(
+                            column_name, 
+                            size=16, 
+                            weight=ft.FontWeight.BOLD, 
+                            color=title_color
+                        ),
+                        ft.Divider(height=1, color=divider_color),
+                        *field_containers
+                    ], spacing=5, tight=True),
+                    padding=ft.padding.all(15),
+                    bgcolor=card_bgcolor,
+                    border_radius=8,
+                    border=ft.border.all(1, card_border_color),
+                    width=320,  # Slightly smaller width
+                    height=None  # Let height be dynamic
                 )
                 
                 column_controls.append(column_card)
             
-            # Create rows of columns (max 3 columns per row) with equal heights
-            column_rows = []
-            for i in range(0, len(column_controls), 3):
-                row_columns = column_controls[i:i+3]
-                column_rows.append(
-                    ft.Row(
-                        controls=row_columns,
+            # Create layout - use Column for vertical stacking to prevent horizontal overlap
+            if column_controls:
+                # Determine layout based on screen space and number of columns
+                if len(column_controls) <= 2:
+                    # For 1-2 columns, use a horizontal row
+                    main_layout = ft.Row(
+                        controls=column_controls,
                         spacing=15,
-                        expand=True,
                         alignment=ft.MainAxisAlignment.START,
-                        vertical_alignment=ft.CrossAxisAlignment.STRETCH  # This ensures equal heights
+                        vertical_alignment=ft.CrossAxisAlignment.START,
+                        wrap=False  # Don't wrap to prevent overlap
                     )
-                )
+                else:
+                    # For 3+ columns, use vertical stacking to prevent overlap
+                    main_layout = ft.Column(
+                        controls=column_controls,
+                        spacing=15,
+                        horizontal_alignment=ft.CrossAxisAlignment.START
+                    )
+            else:
+                main_layout = ft.Text("No fields configured", color=ft.colors.GREY_500)
             
             # Return the complete layout content
             return ft.Column([
                 # Action button (Edit or Save) with mode indicator
                 ft.Container(
-                    content=ft.Column([
-                        # Mode indicator
-                        ft.Container(
-                            content=ft.Row([
-                                ft.Container(expand=True),  # Spacer
-                                self.action_button
-                            ]),
-                            padding=ft.padding.symmetric(horizontal=5)
-                        ),
-                        # Warning for incomplete data
-                        ft.Container(
-                            content=ft.Row([
-                                ft.Icon(ft.icons.WARNING, size=16, color=ft.colors.ORANGE_600),
-                                ft.Text(
-                                    "Please complete all required fields (*) before navigating to other tabs.",
-                                    size=12,
-                                    color=ft.colors.ORANGE_600
-                                )
-                            ]),
-                            visible=not self.is_fully_populated,
-                            padding=ft.padding.symmetric(horizontal=5, vertical=5)
-                        )
+                    content=ft.Row([
+                        ft.Container(expand=True),  # Spacer
+                        self.action_button
                     ]),
                     padding=ft.padding.only(bottom=20)
                 ),
                 
-                # Form content in scrollable container - configurable column layout
+                # Warning for incomplete data
+                ft.Container(
+                    content=ft.Row([
+                        ft.Icon(ft.icons.WARNING, size=16, color=ft.colors.ORANGE_600),
+                        ft.Text(
+                            "Please complete all required fields (*) before navigating to other tabs.",
+                            size=12,
+                            color=ft.colors.ORANGE_600
+                        )
+                    ]),
+                    visible=not self.is_fully_populated,
+                    padding=ft.padding.symmetric(horizontal=5, vertical=10)
+                ),
+                
+                # Form content in scrollable container
                 ft.Container(
                     content=ft.Column([
-                        *column_rows,
-                        
-                        # Messages
-                        self.message_text,
-                        self.error_text,
-                        
-                    ], spacing=15),  # Removed scroll mode to test focus
+                        main_layout
+                    ], scroll=ft.ScrollMode.AUTO),
+                    padding=ft.padding.all(10),
                     expand=True
-                )
+                ),
+                
+                # Messages at bottom
+                self.message_text,
+                self.error_text
             ], spacing=0)
             
         except Exception as e:
@@ -602,7 +553,7 @@ class ProjectMetadataTab:
                     field_value = self.project_data.get(field_key, '')
                     
                     # Create widget based on configuration with current edit mode
-                    widget = create_field_widget(field_config, field_value, self.is_edit_mode)
+                    widget = create_field_widget(field_config, field_value, self.is_edit_mode, self.page)
                     
                     # Store widget and config
                     self.field_widgets[field_key] = widget
@@ -732,19 +683,6 @@ class ProjectMetadataTab:
             if not self._validate_required_fields():
                 return  # Error message already shown
             
-            # Save to database if available
-            if self.database_manager and self.project_data.get('uuid'):
-                print(f"Attempting database save for project: {self.project_data.get('uuid')}")
-                # Update project in database
-                success = self._update_database_project(updated_data)
-                if not success:
-                    self._show_error("Failed to update project in database")
-                    return
-                else:
-                    print("Database save successful")
-            else:
-                print(f"Skipping database save - manager: {bool(self.database_manager)}, uuid: {self.project_data.get('uuid')}")
-            
             # Save to JSON file if available
             if self.project_path:
                 success = self._save_json_file()
@@ -796,40 +734,6 @@ class ProjectMetadataTab:
             
         except Exception as e:
             self._show_error(f"Error validating fields: {str(e)}")
-            return False
-    
-    def _update_database_project(self, updated_data: Dict[str, Any]) -> bool:
-        """Update project in database"""
-        try:
-            if not self.database_manager:
-                print("No database manager available")
-                return False
-            
-            # Get project by UUID
-            project_uuid = self.project_data.get('uuid')
-            if not project_uuid:
-                print("No project UUID found in project data")
-                return False
-            
-            print(f"Attempting to update project with UUID: {project_uuid}")
-            
-            # First check if project exists in database
-            existing_project = self.database_manager.get_project(project_uuid)
-            if not existing_project:
-                print(f"Project with UUID {project_uuid} not found in database")
-                return False
-            
-            print(f"Found existing project: {existing_project.title}")
-            
-            # Update project in database using the new update_project method
-            success = self.database_manager.update_project(project_uuid, updated_data)
-            print(f"Database update result: {success}")
-            return success
-            
-        except Exception as ex:
-            print(f"Database update error: {ex}")
-            import traceback
-            traceback.print_exc()
             return False
     
     def _save_json_file(self) -> bool:
@@ -937,6 +841,8 @@ class ProjectMetadataTab:
     
     def refresh_data(self):
         """Refresh the tab data"""
+        # Load fresh data from JSON
+        self._load_project_data()
         # Update form fields and refresh UI
         self._update_form_fields()
         if hasattr(self, 'page'):

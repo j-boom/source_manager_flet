@@ -11,11 +11,10 @@ from views.components.source_ui_factory import SourceUIFactory, SourceItem
 class ReportsView(BaseView):
     """View for generating reports, bibliographies, and managing citations"""
     
-    def __init__(self, page: ft.Page, theme_manager=None, database_manager=None, 
+    def __init__(self, page: ft.Page, theme_manager=None, 
                  user_config=None, on_navigate=None):
         super().__init__(page)
         self.theme_manager = theme_manager
-        self.database_manager = database_manager
         self.user_config = user_config
         self.on_navigate = on_navigate
         

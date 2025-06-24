@@ -137,8 +137,30 @@ class UserConfigManager:
         return self.username
     
     def get_recent_sites(self) -> list:
-        """Get list of recent sites"""
-        return self.config.get("recent_sites", [])
+        """Get list of recent sites, filtering out any with missing JSON files"""
+        import os
+        
+        recent_sites = self.config.get("recent_sites", [])
+        
+        # Filter out sites where the JSON file no longer exists
+        valid_sites = []
+        sites_to_remove = []
+        
+        for site in recent_sites:
+            path = site.get("path", "")
+            if path and os.path.exists(path):
+                valid_sites.append(site)
+            else:
+                sites_to_remove.append(site)
+                print(f"⚠️  Removing missing project from recent list: {site.get('display_name', 'Unknown')} ({path})")
+        
+        # If we found missing files, update the config to remove them
+        if sites_to_remove:
+            self.config["recent_sites"] = valid_sites
+            self.save_config()
+            print(f"✅ Cleaned up {len(sites_to_remove)} missing project(s) from recent list")
+        
+        return valid_sites
     
     def add_recent_site(self, display_name: str, path: str):
         """Add a site to recent sites list (max 10 items)"""

@@ -9,9 +9,8 @@ from typing import Optional, List, Dict, Any
 class CiteSourcesTab:
     """Tab for managing source citations with dual select interface"""
     
-    def __init__(self, page: ft.Page, database_manager=None, project_data=None, project_path=None, theme_manager=None):
+    def __init__(self, page: ft.Page, project_data=None, project_path=None, theme_manager=None):
         self.page = page
-        self.database_manager = database_manager
         self.project_data = project_data or {}
         self.project_path = project_path
         self.theme_manager = theme_manager

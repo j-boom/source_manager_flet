@@ -12,7 +12,6 @@ if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
 from services import ProjectCreationService
-from models.database_manager import DatabaseManager, Customer, Project
 import uuid
 
 
@@ -20,11 +19,9 @@ class ProjectCreationDialog:
     """Dialog component for creating new projects with database integration"""
     
     def __init__(self, page: ft.Page, project_service: ProjectCreationService, 
-                 db_manager: DatabaseManager,
                  on_success: Optional[Callable] = None, on_cancel: Optional[Callable] = None):
         self.page = page
         self.project_service = project_service
-        self.db_manager = db_manager
         self.on_success = on_success
         self.on_cancel = on_cancel
         self.dialog: Optional[ft.AlertDialog] = None
@@ -37,7 +34,7 @@ class ProjectCreationDialog:
         self.folder_path = ""
         
         # Track if we're editing an existing customer
-        self.existing_customer: Optional[Customer] = None
+        self.existing_customer = None
     
     def show(self, ten_digit_number: str, folder_path: str):
         """Show the project creation dialog"""
@@ -46,7 +43,7 @@ class ProjectCreationDialog:
         
         # Check if customer exists based on the first 4 digits
         customer_key = ten_digit_number[:4]
-        self.existing_customer = self.db_manager.get_customer(customer_key)
+        self.existing_customer = None  # No database lookup needed
         
         self._create_form_fields()
         self._create_dialog()
@@ -319,48 +316,31 @@ class ProjectCreationDialog:
                 self.page.update()
                 return
             
-            # Create or get customer
+            # Create project data structure  
+            project_uuid = str(uuid.uuid4())
+            
+            # Create or get customer data (JSON-only)
             customer_data = {
                 'key': customer_key,
                 'name': customer_name,
                 'number': customer_number,
                 'suffix': None
             }
-            customer_id = self.db_manager.get_or_create_customer(customer_data)
             
             # No project code since we removed suffix
             project_code = None
-            
-            # Create project in database
-            project_uuid = str(uuid.uuid4())
-            project = Project(
-                uuid=project_uuid,
-                customer_id=customer_id,
-                engineer=None,
-                drafter=None,
-                reviewer=None,
-                architect=None,
-                geologist=None,
-                project_code=project_code,
-                project_type=project_type,
-                title=project_title,
-                description=None
-            )
-            
-            project_id = self.db_manager.create_project(project)
             
             # Create legacy JSON file for compatibility (with current year appended)
             project_data = self.project_service.create_project_data(
                 self.ten_digit_number, project_type, current_year, doc_title, self.folder_path
             )
             
-            # Add database fields to JSON for compatibility
+            # Add fields to JSON 
             project_data.update({
                 'uuid': project_uuid,
                 'customer': customer_data,
                 'title': project_title,
-                'description': None,
-                'database_id': project_id
+                'description': None
             })
             
             # Save project file
@@ -376,12 +356,12 @@ class ProjectCreationDialog:
                 self._close_dialog()
                 if self.on_success:
                     print(f"Calling success callback with message and file_path")
-                    self.on_success(f"Project created successfully in database (ID: {project_id}) and file saved: {message}", file_path)
+                    self.on_success(f"Project created successfully and file saved: {message}", file_path)
                 else:
                     print("No success callback defined")
             else:
-                # If file save failed, we might want to remove the database entry
-                self.error_text.value = f"Database entry created but file save failed: {message}"
+                # If file save failed
+                self.error_text.value = f"File save failed: {message}"
                 self.error_text.visible = True
                 self.page.update()
                 

@@ -12,7 +12,6 @@ if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
 from services import ProjectManagementService
-from models.database_manager import DatabaseManager
 from config.project_types_config import get_project_type_display_names
 import uuid
 
@@ -20,11 +19,10 @@ import uuid
 class SimpleProjectCreationDialog:
     """Simple dialog for basic project creation with folder support"""
     
-    def __init__(self, page: ft.Page, project_service: ProjectManagementService, db_manager: DatabaseManager,
+    def __init__(self, page: ft.Page, project_service: ProjectManagementService,
                  on_success: Optional[Callable] = None, on_cancel: Optional[Callable] = None):
         self.page = page
         self.project_service = project_service
-        self.db_manager = db_manager
         self.on_success = on_success
         self.on_cancel = on_cancel
         

@@ -8,7 +8,6 @@ import uuid
 from typing import Optional, Callable, Dict, Any
 from config.project_types_config import get_project_type_config, get_all_project_types
 from src.views.components.forms.dynamic_form_generator import DynamicFormGenerator
-from src.models.database_manager import DatabaseManager, Customer, Project
 from src.services.project_creation_service import ProjectCreationService
 
 
@@ -21,7 +20,7 @@ class DynamicProjectCreationDialog:
                  user_config,
                  ten_digit_number: str,
                  folder_path: str,
-                 existing_customer: Optional[Customer] = None,
+                 existing_customer = None,
                  on_success: Optional[Callable] = None):
         
         self.page = page
@@ -33,7 +32,6 @@ class DynamicProjectCreationDialog:
         self.on_success = on_success
         
         # Initialize services
-        self.db_manager = DatabaseManager()
         self.project_service = ProjectCreationService(user_config)
         
         # Initialize form generator

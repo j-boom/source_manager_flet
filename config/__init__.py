@@ -6,7 +6,6 @@ from .logging_config import setup_logging
 
 __all__ = [
     'PROJECT_ROOT', 'SRC_DIR', 'DATA_DIR', 'LOGS_DIR', 'TEMP_DIR',
-    'DATABASE_DIR', 'DEFAULT_DATABASE', 'DATABASE_SCHEMA',
     'USER_DATA_DIR', 'PROJECTS_DIR',
     'APP_NAME', 'APP_VERSION', 'DEFAULT_THEME',
     'LOG_LEVEL', 'LOG_FORMAT',
