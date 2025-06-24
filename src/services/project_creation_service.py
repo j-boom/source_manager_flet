@@ -5,30 +5,37 @@ import json
 import datetime
 import re
 from typing import Dict, Any, Optional, List
-from config.app_config import PROJECT_TYPE_DISPLAY_NAMES, PROJECT_TYPE_CODES
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from config.project_types_config import get_all_project_types, get_project_type_display_names, get_project_type_config
 
 
 class ProjectCreationService:
     """Handles project creation logic and validation"""
     
-    PROJECT_TYPES = list(PROJECT_TYPE_DISPLAY_NAMES.keys())  # Keep codes for backend
-    PROJECT_TYPE_DISPLAY_NAMES = PROJECT_TYPE_DISPLAY_NAMES
-    PROJECT_TYPE_CODES = PROJECT_TYPE_CODES
-    
     def __init__(self, user_config=None):
         self.user_config = user_config
+        # Load project types from the new configuration
+        self.project_type_display_names = get_project_type_display_names()
+        self.project_type_codes = {v: k for k, v in self.project_type_display_names.items()}
+        self.project_types = get_all_project_types()
     
     def validate_project_data(self, project_type: str, document_title: str = "") -> List[str]:
         """Validate project creation data and return list of errors"""
         errors = []
         
         # Convert display name to code if needed
-        if project_type in self.PROJECT_TYPE_CODES:
-            project_type = self.PROJECT_TYPE_CODES[project_type]
+        if project_type in self.project_type_codes:
+            project_type = self.project_type_codes[project_type]
         
         if not project_type:
             errors.append("Project type is required")
-        elif project_type not in self.PROJECT_TYPES:
+        elif project_type not in self.project_types:
             errors.append(f"Invalid project type. Must be one of: {', '.join(self.get_project_type_options())}")
         
         # Document title validation - required for OTH
@@ -119,12 +126,12 @@ class ProjectCreationService:
 
     def get_project_type_options(self) -> List[str]:
         """Get list of project type display names for dropdown"""
-        return list(self.PROJECT_TYPE_DISPLAY_NAMES.values())
+        return list(self.project_type_display_names.values())
     
     def get_project_type_code(self, display_name: str) -> str:
         """Get project type code from display name"""
-        return self.PROJECT_TYPE_CODES.get(display_name, display_name)
+        return self.project_type_codes.get(display_name, display_name)
     
     def get_project_type_display_name(self, code: str) -> str:
         """Get project type display name from code"""
-        return self.PROJECT_TYPE_DISPLAY_NAMES.get(code, code)
+        return self.project_type_display_names.get(code, code)

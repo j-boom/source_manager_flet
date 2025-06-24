@@ -18,7 +18,9 @@ from config.project_types_config import (
     get_project_type_config, 
     get_fields_by_column_group, 
     create_field_widget as create_typed_field_widget,
-    validate_field_value
+    validate_field_value,
+    get_metadata_fields_for_project_type,
+    DIALOG_COLLECTED_FIELDS
 )
 
 # Simple fallback configuration for backward compatibility
@@ -39,13 +41,13 @@ FALLBACK_METADATA_CONFIG = {
 }
 
 def get_metadata_config(project_type: str) -> Dict[str, Any]:
-    """Get metadata configuration for a specific project type using the new project types config"""
+    """Get metadata configuration for a specific project type using only metadata fields (excluding dialog fields)"""
     try:
-        # Try to use the new project types config
-        project_config = get_project_type_config(project_type)
-        if project_config:
+        # Get metadata-only fields (excluding dialog-collected fields)
+        metadata_fields = get_metadata_fields_for_project_type(project_type)
+        if metadata_fields:
             # Convert to the old format for backward compatibility
-            field_groups = get_fields_by_column_group(project_config.fields)
+            field_groups = get_fields_by_column_group(metadata_fields)
             
             columns = []
             for group_name, fields in field_groups.items():
@@ -55,6 +57,12 @@ def get_metadata_config(project_type: str) -> Dict[str, Any]:
                 }
                 
                 for field in fields:
+                    # Skip fields that are hidden or collected in dialog
+                    if hasattr(field, 'visible') and field.visible == False:
+                        continue
+                    if field.name in DIALOG_COLLECTED_FIELDS:
+                        continue
+                        
                     field_dict = {
                         'key': field.name,
                         'label': field.label,
@@ -63,24 +71,37 @@ def get_metadata_config(project_type: str) -> Dict[str, Any]:
                         'tab_order': field.tab_order
                     }
                     
-                    if field.options:
+                    if hasattr(field, 'options') and field.options:
                         field_dict['options'] = field.options
-                    if field.min_lines:
+                    if hasattr(field, 'min_lines') and field.min_lines:
                         field_dict['min_lines'] = field.min_lines
-                    if field.max_lines:
+                    if hasattr(field, 'max_lines') and field.max_lines:
                         field_dict['max_lines'] = field.max_lines
                     
                     column['fields'].append(field_dict)
                 
-                columns.append(column)
+                # Only add columns that have fields
+                if column['fields']:
+                    columns.append(column)
             
             return {'columns': columns}
     
     except Exception as e:
         print(f"Warning: Could not load project type config for {project_type}: {e}")
     
-    # Fallback to simple default config
-    return FALLBACK_METADATA_CONFIG.get(project_type, FALLBACK_METADATA_CONFIG['default'])
+    # Fallback to simple default config with only metadata fields
+    return {
+        'columns': [
+            {
+                'name': 'Basic Information',
+                'fields': [
+                    {'key': 'request_year', 'label': 'Request Year', 'type': 'dropdown', 'options': [str(year) for year in range(2019, 2031)], 'required': True, 'tab_order': 1},
+                    {'key': 'status', 'label': 'Status', 'type': 'dropdown', 'options': ['active', 'on_hold', 'completed', 'cancelled'], 'required': False, 'tab_order': 2},
+                    {'key': 'description', 'label': 'Project Description', 'type': 'multiline', 'min_lines': 3, 'max_lines': 6, 'tab_order': 3}
+                ]
+            }
+        ]
+    }
 
 def create_field_widget(field_config: Dict[str, Any], value: str = '', is_edit_mode: bool = True, page: Optional[ft.Page] = None) -> ft.Control:
     """Create a Flet widget based on field configuration with proper styling"""
@@ -293,6 +314,9 @@ class ProjectMetadataTab:
             if self.project_data:
                 print(f"Initial project_data keys: {list(self.project_data.keys())}")
                 
+                # Map dialog creation data to form fields
+                self._map_dialog_data_to_form_fields()
+                
                 # Map customer data to location and client fields if not already set
                 if 'customer_name' in self.project_data and not self.project_data.get('location'):
                     self.project_data['location'] = self.project_data['customer_name']
@@ -319,6 +343,49 @@ class ProjectMetadataTab:
                 
         except Exception as e:
             print(f"Error loading project data: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _map_dialog_data_to_form_fields(self):
+        """Map data from project creation dialog to form field names"""
+        try:
+            # Map dialog field names to form field names
+            field_mappings = {
+                # Customer/facility data mappings
+                'customer_name': ['facility_name', 'client_name'],
+                'customer_number': ['building_number'],
+                'customer_key': ['facility_number'],
+                
+                # Project data mappings  
+                'title': ['project_title'],
+                'description': ['project_description'],
+                'project_suffix': ['request_year'],
+                
+                # Direct mappings (same name in dialog and form)
+                'engineer': ['engineer'],
+                'imagery_specialist': ['imagery_specialist'],
+                'all_source': ['all_source'],
+                'geologist': ['geologist'],
+                'reviewer': ['reviewer'],
+            }
+            
+            # Apply mappings
+            for source_field, target_fields in field_mappings.items():
+                if source_field in self.project_data:
+                    source_value = self.project_data[source_field]
+                    for target_field in target_fields:
+                        # Only map if target field doesn't already have a value
+                        if not self.project_data.get(target_field):
+                            self.project_data[target_field] = source_value
+                            print(f"Mapped {source_field} -> {target_field}: {source_value}")
+            
+            # Ensure we have proper values for dropdown fields
+            if 'request_year' in self.project_data:
+                # Make sure request_year is a string (for dropdown)
+                self.project_data['request_year'] = str(self.project_data['request_year'])
+                
+        except Exception as e:
+            print(f"Error mapping dialog data: {e}")
             import traceback
             traceback.print_exc()
     
@@ -447,31 +514,23 @@ class ProjectMetadataTab:
                     bgcolor=card_bgcolor,
                     border_radius=8,
                     border=ft.border.all(1, card_border_color),
-                    width=320,  # Slightly smaller width
+                    width=300,  # Fixed width for proper column display
                     height=None  # Let height be dynamic
                 )
                 
                 column_controls.append(column_card)
             
-            # Create layout - use Column for vertical stacking to prevent horizontal overlap
+            # Create layout - always use horizontal Row layout for proper columns
             if column_controls:
-                # Determine layout based on screen space and number of columns
-                if len(column_controls) <= 2:
-                    # For 1-2 columns, use a horizontal row
-                    main_layout = ft.Row(
-                        controls=column_controls,
-                        spacing=15,
-                        alignment=ft.MainAxisAlignment.START,
-                        vertical_alignment=ft.CrossAxisAlignment.START,
-                        wrap=False  # Don't wrap to prevent overlap
-                    )
-                else:
-                    # For 3+ columns, use vertical stacking to prevent overlap
-                    main_layout = ft.Column(
-                        controls=column_controls,
-                        spacing=15,
-                        horizontal_alignment=ft.CrossAxisAlignment.START
-                    )
+                main_layout = ft.Row(
+                    controls=column_controls,
+                    spacing=10,
+                    alignment=ft.MainAxisAlignment.START,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                    wrap=False,  # Don't wrap to prevent overlap
+                    scroll=ft.ScrollMode.AUTO,  # Allow horizontal scrolling if needed
+                    expand=False  # Don't expand the Row
+                )
             else:
                 main_layout = ft.Text("No fields configured", color=ft.colors.GREY_500)
             
@@ -502,11 +561,11 @@ class ProjectMetadataTab:
                 
                 # Form content in scrollable container
                 ft.Container(
-                    content=ft.Column([
-                        main_layout
-                    ], scroll=ft.ScrollMode.AUTO),
+                    content=main_layout,
                     padding=ft.padding.all(10),
-                    expand=True
+                    expand=True,
+                    width=None,  # Let width be determined by content
+                    height=None  # Let height be determined by content
                 ),
                 
                 # Messages at bottom
@@ -811,7 +870,7 @@ class ProjectMetadataTab:
     def _update_form_fields(self):
         """Update form fields with current project data using configurable fields"""
         try:
-            print(f"Updating form fields with data: {self.project_data}")
+            print(f"Updating form fields with data: {list(self.project_data.keys())}")
             updated_count = 0
             
             for field_key, widget in self.field_widgets.items():
@@ -823,8 +882,13 @@ class ProjectMetadataTab:
                     if isinstance(widget, ft.Dropdown):
                         # For dropdowns, ensure the value is in the options
                         options = [opt.key for opt in widget.options] if widget.options else []
-                        if field_value not in options and options:
+                        if str(field_value) in options:
+                            field_value = str(field_value)
+                        elif options:
                             field_value = options[0]  # Default to first option
+                    
+                    # Convert to string for text fields
+                    field_value = str(field_value) if field_value is not None else ''
                     
                     # Only update if the value has changed
                     if widget.value != field_value:

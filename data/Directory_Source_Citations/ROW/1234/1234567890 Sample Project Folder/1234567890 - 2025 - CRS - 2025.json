@@ -1,0 +1,20 @@
+{
+    "project_id": "1234567890",
+    "project_suffix": "2025",
+    "project_type": "CRS",
+    "document_title": null,
+    "created_date": "2025-06-23T22:13:34.337815",
+    "metadata": {
+        "folder_path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/1234/1234567890 Sample Project Folder",
+        "filename": "1234567890 - 2025 - CRS - 2025.json"
+    },
+    "uuid": "df0db53c-016b-40ab-9b87-51f6dcef603e",
+    "customer": {
+        "key": "1234567890",
+        "name": "Facility Name",
+        "number": "CA123",
+        "suffix": null
+    },
+    "title": "Facility Name Corrective Action",
+    "description": null
+}

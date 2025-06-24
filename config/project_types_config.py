@@ -59,14 +59,14 @@ class ProjectTypeConfig:
     validation_rules: Optional[Dict[str, Any]] = None
 
 
-# Base facility fields (common to all project types)
+# Base facility fields
 FACILITY_FIELDS = [
     FieldConfig(
-        name="facility_number",
-        label="Facility Number *",
+        name="be_number",
+        label="BE Number *",
         field_type=FieldType.TEXT,
         required=True,
-        hint_text="10-digit folder number",
+        hint_text="Facility BE",
         width=200,
         tab_order=1,
         column_group="Facility Information"
@@ -82,8 +82,8 @@ FACILITY_FIELDS = [
         column_group="Facility Information"
     ),
     FieldConfig(
-        name="building_number",
-        label="Building Number",
+        name="osuffix",
+        label="OSuffix",
         field_type=FieldType.TEXT,
         hint_text="Format: [A-Z]{2}\\d{3} (e.g., DC123)",
         width=200,
@@ -91,15 +91,6 @@ FACILITY_FIELDS = [
         tab_order=3,
         column_group="Facility Information"
     ),
-    FieldConfig(
-        name="customer_suffix",
-        label="Customer Suffix",
-        field_type=FieldType.TEXT,
-        hint_text="Optional suffix",
-        width=200,
-        tab_order=4,
-        column_group="Facility Information"
-    )
 ]
 
 # Base project fields (common to all project types)
@@ -137,44 +128,44 @@ BASE_PROJECT_FIELDS = [
     ),
 ]
 
-# Team fields (commented out as per request - no longer used in dialog)
-# TEAM_FIELDS = [
-#     FieldConfig(
-#         name="engineer",
-#         label="Engineer",
-#         field_type=FieldType.TEXT,
-#         hint_text="Lead engineer name",
-#         width=300
-#     ),
-#     FieldConfig(
-#         name="drafter",
-#         label="Drafter",
-#         field_type=FieldType.TEXT,
-#         hint_text="Drafter name",
-#         width=300
-#     ),
-#     FieldConfig(
-#         name="reviewer",
-#         label="Reviewer",
-#         field_type=FieldType.TEXT,
-#         hint_text="Reviewer name",
-#         width=300
-#     ),
-#     FieldConfig(
-#         name="architect",
-#         label="Architect",
-#         field_type=FieldType.TEXT,
-#         hint_text="Architect name",
-#         width=300
-#     ),
-#     FieldConfig(
-#         name="geologist",
-#         label="Geologist",
-#         field_type=FieldType.TEXT,
-#         hint_text="Geologist name",
-#         width=300
-#     ),
-# ]
+# Team fields
+TEAM_FIELDS = [
+    FieldConfig(
+        name="engineer",
+        label="Engineer",
+        field_type=FieldType.TEXT,
+        hint_text="Lead engineer name",
+        width=300
+    ),
+    FieldConfig(
+        name="drafter",
+        label="Drafter",
+        field_type=FieldType.TEXT,
+        hint_text="Drafter name",
+        width=300
+    ),
+    FieldConfig(
+        name="reviewer",
+        label="Reviewer",
+        field_type=FieldType.TEXT,
+        hint_text="Reviewer name",
+        width=300
+    ),
+    FieldConfig(
+        name="architect",
+        label="Architect",
+        field_type=FieldType.TEXT,
+        hint_text="Architect name",
+        width=300
+    ),
+    FieldConfig(
+        name="geologist",
+        label="Geologist",
+        field_type=FieldType.TEXT,
+        hint_text="Geologist name",
+        width=300
+    ),
+]
 
 # Project type specific configurations
 PROJECT_TYPES_CONFIG = {
@@ -619,3 +610,28 @@ def validate_field_value(field_config: FieldConfig, value: str) -> tuple[bool, s
                 return False, f"{field_config.label} must be a valid number"
     
     return True, ""
+
+
+# Fields collected by the project creation dialog (excluded from metadata tab)
+DIALOG_COLLECTED_FIELDS = [
+    "project_type",
+    "project_title",
+    "be_number", 
+    "osuffix",
+    "facility_name",
+    "document_title"
+]
+
+def get_metadata_fields_for_project_type(project_type_code: str) -> List[FieldConfig]:
+    """Get fields that should appear in metadata tab (excluding dialog-collected fields)"""
+    project_config = get_project_type_config(project_type_code)
+    if not project_config:
+        return []
+    
+    # Filter out dialog-collected fields
+    metadata_fields = []
+    for field in project_config.fields:
+        if field.name not in DIALOG_COLLECTED_FIELDS:
+            metadata_fields.append(field)
+    
+    return metadata_fields

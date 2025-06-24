@@ -8,16 +8,16 @@
     },
     "theme": {
         "mode": "dark",
-        "color": "purple"
+        "color": "indigo"
     },
     "last_page": "projects",
     "recent_sites": [
         {
-            "display_name": "1234567890 - 2025 - STD - 2025.json",
-            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/1234/1234567890 Sample Project Folder/1234567890 - 2025 - STD - 2025.json"
+            "display_name": "1234567890 - 2025 - CRS - 2025",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/1234/1234567890 Sample Project Folder/1234567890 - 2025 - CRS - 2025.json"
         },
         {
-            "display_name": "Government Facility - 2025 - Analysis",
+            "display_name": "Facility Name Corrective Action",
             "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/1234/1234567890 Sample Project Folder"
         }
     ]
