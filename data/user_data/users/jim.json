@@ -1,0 +1,26 @@
+{
+    "window": {
+        "width": 1200,
+        "height": 800,
+        "x": null,
+        "y": null,
+        "maximized": false
+    },
+    "theme": {
+        "mode": "light",
+        "color": "yellow"
+    },
+    "last_page": "home",
+    "recent_sites": [
+        {
+            "display_name": "Sample Document - 2025",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/1234/1234512314 Second Sample Project/Sample Document - 2025.json"
+        },
+        {
+            "display_name": "Sample Document",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/1234/1234512314 Second Sample Project"
+        }
+    ],
+    "display_name": "Jim Bergren",
+    "setup_completed": true
+}

@@ -1,7 +1,19 @@
 import flet as ft
+import sys
+from pathlib import Path
 from typing import Callable, Optional
 from .theme_manager import ThemeManager
 from .user_config import UserConfigManager
+
+# Import dialog class with lazy loading to avoid circular imports
+def get_edit_display_name_dialog():
+    """Lazy import to avoid circular imports"""
+    project_root = Path(__file__).parent.parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    
+    from src.views.components.dialogs.edit_display_name_dialog import EditDisplayNameDialog
+    return EditDisplayNameDialog
 
 
 class SettingsManager:
@@ -12,6 +24,9 @@ class SettingsManager:
         self.theme_manager = theme_manager
         self.theme_change_callback: Optional[Callable[[str], None]] = None
         self.color_change_callback: Optional[Callable[[str], None]] = None
+        self.display_name_change_callback: Optional[Callable[[], None]] = None
+        self.current_page: Optional[ft.Page] = None
+        self.current_settings_content: Optional[ft.Container] = None
     
     def set_theme_change_callback(self, callback: Callable[[str], None]):
         """Set callback for theme mode changes"""
@@ -20,6 +35,10 @@ class SettingsManager:
     def set_color_change_callback(self, callback: Callable[[str], None]):
         """Set callback for color theme changes"""
         self.color_change_callback = callback
+    
+    def set_display_name_change_callback(self, callback: Callable[[], None]):
+        """Set callback for display name changes"""
+        self.display_name_change_callback = callback
     
     def toggle_theme_mode(self, page: ft.Page):
         """Toggle between light and dark theme"""
@@ -59,6 +78,31 @@ class SettingsManager:
         """Get current theme color"""
         return self.user_config.get_theme_color()
     
+    def edit_display_name(self):
+        """Show dialog to edit display name"""
+        if not self.current_page:
+            return
+            
+        current_name = self.user_config.get_display_name() or ""
+        
+        def on_name_saved(new_name: str):
+            self.user_config.save_display_name(new_name)
+            if self.display_name_change_callback:
+                self.display_name_change_callback()
+            # Refresh the settings view to show the updated name
+            self._refresh_settings_view()
+        
+        EditDisplayNameDialog = get_edit_display_name_dialog()
+        dialog = EditDisplayNameDialog(self.current_page, current_name, on_name_saved)
+        dialog.show()
+    
+    def _refresh_settings_view(self):
+        """Refresh the current settings view"""
+        if self.current_page and self.current_settings_content:
+            updated_content = self.create_settings_view(self.current_page)
+            self.current_settings_content.content = updated_content.content
+            self.current_page.update()
+    
     def apply_saved_settings(self, page: ft.Page):
         """Apply all saved settings to the page"""
         # Apply theme mode
@@ -75,6 +119,8 @@ class SettingsManager:
     
     def create_settings_view(self, page: ft.Page) -> ft.Container:
         """Create the settings view content"""
+        self.current_page = page  # Store page reference for dialogs
+        
         theme_colors = self.theme_manager.get_available_colors()
         current_color = self.get_current_theme_color()
         
@@ -125,7 +171,33 @@ class SettingsManager:
                 ),
                 ft.Divider(),
                 
+                # Personal Settings Section
+                ft.Text(
+                    "Personal Settings",
+                    size=18,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.colors.GREY_800
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.icons.PERSON),
+                    title=ft.Text("Display Name"),
+                    subtitle=ft.Text(self.user_config.get_display_name() or "Not set"),
+                    trailing=ft.IconButton(
+                        icon=ft.icons.EDIT,
+                        tooltip="Edit display name",
+                        on_click=lambda e: self.edit_display_name()
+                    )
+                ),
+                
+                ft.Container(height=20),
+                
                 # Theme Mode Setting
+                ft.Text(
+                    "Appearance",
+                    size=18,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.colors.GREY_800
+                ),
                 ft.ListTile(
                     leading=ft.Icon(ft.icons.BRIGHTNESS_6),
                     title=ft.Text("Theme Mode"),
@@ -178,8 +250,8 @@ class SettingsManager:
                     subtitle=ft.Text("Python & Flet Framework"),
                 ),
                 ft.ListTile(
-                    leading=ft.Icon(ft.icons.PERSON),
-                    title=ft.Text("Current User"),
+                    leading=ft.Icon(ft.icons.COMPUTER),
+                    title=ft.Text("System User"),
                     subtitle=ft.Text(self.user_config.get_username()),
                 ),
             ]),
@@ -187,4 +259,5 @@ class SettingsManager:
             expand=True,
         )
         
+        self.current_settings_content = settings_content  # Store reference for refreshing
         return settings_content

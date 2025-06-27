@@ -3,6 +3,7 @@ from typing import Dict
 from views import MainView, HomeView, RecentProjectsView, NewProjectView
 from views.pages.sources_view import SourcesView
 from views.pages.reports_view import ReportsView
+from views.components.dialogs.first_time_setup_dialog import FirstTimeSetupDialog
 from models import (
     UserConfigManager,
     ThemeManager,
@@ -30,7 +31,7 @@ class AppController:
         self.settings_manager.apply_saved_settings(page)
 
         # Initialize main view
-        self.main_view = MainView(page, self.theme_manager)
+        self.main_view = MainView(page, self.theme_manager, self.user_config)
 
         # Set up callbacks
         self._setup_callbacks()
@@ -86,6 +87,7 @@ class AppController:
         # Settings callbacks
         self.settings_manager.set_theme_change_callback(self._handle_theme_change)
         self.settings_manager.set_color_change_callback(self._handle_color_change)
+        self.settings_manager.set_display_name_change_callback(self._handle_display_name_change)
 
     def _handle_navigation(self, page_name: str):
         """Handle navigation between pages"""
@@ -187,6 +189,12 @@ class AppController:
         # Refresh current page to apply new colors
         current_page = self.navigation_manager.get_current_page()
         self._handle_navigation(current_page)
+    
+    def _handle_display_name_change(self):
+        """Handle display name changes"""
+        # Refresh the main view app bar to show updated greeting
+        self.main_view.refresh_app_bar()
+        self.page.update()
 
     def add_sample_recent_site(self, display_name: str, path: str):
         """Add a sample recent site (for testing purposes)"""
@@ -398,8 +406,29 @@ class AppController:
         # Show the main view
         self.main_view.show()
 
-        # Always navigate to home page on startup (ignore saved last page)
-        self._handle_navigation("home")
+        # Check if user needs first-time setup
+        if self.user_config.needs_setup():
+            self._show_first_time_setup()
+        else:
+            # Always navigate to home page on startup (ignore saved last page)
+            self._handle_navigation("home")
+    
+    def _show_first_time_setup(self):
+        """Show first-time setup dialog"""
+        def on_setup_complete(display_name: str):
+            if display_name:  # User provided a display name
+                self.user_config.save_display_name(display_name)
+            self.user_config.mark_setup_completed()
+            print(f"Setup completed for user: {self.user_config.get_greeting()}")
+            
+            # Refresh the app bar to show the greeting
+            self.main_view.refresh_app_bar()
+            
+            # Navigate to home after setup
+            self._handle_navigation("home")
+        
+        setup_dialog = FirstTimeSetupDialog(self.page, on_setup_complete)
+        setup_dialog.show()
 
     def cleanup(self):
         """Clean up and save configuration before exit"""

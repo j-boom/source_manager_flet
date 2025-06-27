@@ -3,9 +3,10 @@ from typing import Optional, Callable
 
 
 class MainView:
-    def __init__(self, page: ft.Page, theme_manager=None):
+    def __init__(self, page: ft.Page, theme_manager=None, user_config=None):
         self.page = page
         self.theme_manager = theme_manager
+        self.user_config = user_config
         self.page.window_width = 1200
         self.page.window_height = 800
         self.page.window_min_width = 800
@@ -22,24 +23,46 @@ class MainView:
         
     def _create_app_bar(self) -> ft.AppBar:
         """Create the application bar"""
+        # Create greeting text for the right side
+        greeting_text = None
+        if self.user_config:
+            greeting = self.user_config.get_greeting()
+            if greeting:
+                greeting_text = ft.Text(
+                    greeting,
+                    size=16,
+                    weight=ft.FontWeight.W_500,
+                    color=ft.colors.WHITE
+                )
+        
+        # Create actions list with greeting first (if exists)
+        actions = []
+        if greeting_text:
+            actions.append(ft.Container(
+                content=greeting_text,
+                padding=ft.padding.only(right=10)
+            ))
+        
+        actions.extend([
+            ft.IconButton(
+                icon=ft.icons.SETTINGS,
+                icon_color=ft.colors.WHITE,
+                tooltip="Settings",
+                on_click=self._on_settings_click
+            ),
+            ft.IconButton(
+                icon=ft.icons.HELP,
+                icon_color=ft.colors.WHITE,
+                tooltip="Help",
+                on_click=self._on_help_click
+            ),
+        ])
+        
         return ft.AppBar(
             title=ft.Text("Source Manager", size=20, weight=ft.FontWeight.BOLD),
             bgcolor=ft.colors.BLUE_700,
             color=ft.colors.WHITE,
-            actions=[
-                ft.IconButton(
-                    icon=ft.icons.SETTINGS,
-                    icon_color=ft.colors.WHITE,
-                    tooltip="Settings",
-                    on_click=self._on_settings_click
-                ),
-                ft.IconButton(
-                    icon=ft.icons.HELP,
-                    icon_color=ft.colors.WHITE,
-                    tooltip="Help",
-                    on_click=self._on_help_click
-                ),
-            ]
+            actions=actions
         )
     
     def _create_sidebar(self) -> ft.NavigationRail:
@@ -219,4 +242,10 @@ class MainView:
             nested_container = self.content_area.content.controls[3]
             if hasattr(nested_container, 'bgcolor'):
                 nested_container.bgcolor = self._get_secondary_bg_color()
+        self.page.update()
+
+    def refresh_app_bar(self):
+        """Refresh the app bar with updated greeting"""
+        self.app_bar = self._create_app_bar()
+        self.page.appbar = self.app_bar
         self.page.update()

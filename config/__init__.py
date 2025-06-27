@@ -3,6 +3,11 @@ Configuration package initialization.
 """
 from .app_config import *
 from .logging_config import setup_logging
+from .data_models import (
+    ProjectData, ProjectMetadata, CustomerInfo, ProjectSource, ProjectCitation,
+    UserConfig, WindowConfig, ThemeConfig, RecentSite,
+    dataclass_to_json, json_to_dataclass
+)
 
 __all__ = [
     'PROJECT_ROOT', 'SRC_DIR', 'DATA_DIR', 'LOGS_DIR', 'TEMP_DIR',
@@ -12,5 +17,9 @@ __all__ = [
     'DEFAULT_WINDOW_WIDTH', 'DEFAULT_WINDOW_HEIGHT',
     'MIN_WINDOW_WIDTH', 'MIN_WINDOW_HEIGHT',
     'RECENT_PROJECTS_LIMIT', 'RECENT_SITES_LIMIT',
-    'setup_logging'
+    'setup_logging',
+    # Data models
+    'ProjectData', 'ProjectMetadata', 'CustomerInfo', 'ProjectSource', 'ProjectCitation',
+    'UserConfig', 'WindowConfig', 'ThemeConfig', 'RecentSite',
+    'dataclass_to_json', 'json_to_dataclass'
 ]
