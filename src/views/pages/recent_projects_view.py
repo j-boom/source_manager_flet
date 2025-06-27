@@ -185,30 +185,26 @@ class RecentProjectsView(BaseView):
                 ),
                 
                 # Project info column
-                ft.Column([
-                    # Display name (either text or editable field)
-                    ft.Stack([
-                        display_name_text,
-                        display_name_field
-                    ]),
-                    # Path info
-                    ft.Row([
-                        ft.Text(
-                            dir_name,
-                            size=12,
-                            color=self._get_secondary_text_color(),
-                            weight=ft.FontWeight.W_500
-                        ),
-                        ft.Text(" • ", size=12, color=self._get_secondary_text_color()),
-                        ft.Text(
-                            path,
-                            size=12,
-                            color=self._get_secondary_text_color(),
-                            overflow=ft.TextOverflow.ELLIPSIS,
-                            expand=True
-                        )
-                    ], spacing=0)
-                ], spacing=4, expand=True),
+                ft.Container(
+                    content=ft.Column([
+                        # Display name (either text or editable field)
+                        ft.Stack([
+                            display_name_text,
+                            display_name_field
+                        ]),
+                        # Path info
+                        ft.Row([
+                            ft.Text(
+                                dir_name,
+                                size=12,
+                                color=self._get_secondary_text_color(),
+                                weight=ft.FontWeight.W_500
+                            ),
+                        ], spacing=0)
+                    ], spacing=4),
+                    padding=ft.padding.only(left=10),
+                    expand=True
+                ),
                 
                 # Action buttons
                 ft.Row([

@@ -137,34 +137,52 @@ class UserConfigManager:
         return self.username
     
     def get_recent_sites(self) -> list:
-        """Get list of recent sites, filtering out any with missing JSON files"""
+        """Get list of recent sites, filtering out any with missing JSON files and syncing display names"""
         import os
         
         recent_sites = self.config.get("recent_sites", [])
         
-        # Filter out sites where the JSON file no longer exists
+        # Filter out sites where the JSON file no longer exists and sync display names
         valid_sites = []
         sites_to_remove = []
+        sites_updated = False
         
         for site in recent_sites:
             path = site.get("path", "")
             if path and os.path.exists(path):
+                # Get the current display name from the JSON file (source of truth)
+                json_display_name = self._get_display_name_from_project_json(path)
+                current_display_name = site.get("display_name", "")
+                
+                # If the JSON file has a different display name, update it
+                if json_display_name and json_display_name != current_display_name:
+                    site["display_name"] = json_display_name
+                    sites_updated = True
+                    print(f"🔄 Synced display name from JSON: {json_display_name}")
+                
                 valid_sites.append(site)
             else:
                 sites_to_remove.append(site)
                 print(f"⚠️  Removing missing project from recent list: {site.get('display_name', 'Unknown')} ({path})")
         
-        # If we found missing files, update the config to remove them
-        if sites_to_remove:
+        # If we found missing files or updated display names, save the config
+        if sites_to_remove or sites_updated:
             self.config["recent_sites"] = valid_sites
             self.save_config()
-            print(f"✅ Cleaned up {len(sites_to_remove)} missing project(s) from recent list")
+            if sites_to_remove:
+                print(f"✅ Cleaned up {len(sites_to_remove)} missing project(s) from recent list")
+            if sites_updated:
+                print(f"✅ Synced display names from project JSON files")
         
         return valid_sites
     
     def add_recent_site(self, display_name: str, path: str):
         """Add a site to recent sites list (max 10 items)"""
         recent_sites = self.get_recent_sites()
+        
+        # If no display_name provided, try to get it from the project JSON
+        if not display_name.strip():
+            display_name = self._get_display_name_from_project_json(path) or "Unknown Project"
         
         # Create new site entry
         new_site = {
@@ -185,6 +203,31 @@ class UserConfigManager:
         self.config["recent_sites"] = recent_sites
         self.save_config()
     
+    def _get_display_name_from_project_json(self, json_path: str) -> str:
+        """Get the display name (document_title) from a project JSON file"""
+        try:
+            import json
+            from pathlib import Path
+            
+            json_file = Path(json_path)
+            if json_file.exists():
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    project_data = json.load(f)
+                
+                # Try to get document_title, fall back to project_title, then project_id
+                display_name = (
+                    project_data.get("document_title") or 
+                    project_data.get("project_title") or 
+                    project_data.get("project_id", "Unknown Project")
+                )
+                
+                return display_name if display_name else "Unknown Project"
+            
+        except Exception as e:
+            print(f"Error reading display name from project JSON: {e}")
+        
+        return "Unknown Project"
+    
     def remove_recent_site(self, path: str):
         """Remove a site from recent sites list"""
         recent_sites = self.get_recent_sites()
@@ -193,7 +236,11 @@ class UserConfigManager:
         self.save_config()
     
     def update_recent_site_display_name(self, path: str, new_display_name: str):
-        """Update the display name for a specific recent site"""
+        """Update the display name for a specific recent site and sync with project JSON"""
+        # First, update the document_title in the project JSON file (source of truth)
+        self._sync_display_name_to_project_json(path, new_display_name)
+        
+        # Then update the recent sites display name to match
         recent_sites = self.get_recent_sites()
         for site in recent_sites:
             if site["path"] == path:
@@ -201,6 +248,32 @@ class UserConfigManager:
                 break
         self.config["recent_sites"] = recent_sites
         self.save_config()
+    
+    def _sync_display_name_to_project_json(self, json_path: str, display_name: str):
+        """Sync the display name to the document_title field in the project JSON file"""
+        try:
+            import json
+            from pathlib import Path
+            
+            json_file = Path(json_path)
+            if json_file.exists():
+                # Read the current JSON data
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    project_data = json.load(f)
+                
+                # Update the document_title field
+                project_data["document_title"] = display_name
+                
+                # Write back to the file
+                with open(json_file, 'w', encoding='utf-8') as f:
+                    json.dump(project_data, f, indent=4, ensure_ascii=False)
+                
+                print(f"✅ Synced display name to project JSON: {display_name}")
+            else:
+                print(f"⚠️  Project JSON file not found: {json_path}")
+                
+        except Exception as e:
+            print(f"❌ Error syncing display name to project JSON: {e}")
 
     def clear_recent_sites(self):
         """Clear all recent sites"""
