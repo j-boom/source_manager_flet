@@ -6,41 +6,43 @@ All JSON data structures should be defined here as dataclasses
 from dataclasses import dataclass, asdict, field
 from typing import Optional, Dict, Any, List
 import json
-import uuid
 from datetime import datetime
 from pathlib import Path
+from config.enums import ProjectType
 
 
 @dataclass
 class ProjectMetadata:
     """Metadata section of project JSON files"""
+
     folder_path: str
     filename: str
-    
+    requestor: Optional[str] = None  # Requestor's name
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ProjectMetadata':
+    def from_dict(cls, data: Dict[str, Any]) -> "ProjectMetadata":
         """Create instance from dictionary"""
         return cls(**data)
 
 
 @dataclass
-class CustomerInfo:
+class FacilityInfo:
     """Customer information section of project JSON files"""
-    key: str
+
     name: str
     number: str
     suffix: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'CustomerInfo':
+    def from_dict(cls, data: Dict[str, Any]) -> "FacilityInfo":
         """Create instance from dictionary"""
         return cls(**data)
 
@@ -48,47 +50,43 @@ class CustomerInfo:
 @dataclass
 class ProjectSource:
     """Source reference within a project"""
+
     source_id: str  # Reference to the master source ID
     usage_notes: str  # How this source is used in this project
     user_description: str  # User's description for this project context
-    date_added: str  # When added to this project
-    added_by: str  # Who added it to this project
-    citation_format: Optional[str] = None  # Custom citation format for this project
-    
+    date_of_information: str  # When added to this project
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ProjectSource':
+    def from_dict(cls, data: Dict[str, Any]) -> "ProjectSource":
         """Create instance from dictionary"""
         return cls(**data)
 
 
 @dataclass
-class ProjectCitation:
+class SlideCitations:
     """Citation/slide reference within a project"""
-    citation_id: str  # Unique citation ID within this project
-    title: str  # Citation/slide title
-    content: Optional[str] = None  # Citation content or slide notes
-    source_references: Optional[List[str]] = None  # List of source IDs this citation references
-    slide_number: Optional[int] = None  # Slide number if this is a presentation citation
-    date_created: str = ""  # When citation was created
-    created_by: str = ""  # Who created the citation
-    last_modified: str = ""  # Last modification date
-    modified_by: str = ""  # Who last modified
-    
+
+    slide_id: str  # Unique citation ID within this project from ppt
+    slide_title: str  # Citation/slide title
+    source_references: Optional[List[str]] = (
+        None  # List of source IDs this citation references
+    )
+
     def __post_init__(self):
         """Initialize source_references list if None"""
         if self.source_references is None:
             self.source_references = []
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ProjectCitation':
+    def from_dict(cls, data: Dict[str, Any]) -> "SlideCitations":
         """Create instance from dictionary"""
         return cls(**data)
 
@@ -96,158 +94,174 @@ class ProjectCitation:
 @dataclass
 class ProjectData:
     """Complete project data structure for JSON persistence"""
-    project_id: str
-    project_suffix: str
-    project_type: str
+
+    uuid: str
+    project_type: ProjectType
     created_date: str
     metadata: ProjectMetadata
-    uuid: str
-    customer: CustomerInfo
     title: str
     document_title: Optional[str] = None
     description: Optional[str] = None
-    sources: Optional[List[ProjectSource]] = None  # Project-specific sources
-    citations: Optional[List[ProjectCitation]] = None  # Project-specific citations/slides
-    
+    sources: List[ProjectSource] = field(default_factory=list)  # Project-specific sources
+    citations: Optional[List[SlideCitations]] = (
+        None  # Project-specific citations/slides
+    )
+
     def __post_init__(self):
         """Ensure nested objects are dataclass instances"""
         if isinstance(self.metadata, dict):
             self.metadata = ProjectMetadata.from_dict(self.metadata)
-        if isinstance(self.customer, dict):
-            self.customer = CustomerInfo.from_dict(self.customer)
-        
+
         # Initialize sources list if None
         if self.sources is None:
             self.sources = []
-        elif self.sources and len(self.sources) > 0 and isinstance(self.sources[0], dict):
-            self.sources = [ProjectSource.from_dict(source) for source in self.sources if isinstance(source, dict)]
-        
+        elif (
+            self.sources and len(self.sources) > 0 and isinstance(self.sources[0], dict)
+        ):
+            self.sources = [
+                ProjectSource.from_dict(source)
+                for source in self.sources
+                if isinstance(source, dict)
+            ]
+
         # Initialize citations list if None
         if self.citations is None:
             self.citations = []
-        elif self.citations and len(self.citations) > 0 and isinstance(self.citations[0], dict):
-            self.citations = [ProjectCitation.from_dict(citation) for citation in self.citations if isinstance(citation, dict)]
-    
+        elif (
+            self.citations
+            and len(self.citations) > 0
+            and isinstance(self.citations[0], dict)
+        ):
+            self.citations = [
+                SlideCitations.from_dict(citation)
+                for citation in self.citations
+                if isinstance(citation, dict)
+            ]
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         result = asdict(self)
         return result
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ProjectData':
+    def from_dict(cls, data: Dict[str, Any]) -> "ProjectData":
         """Create instance from dictionary"""
         return cls(**data)
-    
+
     def save_to_json(self, file_path: Path) -> bool:
         """Save project data to JSON file"""
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(self.to_dict(), f, indent=4, ensure_ascii=False)
             return True
         except Exception as e:
             print(f"Error saving project to {file_path}: {e}")
             return False
-    
+
     @classmethod
-    def load_from_json(cls, file_path: Path) -> Optional['ProjectData']:
+    def load_from_json(cls, file_path: Path) -> Optional["ProjectData"]:
         """Load project data from JSON file"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return cls.from_dict(data)
         except Exception as e:
             print(f"Error loading project from {file_path}: {e}")
             return None
-    
+
     # Helper methods for managing sources
-    def add_source(self, source_id: str, usage_notes: str, user_description: str, 
-                   added_by: str, citation_format: Optional[str] = None) -> None:
+    def add_source(
+        self,
+        source_id: str,
+        usage_notes: str,
+        user_description: str,
+        added_by: str,
+        citation_format: Optional[str] = None,
+    ) -> None:
         """Add a source to this project"""
         if self.sources is None:
             self.sources = []
-        
+
         # Remove existing source if it exists (to update it)
         self.sources = [s for s in self.sources if s.source_id != source_id]
-        
+
         # Add new source
         new_source = ProjectSource(
             source_id=source_id,
             usage_notes=usage_notes,
             user_description=user_description,
-            date_added=datetime.now().isoformat(),
-            added_by=added_by,
-            citation_format=citation_format
+            date_of_information=datetime.now().isoformat(),
         )
         self.sources.append(new_source)
-    
+
     def remove_source(self, source_id: str) -> bool:
         """Remove a source from this project"""
         if self.sources is None:
             return False
-        
+
         original_count = len(self.sources)
         self.sources = [s for s in self.sources if s.source_id != source_id]
         return len(self.sources) < original_count
-    
+
     def get_source(self, source_id: str) -> Optional[ProjectSource]:
         """Get a specific source from this project"""
         if self.sources is None:
             return None
-        
+
         for source in self.sources:
             if source.source_id == source_id:
                 return source
         return None
-    
+
     # Helper methods for managing citations
-    def add_citation(self, citation_id: str, title: str, content: Optional[str] = None,
-                     source_references: Optional[List[str]] = None, slide_number: Optional[int] = None,
-                     created_by: str = "") -> None:
+    def add_citation(
+        self,
+        slide_id: str,
+        title: str,
+        content: Optional[str] = None,
+        source_references: Optional[List[str]] = None,
+        slide_number: Optional[int] = None,
+        created_by: str = "",
+    ) -> None:
         """Add a citation to this project"""
         if self.citations is None:
             self.citations = []
-        
+
         # Remove existing citation if it exists (to update it)
-        self.citations = [c for c in self.citations if c.citation_id != citation_id]
-        
+        self.citations = [c for c in self.citations if c.slide_id != slide_id]
+
         # Add new citation
-        new_citation = ProjectCitation(
-            citation_id=citation_id,
-            title=title,
-            content=content,
+        new_citation = SlideCitations(
+            slide_id=slide_id,
+            slide_title=title,
             source_references=source_references or [],
-            slide_number=slide_number,
-            date_created=datetime.now().isoformat(),
-            created_by=created_by,
-            last_modified=datetime.now().isoformat(),
-            modified_by=created_by
         )
         self.citations.append(new_citation)
-    
-    def remove_citation(self, citation_id: str) -> bool:
+
+    def remove_citation(self, slide_id: str) -> bool:
         """Remove a citation from this project"""
         if self.citations is None:
             return False
-        
+
         original_count = len(self.citations)
-        self.citations = [c for c in self.citations if c.citation_id != citation_id]
+        self.citations = [c for c in self.citations if c.slide_id != slide_id]
         return len(self.citations) < original_count
-    
-    def get_citation(self, citation_id: str) -> Optional[ProjectCitation]:
+
+    def get_citation(self, slide_id: str) -> Optional[SlideCitations]:
         """Get a specific citation from this project"""
         if self.citations is None:
             return None
-        
+
         for citation in self.citations:
-            if citation.citation_id == citation_id:
+            if citation.slide_id == slide_id:
                 return citation
         return None
-    
-    def get_citations_by_source(self, source_id: str) -> List[ProjectCitation]:
+
+    def get_citations_by_source(self, source_id: str) -> List[SlideCitations]:
         """Get all citations that reference a specific source"""
         if self.citations is None:
             return []
-        
+
         matching_citations = []
         for citation in self.citations:
             if citation.source_references and source_id in citation.source_references:
@@ -258,18 +272,19 @@ class ProjectData:
 @dataclass
 class WindowConfig:
     """Window configuration for user settings"""
+
     width: int
     height: int
     x: Optional[int] = None
     y: Optional[int] = None
     maximized: bool = False
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'WindowConfig':
+    def from_dict(cls, data: Dict[str, Any]) -> "WindowConfig":
         """Create instance from dictionary"""
         return cls(**data)
 
@@ -277,15 +292,18 @@ class WindowConfig:
 @dataclass
 class ThemeConfig:
     """Theme configuration for user settings"""
+
     mode: str = "light"  # "light" or "dark"
-    color: str = "blue"  # "red", "blue", "orange", "green", "yellow", "purple", "indigo"
-    
+    color: str = (
+        "blue"  # "red", "blue", "orange", "green", "yellow", "purple", "indigo"
+    )
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ThemeConfig':
+    def from_dict(cls, data: Dict[str, Any]) -> "ThemeConfig":
         """Create instance from dictionary"""
         return cls(**data)
 
@@ -293,15 +311,16 @@ class ThemeConfig:
 @dataclass
 class RecentSite:
     """Recent site entry for user config"""
+
     display_name: str
     path: str
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'RecentSite':
+    def from_dict(cls, data: Dict[str, Any]) -> "RecentSite":
         """Create instance from dictionary"""
         return cls(**data)
 
@@ -309,46 +328,55 @@ class RecentSite:
 @dataclass
 class UserConfig:
     """Complete user configuration data structure"""
+
     window: WindowConfig
     theme: ThemeConfig
     last_page: str = "home"
     recent_sites: List[RecentSite] = field(default_factory=list)
     display_name: Optional[str] = None  # User's display name for personalization
     setup_completed: bool = False  # Whether initial setup is complete
-    
+
     def __post_init__(self):
         """Ensure nested objects are dataclass instances"""
         if isinstance(self.window, dict):
             self.window = WindowConfig.from_dict(self.window)
         if isinstance(self.theme, dict):
             self.theme = ThemeConfig.from_dict(self.theme)
-        if self.recent_sites and len(self.recent_sites) > 0 and isinstance(self.recent_sites[0], dict):
-            self.recent_sites = [RecentSite.from_dict(site) for site in self.recent_sites if isinstance(site, dict)]
-    
+        if (
+            self.recent_sites
+            and len(self.recent_sites) > 0
+            and isinstance(self.recent_sites[0], dict)
+        ):
+            self.recent_sites = [
+                RecentSite.from_dict(site)
+                for site in self.recent_sites
+                if isinstance(site, dict)
+            ]
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'UserConfig':
+    def from_dict(cls, data: Dict[str, Any]) -> "UserConfig":
         """Create instance from dictionary"""
         return cls(**data)
-    
+
     def save_to_json(self, file_path: Path) -> bool:
         """Save user config to JSON file"""
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(self.to_dict(), f, indent=4, ensure_ascii=False)
             return True
         except Exception as e:
             print(f"Error saving user config to {file_path}: {e}")
             return False
-    
+
     @classmethod
-    def load_from_json(cls, file_path: Path) -> Optional['UserConfig']:
+    def load_from_json(cls, file_path: Path) -> Optional["UserConfig"]:
         """Load user config from JSON file"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return cls.from_dict(data)
         except Exception as e:
@@ -360,7 +388,7 @@ class UserConfig:
 def dataclass_to_json(obj, file_path: Path) -> bool:
     """Save any dataclass to JSON file"""
     try:
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(asdict(obj), f, indent=4, ensure_ascii=False)
         return True
     except Exception as e:
@@ -371,7 +399,7 @@ def dataclass_to_json(obj, file_path: Path) -> bool:
 def json_to_dataclass(cls, file_path: Path):
     """Load JSON file as dataclass"""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)
     except Exception as e:

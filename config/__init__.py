@@ -4,7 +4,7 @@ Configuration package initialization.
 from .app_config import *
 from .logging_config import setup_logging
 from .data_models import (
-    ProjectData, ProjectMetadata, CustomerInfo, ProjectSource, ProjectCitation,
+    ProjectData, ProjectMetadata, FacilityInfo, ProjectSource, SlideCitations,
     UserConfig, WindowConfig, ThemeConfig, RecentSite,
     dataclass_to_json, json_to_dataclass
 )
@@ -19,7 +19,7 @@ __all__ = [
     'RECENT_PROJECTS_LIMIT', 'RECENT_SITES_LIMIT',
     'setup_logging',
     # Data models
-    'ProjectData', 'ProjectMetadata', 'CustomerInfo', 'ProjectSource', 'ProjectCitation',
+    'ProjectData', 'ProjectMetadata', 'FacilityInfo', 'ProjectSource', 'SlideCitations',
     'UserConfig', 'WindowConfig', 'ThemeConfig', 'RecentSite',
     'dataclass_to_json', 'json_to_dataclass'
 ]
