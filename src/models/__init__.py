@@ -1,13 +1,23 @@
-from .user_config import UserConfigManager
-from .theme_manager import ThemeManager
-from .window_manager import WindowManager
-from .navigation_manager import NavigationManager
-from .settings_manager import SettingsManager
+"""
+The project models module.
+This module defines the data structures for managing projects and their
+relationship to source records.
+"""
+
+from .project_models import Project, ProjectSourceLink, ProjectType
+from .source_models import SourceRecord
+from .user_config_models import UserConfig, WindowConfig, ThemeConfig, RecentProject
 
 __all__ = [
-    'UserConfigManager',
-    'ThemeManager', 
-    'WindowManager',
-    'NavigationManager',
-    'SettingsManager'
+    # Project Models
+    "Project",
+    "ProjectSourceLink",
+    "ProjectType",
+    # Source Models
+    "SourceRecord",
+    # User Config Models
+    "UserConfig",
+    "WindowConfig",
+    "ThemeConfig",
+    "RecentProject",
 ]

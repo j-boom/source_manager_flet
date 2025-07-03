@@ -1,0 +1,79 @@
+"""
+User Configuration Data Models
+
+This file defines the authoritative data structures for user-specific settings,
+such as window state, theme preferences, and recent projects.
+"""
+from __future__ import annotations
+import json
+import logging
+from pathlib import Path
+from dataclasses import dataclass, field, asdict, fields
+from typing import List, Optional, Dict, Any
+
+@dataclass
+class WindowConfig:
+    """Stores the state of the application window."""
+    width: int
+    height: int
+    x: Optional[int] = None
+    y: Optional[int] = None
+    maximized: bool = False
+
+@dataclass
+class ThemeConfig:
+    """Stores the user's selected theme."""
+    mode: str  # e.g., "light" or "dark"
+    color: str # e.g., "blue"
+
+@dataclass
+class RecentProject:
+    """Stores a reference to a recently opened project."""
+    display_name: str
+    path: str
+
+@dataclass
+class UserConfig:
+    """The main container for all user-specific settings."""
+    window: WindowConfig
+    theme: ThemeConfig
+    display_name: Optional[str] = None
+    setup_completed: bool = False
+    recent_projects: List[RecentProject] = field(default_factory=list)
+    last_page: str = "home"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the entire config into a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> UserConfig:
+        """Creates a UserConfig instance from a dictionary."""
+        # Handle nested dataclasses
+        data['window'] = WindowConfig(**data.get('window', {}))
+        data['theme'] = ThemeConfig(**data.get('theme', {}))
+        data['recent_projects'] = [RecentProject(**rp) for rp in data.get('recent_projects', [])]
+        
+        # Ensure only valid fields are passed to the constructor
+        field_names = {f.name for f in fields(cls)}
+        filtered_data = {k: v for k, v in data.items() if k in field_names}
+        return cls(**filtered_data)
+
+    def save_to_json(self, file_path: Path):
+        """Saves the current config state to a JSON file."""
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=4)
+
+    @classmethod
+    def load_from_json(cls, file_path: Path) -> Optional[UserConfig]:
+        """Loads a UserConfig from a JSON file, returning None if it fails."""
+        if not file_path.exists():
+            return None
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return cls.from_dict(data)
+        except (json.JSONDecodeError, TypeError, KeyError) as e:
+            logging.getLogger(__name__).error(f"Error loading user config from {file_path}: {e}")
+            return None

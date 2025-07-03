@@ -1,141 +1,124 @@
+"""
+Home View (Refactored)
+
+The main landing page for the application, providing quick actions and a welcome message.
+This view has been refactored to align with the application's MVC-like architecture.
+"""
+
 import flet as ft
-from ..base_view import BaseView
+from src.views.base_view import BaseView
 
 
 class HomeView(BaseView):
-    """Home page view"""
-    
-    def __init__(self, page: ft.Page, theme_manager=None, on_navigate=None):
-        super().__init__(page)
-        self.theme_manager = theme_manager
-        self.on_navigate = on_navigate
-    
+    """The Home page view."""
+
+    def __init__(self, page: ft.Page, controller):
+        """
+        Initializes the HomeView.
+
+        Args:
+            page: The Flet Page object.
+            controller: The main AppController instance.
+        """
+        super().__init__(page, controller)
+
     def build(self) -> ft.Control:
-        """Build the home page content"""
+        """Builds the UI for the home page content."""
+        # The view now simply uses the 'self.colors' property from BaseView.
+        # It's guaranteed to be safe and always return a valid color object.
+        colors = self.colors
+
+        # The root control is a Container to handle padding and alignment.
         return ft.Container(
-            content=ft.Column([
-                # Welcome Section
-                ft.Container(
-                    content=ft.Column([
-                        ft.Text(
-                            "Welcome to Source Manager",
-                            size=28,
-                            weight=ft.FontWeight.BOLD,
-                            color=ft.colors.BLUE_700
+            content=ft.Column(
+                [
+                    # Welcome Section
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Text(
+                                    "Welcome to Source Manager",
+                                    theme_style=ft.TextThemeStyle.DISPLAY_SMALL,
+                                    weight=ft.FontWeight.BOLD,
+                                    color=colors.primary,
+                                ),
+                                ft.Text(
+                                    "Manage your source code projects efficiently",
+                                    theme_style=ft.TextThemeStyle.TITLE_LARGE,
+                                    color=colors.on_surface_variant,
+                                ),
+                            ],
+                            spacing=5,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         ),
-                        ft.Text(
-                            "Manage your source code projects efficiently",
-                            size=16,
-                            color=ft.colors.GREY_600
-                        ),
-                    ]),
-                    padding=ft.padding.only(bottom=30)
-                ),
-                
-                # Quick Actions Cards
-                ft.Text(
-                    "Quick Actions",
-                    size=20,
-                    weight=ft.FontWeight.BOLD,
-                    color=ft.colors.GREY_800
-                ),
-                
-                ft.Row([
-                    self._create_action_card(
-                        "New Project",
-                        "Create a new source code project",
-                        ft.icons.ADD_CIRCLE_OUTLINE,
-                        ft.colors.GREEN,
-                        self._on_new_project
+                        padding=ft.padding.only(bottom=40, top=20),
                     ),
-                    ft.Container(width=50),  # 50px spacing
-                    self._create_action_card(
-                        "Import Sources",
-                        "Import existing source files",
-                        ft.icons.UPLOAD_FILE,
-                        ft.colors.BLUE,
-                        self._on_import_sources
+                    # Quick Actions Cards
+                    ft.Text(
+                        "Quick Actions", theme_style=ft.TextThemeStyle.HEADLINE_SMALL
                     ),
-                    ft.Container(width=50),  # 50px spacing
-                    self._create_action_card(
-                        "Recent Projects",
-                        "View recently accessed projects",
-                        ft.icons.HISTORY,
-                        ft.colors.ORANGE,
-                        self._on_recent_projects
+                    ft.Row(
+                        [
+                            self._create_action_card(
+                                "New Project",
+                                "Create a new project or folder.",
+                                ft.icons.ADD_CIRCLE_OUTLINE,
+                                lambda e: self.controller.navigate_to("new_project"),
+                            ),
+                            self._create_action_card(
+                                "Recent Projects",
+                                "View and open recent projects.",
+                                ft.icons.HISTORY,
+                                lambda e: self.controller.navigate_to(
+                                    "recent_projects"
+                                ),
+                            ),
+                            self._create_action_card(
+                                "Settings",
+                                "Configure application settings.",
+                                ft.icons.SETTINGS_OUTLINED,
+                                lambda e: self.controller.navigate_to("settings"),
+                            ),
+                        ],
+                        # Center the action cards
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=20,
                     ),
-                ], alignment=ft.MainAxisAlignment.CENTER),
-            ]),
-            padding=20,
+                ],
+                spacing=20,
+                scroll=ft.ScrollMode.ADAPTIVE,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            padding=ft.padding.all(30),
             expand=True,
         )
-    
-    def _create_action_card(self, title: str, description: str, icon: str, color: str, on_click) -> ft.Container:
-        """Create a quick action card"""
+
+    def _create_action_card(
+        self, title: str, description: str, icon: str, on_click
+    ) -> ft.Container:
+        """Helper method to create a consistent action card."""
+        colors = self.colors
+
         return ft.Container(
-            content=ft.Column([
-                ft.Icon(icon, size=40, color=color),
-                ft.Text(title, size=16, weight=ft.FontWeight.BOLD, color=self._get_card_title_color()),
-                ft.Text(description, size=12, color=self._get_card_description_color(), text_align=ft.TextAlign.CENTER),
-            ], 
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=10),
-            width=200,
-            height=150,
+            content=ft.Column(
+                [
+                    ft.Icon(icon, size=40, color=colors.primary),
+                    ft.Text(title, size=16, weight=ft.FontWeight.BOLD),
+                    ft.Text(
+                        description,
+                        size=12,
+                        color=colors.on_surface_variant,
+                        text_align=ft.TextAlign.CENTER,
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=10,
+            ),
+            width=220,
+            height=180,
             padding=20,
-            bgcolor=self._get_card_bg_color(),
-            border=ft.border.all(1, self._get_card_border_color()),
-            border_radius=8,
+            bgcolor=colors.surface_variant,
+            border_radius=ft.border_radius.all(12),
             ink=True,
             on_click=on_click,
         )
-    
-    def _get_card_bg_color(self) -> str:
-        """Get card background color based on theme"""
-        if self.theme_manager:
-            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
-            return self.theme_manager.get_card_bg_color(current_mode)
-        # Fallback
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.GREY_700
-        return ft.colors.WHITE
-    
-    def _get_card_border_color(self) -> str:
-        """Get card border color based on theme"""
-        if self.theme_manager:
-            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
-            return self.theme_manager.get_card_border_color(current_mode)
-        # Fallback
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.GREY_600
-        return ft.colors.GREY_300
-
-    def _get_card_title_color(self) -> str:
-        """Get card title text color based on theme"""
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.WHITE
-        return ft.colors.BLACK
-    
-    def _get_card_description_color(self) -> str:
-        """Get card description text color based on theme"""
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.GREY_400
-        return ft.colors.GREY_700
-
-    def _on_new_project(self, e):
-        """Handle new project action"""
-        if self.on_navigate:
-            self.on_navigate("new_project")
-        else:
-            print("New project clicked")
-    
-    def _on_import_sources(self, e):
-        """Handle import sources action (placeholder)"""
-        print("Import sources clicked - functionality to be implemented")
-
-    def _on_recent_projects(self, e):
-        """Handle recent projects action"""
-        if self.on_navigate:
-            self.on_navigate("recent_projects")
-        else:
-            print("Recent projects clicked")
