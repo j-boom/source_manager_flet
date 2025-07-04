@@ -23,13 +23,14 @@ from managers import (
     NavigationManager,
     SettingsManager,
     ProjectStateManager,
+    ProjectBrowserManager
 )
 
 # --- Services: Handle I/O and business logic ---
 from src.services.data_service import DataService
 
 # --- Views: Handle UI presentation ---
-from src.views import MainView
+from src.views import MainView, BaseView
 from src.views.pages import (
     HomeView,
     RecentProjectsView,
@@ -70,6 +71,7 @@ class AppController:
         self.window_manager = WindowManager(page, self.user_config_manager)
         self.navigation_manager = NavigationManager()
         self.project_state_manager = ProjectStateManager()
+        self.project_browser_manager = ProjectBrowserManager(self.data_service)
 
         # --- Views ---
         self.main_view = MainView(page, controller=self)

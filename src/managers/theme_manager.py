@@ -22,6 +22,11 @@ class ThemeManager:
         "yellow": ft.colors.YELLOW,
         "purple": ft.colors.PURPLE,
         "indigo": ft.colors.INDIGO,
+        "pink": ft.colors.PINK,
+        "teal": ft.colors.TEAL,
+        "cyan": ft.colors.CYAN,
+        "amber": ft.colors.AMBER,
+        "lime": ft.colors.LIME,
     }
 
     def __init__(self, initial_mode: str = "light", initial_color: str = "blue"):
