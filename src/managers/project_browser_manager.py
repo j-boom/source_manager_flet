@@ -36,9 +36,9 @@ class ProjectBrowserManager:
         self.displayed_items: List[Dict[str, Any]] = []
         self.breadcrumb_parts: List[str] = ["Projects"]
 
-    # --- Public Methods for View Interaction ---
+    # --- Private Properties for Internal Logic ---
     @property
-    def can_add_folder(self) -> bool:
+    def _can_add_folder(self) -> bool:
         """Determines if a new folder can be added."""
         if self.current_path == self.root_path:
             return False
@@ -50,18 +50,40 @@ class ProjectBrowserManager:
         )
 
     @property
-    def can_add_file(self) -> bool:
+    def _can_add_file(self) -> bool:
         """Determines if a new file can be added."""
         if self.current_path == self.root_path:
             return False
 
         folder_name = self.current_path.name
-        return (
-            bool(re.match(r"^\d{4}[A-Z]{2}\d{4}$", folder_name))
-        )
+        return bool(re.match(r"^\d{4}[A-Z]{2}\d{4}\b|^\d{10}\b", folder_name))
+
+    # --- Public Properties for View Display ---
+    @property
+    def action_button_config(self) -> Dict[str, Any]:
+        """Returns the configuration for the action button based on current state."""
+        if self._can_add_file:
+            return {
+                "visible": True,
+                "text": "Add Project",
+                "icon": "post_add",
+                "action": "add_project",
+            }
+
+        if self._can_add_folder:
+            return {
+                "visible": True,
+                "text": "New Folder",
+                "icon": "create_new_folder_outlined",
+                "action": "add_folder",
+            }
+
+        return {
+            "visible": False,
+        }
 
     # --- Public methods for View Interaction ---
-    
+
     def select_primary_folder(self, folder_name: Optional[str]):
         """Sets the primary folder and updates the state."""
         self.selected_primary_folder = folder_name

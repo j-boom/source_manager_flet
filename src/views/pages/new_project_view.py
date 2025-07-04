@@ -30,21 +30,22 @@ class NewProjectView(BaseView):
         self.file_list_view: Optional[ft.ListView] = None
         self.header_container: Optional[ft.Container] = None
 
+        # --- Action Button Placeholders ---
+        self.action_button: Optional[ft.ElevatedButton] = None
+
     def build(self) -> ft.Control:
         """Builds the UI for the view."""
         self.header_container = self._build_header()
+        self.breadcrumb_bar = self._build_breadcrumb_bar()
         self.directory_selection = self._build_directory_selection()
-        self.breadcrumb = self._build_breadcrumb()
         self.file_list_view = ft.ListView(spacing=5, expand=True)
+
         self._update_file_list()
 
         return ft.Column(
             controls=[
                 self.header_container,
-                ft.Container(
-                    self.breadcrumb,
-                    padding=ft.padding.symmetric(horizontal=20, vertical=5),
-                ),
+                self.breadcrumb_bar,
                 self.directory_selection,
                 ft.Container(
                     content=self.file_list_view,
@@ -61,35 +62,37 @@ class NewProjectView(BaseView):
 
     def _build_header(self) -> ft.Container:
         """Builds the header, which includes a search bar and action buttons."""
-        return ft.Container(
+        self.header_container = ft.Container(
             content=ft.Row(
                 [
-                    ft.Text(
-                        "Project Browser", theme_style=ft.TextThemeStyle.HEADLINE_SMALL
+                    ft.ElevatedButton(
+                        "Back",
+                        icon=ft.icons.ARROW_BACK,
+                        on_click=self._on_back_clicked,
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY
+                        ),
                     ),
-                    # ft.Row(self._get_header_actions()),
+                    ft.Container(expand=True),
+                    ft.Text("New Project", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Container(expand=True),
+                    ft.ElevatedButton(
+                        "Recent Projects",
+                        icon=ft.icons.HISTORY,
+                        on_click=self._on_recent_projects_clicked,
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY
+                        ),
+                    ),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                spacing=20,
             ),
-            padding=ft.padding.all(15),
-            border=ft.border.only(bottom=ft.BorderSide(1, self.colors.outline_variant)),
+            padding=ft.padding.all(20),
+            bgcolor=ft.colors.SURFACE_VARIANT,
+            border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.OUTLINE)),
         )
 
-    # def _get_header_actions(self) -> List[ft.Control]:
-    #     """Determines which action buttons to show."""
-    #     return [
-    #         self._build_action_button(
-    #             icon=ft.icons.CREATE_NEW_FOLDER_OUTLINED,
-    #             tooltip="Create New Folder",
-    #             on_click=self._on_add_folder_clicked,
-    #         ),
-    #         self._build_action_button(
-    #             icon=ft.icons.POST_ADD_ROUNDED,
-    #             tooltip="Create New Project",
-    #             on_click=self._on_add_project_clicked,
-    #         ),
-    #     ]
+        return self.header_container
 
     def _build_directory_selection(self) -> ft.Control:
         """Build directory selection section"""
@@ -126,20 +129,32 @@ class NewProjectView(BaseView):
         )
         return self.directory_selection_container
 
+    def _build_breadcrumb_bar(self) -> ft.Container:
+        """Builds the breadcrumb bar for navigation."""
+        self.breadcrumb = self._build_breadcrumb()
+        self.action_button = ft.ElevatedButton(
+            text="Add Project",
+            icon=ft.icons.POST_ADD,
+            on_click=self._on_add_project_clicked,
+            bgcolor=ft.colors.TERTIARY_CONTAINER,
+            color=ft.colors.ON_TERTIARY_CONTAINER,
+            visible=False,  # Initially hidden, updated later
+        )
+
+        return ft.Container(
+            content=ft.Row(
+                controls=[self.breadcrumb, self.action_button],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            padding=ft.padding.symmetric(horizontal=20, vertical=5),
+        )
+
     def _build_breadcrumb(self) -> Breadcrumb:
         """Builds the breadcrumb component."""
         return Breadcrumb(
             crumbs=self.browser_manager.breadcrumb_parts,
             on_crumb_click=self._on_breadcrumb_clicked,
-        )
-
-    def _build_action_button(self, icon: str, tooltip: str, on_click) -> ft.IconButton:
-        """Builds a consistent IconButton for the header."""
-        return ft.IconButton(
-            icon=icon,
-            tooltip=tooltip,
-            on_click=on_click,
-            icon_color=self.colors.primary,
         )
 
     # --- Event Handlers ---
@@ -161,6 +176,14 @@ class NewProjectView(BaseView):
         self.browser_manager.navigate_to_path(new_path)
         self._update_view()
 
+    def _on_back_clicked(self, e):
+        """Handles the back button click to navigate to the home view."""
+        self.controller.navigate_to("home")
+
+    def _on_recent_projects_clicked(self, e):
+        """Handles the recent projects button click."""
+        self.controller.navigate_to("recent_projects")
+
     def _on_item_clicked(self, e):
         """Handles a click on a file or folder in the list."""
         item_path = Path(e.control.data["path"])
@@ -179,9 +202,29 @@ class NewProjectView(BaseView):
         self.controller.show_create_folder_dialog(parent_path=self.current_path)
 
     # --- View Update Logic ---
+    def _update_action_button(self):
+        config = self.browser_manager.action_button_config
+        if not self.action_button:
+            return
+
+        self.action_button.visible = config.get("visible", False)
+
+        if self.action_button.visible:
+            self.action_button.text = config.get("text")
+            self.action_button.icon = config.get("icon")
+            action = config.get("action")
+
+            if action == "add_project":
+                self.action_button.on_click = self._on_add_project_clicked
+            elif action == "add_folder":
+                self.action_button.on_click = self._on_add_folder_clicked
+            else:
+                self.action_button.on_click = None
+
     def _update_view(self):
         """Refreshes the breadcrumb, header, and file list."""
         self.breadcrumb.update_crumbs(self.browser_manager.breadcrumb_parts)
+        self._update_action_button()
         self._update_file_list()
         self.page.update()
 
