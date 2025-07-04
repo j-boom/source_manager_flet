@@ -6,13 +6,8 @@ from typing import List, Dict, Any
 class RecentProjectsView(BaseView):
     """Recent projects view - displays list of recent sites"""
     
-    def __init__(self, page: ft.Page, theme_manager=None, user_config=None, on_open_project=None, on_back=None, on_navigate=None):
-        super().__init__(page)
-        self.theme_manager = theme_manager
-        self.user_config = user_config
-        self.on_open_project = on_open_project
-        self.on_back = on_back
-        self.on_navigate = on_navigate
+    def __init__(self, page: ft.Page, controller):
+        super().__init__(page, controller=controller)
     
     def build(self) -> ft.Control:
         """Build the recent projects page content"""

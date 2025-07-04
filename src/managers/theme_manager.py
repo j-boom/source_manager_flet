@@ -6,8 +6,10 @@ Flet's Material 3 `color_scheme_seed` to automatically generate complete
 light and dark mode color palettes from a single seed color. It also provides
 a failsafe default ColorScheme.
 """
+
 import flet as ft
 from typing import Dict
+
 
 class ThemeManager:
     """Manages the application's theme using a seed color."""
@@ -46,6 +48,10 @@ class ThemeManager:
         return ft.Theme(
             color_scheme_seed=self.get_seed_color(),
             font_family="Segoe UI",
+            appbar_theme=ft.AppBarTheme(
+                color=ft.colors.ON_PRIMARY_CONTAINER,
+                bgcolor=ft.colors.PRIMARY_CONTAINER,
+            ),
         )
 
     # --- NEW: Failsafe Default ColorScheme ---

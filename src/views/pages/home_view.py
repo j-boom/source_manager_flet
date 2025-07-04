@@ -40,12 +40,12 @@ class HomeView(BaseView):
                                     "Welcome to Source Manager",
                                     theme_style=ft.TextThemeStyle.DISPLAY_SMALL,
                                     weight=ft.FontWeight.BOLD,
-                                    color=colors.primary,
+                                    color=ft.colors.INVERSE_PRIMARY,
                                 ),
                                 ft.Text(
                                     "Manage your source code projects efficiently",
                                     theme_style=ft.TextThemeStyle.TITLE_LARGE,
-                                    color=colors.on_surface_variant,
+                                    color=ft.colors.SECONDARY,
                                 ),
                             ],
                             spacing=5,
@@ -74,10 +74,10 @@ class HomeView(BaseView):
                                 ),
                             ),
                             self._create_action_card(
-                                "Settings",
-                                "Configure application settings.",
-                                ft.icons.SETTINGS_OUTLINED,
-                                lambda e: self.controller.navigate_to("settings"),
+                                "Sources",
+                                "Search for Sources to add, or create a new one.",
+                                ft.icons.SOURCE_OUTLINED,
+                                lambda e: self.controller.navigate_to("sources"),
                             ),
                         ],
                         # Center the action cards
@@ -102,12 +102,12 @@ class HomeView(BaseView):
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Icon(icon, size=40, color=colors.primary),
-                    ft.Text(title, size=16, weight=ft.FontWeight.BOLD),
+                    ft.Icon(icon, size=40, color=ft.colors.ON_SECONDARY_CONTAINER),
+                    ft.Text(title, size=16, weight=ft.FontWeight.BOLD, color=ft.colors.ON_SECONDARY_CONTAINER),
                     ft.Text(
                         description,
                         size=12,
-                        color=colors.on_surface_variant,
+                        color=ft.colors.ON_SECONDARY_CONTAINER,
                         text_align=ft.TextAlign.CENTER,
                     ),
                 ],
@@ -117,7 +117,7 @@ class HomeView(BaseView):
             width=220,
             height=180,
             padding=20,
-            bgcolor=colors.surface_variant,
+            bgcolor=ft.colors.SECONDARY_CONTAINER,
             border_radius=ft.border_radius.all(12),
             ink=True,
             on_click=on_click,

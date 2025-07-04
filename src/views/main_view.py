@@ -2,8 +2,7 @@ import flet as ft
 from typing import Callable
 
 # --- Component Imports ---
-from components import AppBar, Sidebar
-
+from .components import AppBar, Sidebar
 # --- Configuration ---
 from config.app_config import PAGES
 
