@@ -49,17 +49,17 @@ PAGES = [
         "view_name": "HomeView",
     },
     {
-        "name": "new_project",
-        "label": "New Project",
-        "icon": ft.icons.CREATE_NEW_FOLDER_OUTLINED,
-        "selected_icon": ft.icons.CREATE_NEW_FOLDER,
+        "name": "project_view",
+        "label": "Project",
+        "icon": ft.icons.FOLDER_OUTLINED,
+        "selected_icon": ft.icons.FOLDER,
         "view_name": "NewProjectView",
     },
     {
         "name": "sources",
         "label": "Sources",
-        "icon": ft.icons.CODE_OUTLINED,
-        "selected_icon": ft.icons.CODE,
+        "icon": ft.icons.SOURCE_OUTLINED,
+        "selected_icon": ft.icons.SOURCE,
         "view_name": "SourcesView",
     },
     {
@@ -73,7 +73,7 @@ PAGES = [
 
 # --- CHANGE: Settings and Help are now defined as special pages ---
 SPECIAL_PAGES = {
-    "project_view": {"view_name": "ProjectView"},
+    "new_project": {"view_name": "NewProjectView"},
     "recent_projects": {"view_name": "RecentProjectsView"},
     "settings": {"view_name": "SettingsView"},
     "help": {"view_name": "HelpView"},

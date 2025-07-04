@@ -40,12 +40,13 @@ class HomeView(BaseView):
                                     "Welcome to Source Manager",
                                     theme_style=ft.TextThemeStyle.DISPLAY_SMALL,
                                     weight=ft.FontWeight.BOLD,
-                                    color=ft.colors.INVERSE_PRIMARY,
+                                    color=ft.colors.PRIMARY,
                                 ),
                                 ft.Text(
                                     "Manage your source code projects efficiently",
                                     theme_style=ft.TextThemeStyle.TITLE_LARGE,
-                                    color=ft.colors.SECONDARY,
+                                    color=ft.colors.INVERSE_PRIMARY,
+                                    italic=True,
                                 ),
                             ],
                             spacing=5,
@@ -102,7 +103,7 @@ class HomeView(BaseView):
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Icon(icon, size=40, color=ft.colors.ON_SECONDARY_CONTAINER),
+                    ft.Icon(icon, size=40, color=ft.colors.INVERSE_PRIMARY),
                     ft.Text(title, size=16, weight=ft.FontWeight.BOLD, color=ft.colors.ON_SECONDARY_CONTAINER),
                     ft.Text(
                         description,
