@@ -93,19 +93,19 @@ class ProjectBrowserManager:
             self.current_path = self.root_path
 
         self.search_term = ""  # Reset search on folder change
-        self._update_state()
+        self.update_state()
 
     def navigate_to_path(self, path: Path):
         """Navigates to a specific directory path."""
         self.current_path = path
-        self._update_state()
+        self.update_state()
 
     def search(self, term: str):
         """Filters the displayed items based on a search term."""
         self.search_term = term.lower()
-        self._update_state()
+        self.update_state()
 
-    def _update_state(self):
+    def update_state(self):
         """
         The core logic method. It updates the displayed_items and breadcrumb_parts
         based on the current state of the manager.

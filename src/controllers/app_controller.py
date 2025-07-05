@@ -274,10 +274,11 @@ class AppController:
         )
         try:
             success = self.data_service.create_new_folder(
-                parent_path=parent_path, name=folder_name, description=description
+                parent_path=parent_path, folder_name=folder_name, description=description
             )
             if success:
                 self.logger.info(f"Successfully created folder: {folder_name}")
+                self.project_browser_manager.update_state()
             else:
                 self.logger.error(
                     f"Folder creation failed for '{folder_name}'. DataService returned False."

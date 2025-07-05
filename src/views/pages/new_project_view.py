@@ -199,7 +199,8 @@ class NewProjectView(BaseView):
 
     def _on_add_folder_clicked(self, e):
         """Tells the controller to show the folder creation dialog."""
-        self.controller.show_create_folder_dialog(parent_path=self.current_path)
+        print(f"The current path is: {self.browser_manager.current_path}")
+        self.controller.show_create_folder_dialog(parent_path=self.browser_manager.current_path)
 
     # --- View Update Logic ---
     def _update_action_button(self):

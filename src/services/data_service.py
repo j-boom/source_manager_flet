@@ -63,7 +63,45 @@ class DataService:
         # Sort directories first, then files
         return sorted(contents, key=lambda x: (not x['is_directory'], x['name'].lower()))
 
-    # --- Project Creation Logic (from ProjectCreationService) ---
+    # --- Artifact Creation Logic ---
+
+    def create_new_folder(self, parent_path: Path, folder_name: str, description: Optional[str] = None) -> Optional[Path]:
+        """
+        Creates a new folder at the specified path and optionally adds a description file.
+
+        Args:
+            parent_path: The directory in which to create the new folder.
+            folder_name: The name for the new folder.
+            description: An optional description to be saved in a 'readme.md' file.
+
+        Returns:
+            The Path to the newly created folder if successful, otherwise None.
+        """
+        # Sanitize folder name to prevent directory traversal issues
+        # and remove characters that are invalid in file paths on Windows.
+        sanitized_name = re.sub(r'[<>:"/\\|?*]', '', folder_name).strip()
+        if not sanitized_name:
+            print(f"Error: Invalid folder name '{folder_name}'.")
+            return None
+        
+        new_name = f"{sanitized_name} {description}" if description else sanitized_name
+
+        new_folder_path = parent_path / new_name
+        
+        # Check for existing folder/file to prevent overwriting
+        if new_folder_path.exists():
+            print(f"Error: A folder or file named '{new_name}' already exists at this location.")
+            return None
+            
+        try:
+            # Create the new directory
+            new_folder_path.mkdir(parents=True, exist_ok=False)
+            print(f"Successfully created folder: {new_folder_path}")
+            return new_folder_path
+        except OSError as e:
+            print(f"Error creating directory {new_folder_path}: {e}")
+            return None
+
 
     def create_new_project(self, project_type: ProjectType, title: str, parent_dir: Path, metadata: Dict[str, Any]) -> Optional[Project]:
         """Creates a new project, saves it, and returns the Project object."""

@@ -7,8 +7,8 @@
         "maximized": false
     },
     "theme": {
-        "mode": "dark",
-        "color": "teal"
+        "mode": "light",
+        "color": "purple"
     },
     "display_name": "Jim Bergren",
     "setup_completed": true,
