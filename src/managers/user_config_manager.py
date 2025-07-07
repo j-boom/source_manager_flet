@@ -6,7 +6,6 @@ This class is the single point of interaction for user settings.
 """
 import getpass
 import logging
-from pathlib import Path
 from typing import Optional, List
 
 # Configuration imports
@@ -124,3 +123,16 @@ class UserConfigManager:
         # Keep only the 10 most recent
         self.config.recent_projects = self.config.recent_projects[:10]
         self.save_config()
+
+    def clear_recent_projects(self):
+        """Clears the list of recent projects."""
+        self.config.recent_projects.clear()
+        self.save_config()
+
+    def remove_recent_project(self, path_to_remove: str):
+        """Removes a project from the recent projects list by its path."""
+        self.config.recent_projects = [
+            p for p in self.config.recent_projects if p.path != path_to_remove
+        ]
+        self.save_config()
+

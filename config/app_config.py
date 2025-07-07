@@ -49,11 +49,11 @@ PAGES = [
         "view_name": "HomeView",
     },
     {
-        "name": "project_view",
+        "name": "project_view", # This is the "smart route"
         "label": "Project",
         "icon": ft.icons.FOLDER_OUTLINED,
         "selected_icon": ft.icons.FOLDER,
-        "view_name": "NewProjectView",
+        "view_name": "NewProjectView", # This is a default
     },
     {
         "name": "sources",
@@ -74,6 +74,7 @@ PAGES = [
 # --- CHANGE: Settings and Help are now defined as special pages ---
 SPECIAL_PAGES = {
     "new_project": {"view_name": "NewProjectView"},
+    "project_dashboard": {"view_name": "ProjectView"}, # <-- Crucial for this fix
     "recent_projects": {"view_name": "RecentProjectsView"},
     "settings": {"view_name": "SettingsView"},
     "help": {"view_name": "HelpView"},

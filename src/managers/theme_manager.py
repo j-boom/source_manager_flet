@@ -57,6 +57,7 @@ class ThemeManager:
                 color=ft.colors.ON_PRIMARY_CONTAINER,
                 bgcolor=ft.colors.PRIMARY_CONTAINER,
             ),
+            
         )
 
     # --- NEW: Failsafe Default ColorScheme ---

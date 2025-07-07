@@ -1,0 +1,24 @@
+{
+    "project_id": "475b7c45-2fdf-4429-88be-d2a50a7541fb",
+    "project_type": "STD",
+    "title": "Sample Design Project",
+    "file_path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Europe/France/0001/0001CA0123/0001CA0123 - CA123 - STD - 2025.json",
+    "metadata": {
+        "project_title": "Sample Design Project",
+        "be_number": "0001CA0123",
+        "osuffix": "CA123",
+        "facility_name": "Sample Facility",
+        "project_type": "STD",
+        "current_year": "2025",
+        "facility_number": "123456879652132",
+        "engineer": "asdf",
+        "imagery": "asdfasdgasdg",
+        "reviewer": "asdfasds",
+        "analyst": "satlhjlgfhj",
+        "geologist": "safijyursxd",
+        "requestor": "asdbsxcc",
+        "request_year": "2023 Q3",
+        "relook": false
+    },
+    "sources": []
+}

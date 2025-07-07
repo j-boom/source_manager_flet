@@ -11,18 +11,14 @@ from typing import Callable, Dict, Any, List
 
 # Configuration for dynamic form generation
 from .base_dialog import BaseDialog
-from config.project_types_config import (
-    get_project_type_config,
-    get_project_type_display_names,
-    create_field_widget,
-)
+from config import get_dialog_fields, get_project_type_display_names, create_field_widget
 
 
 class ProjectCreationDialog(BaseDialog):
     """A dialog for collecting new project information dynamically."""
 
     def __init__(
-        self, page: ft.Page, controller, parent_path: Path, on_close: Callable
+        self, page: ft.Page, controller, parent_path: Path, on_close: Callable, initial_be_number: str = ""
     ):
         """
         Initializes the dialog.  Delegates most of the work to the Base Dialog
@@ -30,7 +26,9 @@ class ProjectCreationDialog(BaseDialog):
         self.controller = controller
         self.parent_path = parent_path
         self.form_fields: Dict[str, ft.Control] = {}
+        self.initial_be_number = initial_be_number  # Optional initial value for 'be_number'
 
+        print(f"Initial BE Number: {self.initial_be_number}")
         # --- UI Components ---
         self.project_type_dropdown = self._build_project_type_dropdown()
         self.fields_container = ft.Column(spacing=15)
@@ -73,20 +71,25 @@ class ProjectCreationDialog(BaseDialog):
         )
 
     def _update_form_fields(self, project_type_code: str):
-        """Updates the form fields based on the selected project type."""
+        """
+        Clears and rebuilds the form fields using only the fields
+        configured for the 'dialog' collection stage.
+        """
         self.form_fields.clear()
         self.fields_container.controls.clear()
 
-        config = get_project_type_config(project_type_code)
-        if not config:
-            self.page.update()
-            return
+        # Get ONLY the fields designated for the dialog stage from the config.
+        dialog_fields = get_dialog_fields(project_type_code)
 
-        for field_config in config.fields:
+        # Create a widget for each field and add it to the form.
+        for field_config in dialog_fields:
             widget = create_field_widget(field_config)
             self.form_fields[field_config.name] = widget
             self.fields_container.controls.append(widget)
-
+            if field_config.name == "be_number":
+                # If the field is 'be_number', set its initial value if provided
+                widget.value = self.initial_be_number or ""
+                widget.read_only = True
         self.page.update()
 
     # --- Event Handlers ---

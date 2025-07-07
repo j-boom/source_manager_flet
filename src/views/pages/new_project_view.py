@@ -8,7 +8,7 @@ It combines a rich UI with the clean, controller-delegated architecture.
 import flet as ft
 from typing import Optional
 from pathlib import Path
-
+import logging
 from src.views.base_view import BaseView
 from src.views.components.breadcrumb import Breadcrumb
 
@@ -20,7 +20,7 @@ class NewProjectView(BaseView):
         super().__init__(page, controller)
         # Get a direct reference to the browser manager for convenience
         self.browser_manager = self.controller.project_browser_manager
-
+        self.logger = logging.getLogger(__name__)
         # --- UI State ---
         self.current_path: Path = Path(self.controller.data_service.project_data_dir)
         self.search_text: str = ""
@@ -186,16 +186,38 @@ class NewProjectView(BaseView):
 
     def _on_item_clicked(self, e):
         """Handles a click on a file or folder in the list."""
-        item_path = Path(e.control.data["path"])
-        if e.control.data["is_directory"]:
-            self.browser_manager.navigate_to_path(item_path)
-            self._update_view()
-        else:
-            self.controller.open_project(item_path)
+        # --- DEBUGGING: Added detailed logging and error handling ---
+        try:
+            item_data = e.control.data
+            self.logger.info(f"--- _on_item_clicked: Item clicked. Raw data: {item_data} ---")
+
+            if not isinstance(item_data, dict):
+                self.logger.error(f"--- _on_item_clicked: ERROR! Item data is not a dictionary. Type is {type(item_data)} ---")
+                return
+
+            item_path_str = item_data.get("path")
+            is_directory = item_data.get("is_directory")
+
+            if item_path_str is None or is_directory is None:
+                self.logger.error(f"--- _on_item_clicked: ERROR! Item data is missing 'path' or 'is_directory'. ---")
+                return
+
+            item_path = Path(item_path_str)
+            if is_directory:
+                self.logger.info(f"--- _on_item_clicked: Navigating to directory: {item_path} ---")
+                self.browser_manager.navigate_to_path(item_path)
+                self._update_view()
+            else:
+                self.logger.info(f"--- _on_item_clicked: Calling controller.open_project with path: {item_path} ---")
+                self.controller.open_project(item_path)
+
+        except Exception as ex:
+            self.logger.error(f"--- _on_item_clicked: An unexpected exception occurred: {ex} ---", exc_info=True)
+        # --- END DEBUGGING ---
 
     def _on_add_project_clicked(self, e):
         """Tells the controller to show the project creation dialog."""
-        self.controller.show_create_project_dialog(parent_path=self.current_path)
+        self.controller.show_create_project_dialog(parent_path=self.browser_manager.current_path)
 
     def _on_add_folder_clicked(self, e):
         """Tells the controller to show the folder creation dialog."""

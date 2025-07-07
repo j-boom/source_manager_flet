@@ -4,6 +4,7 @@ Configuration package initialization.
 
 from .app_config import *
 from .logging_config import setup_logging
+from .project_types_config import get_dialog_fields, get_project_type_display_names, get_project_type_config, create_field_widget
 
 __all__ = [
     "PROJECT_ROOT",
@@ -25,4 +26,8 @@ __all__ = [
     "RECENT_PROJECTS_LIMIT",
     "RECENT_SITES_LIMIT",
     "setup_logging",
+    "get_dialog_fields",
+    "get_project_type_display_names",
+    "get_project_type_config",
+    "create_field_widget",
 ]

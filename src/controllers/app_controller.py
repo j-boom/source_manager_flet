@@ -9,6 +9,7 @@ acting as the central hub for all application logic.
 from typing import Dict, Optional, Any
 from pathlib import Path
 import logging
+import re
 
 import flet as ft
 
@@ -23,27 +24,17 @@ from managers import (
     NavigationManager,
     SettingsManager,
     ProjectStateManager,
-    ProjectBrowserManager
+    ProjectBrowserManager,
 )
 
 # --- Services: Handle I/O and business logic ---
-from src.services.data_service import DataService
+from services import DataService
 
 # --- Views: Handle UI presentation ---
-from src.views import MainView, BaseView
-from src.views.pages import (
-    HomeView,
-    RecentProjectsView,
-    NewProjectView,
-    ProjectView,
-    SettingsView,
-    SourcesView,
-    ReportsView,
-    HelpView,
-)
+from views import MainView
 
 # --- Dialogs: Handle user interactions ---
-from src.views.components.dialogs import (
+from views.components.dialogs import (
     FirstTimeSetupDialog,
     ProjectCreationDialog,
     FolderCreationDialog,
@@ -83,13 +74,22 @@ class AppController:
 
     def _build_view_class_map(self) -> Dict[str, type]:
         """Creates a mapping from page names to view classes for the factory."""
-        # Combine regular and special pages into one map
+        from views.pages import (
+            HomeView,
+            RecentProjectsView,
+            NewProjectView,
+            ProjectView,
+            SettingsView,
+            SourcesView,
+            ReportsView,
+            HelpView,
+        )
+
         all_pages = {p["name"]: p["view_name"] for p in PAGES}
         all_pages.update(
             {name: data["view_name"] for name, data in SPECIAL_PAGES.items()}
         )
 
-        # Map string names to actual class objects
         view_classes = {
             "HomeView": HomeView,
             "NewProjectView": NewProjectView,
@@ -118,77 +118,71 @@ class AppController:
         self.window_manager.apply_saved_window_config()
         self.apply_theme_and_update_views()
         self.main_view.show()
-
         if self.user_config_manager.needs_setup():
             self._show_first_time_setup()
         else:
             self.navigate_to("home")
 
     def cleanup(self, e=None):
-        """
-        Saves state before the application exits. This is the single, correct
-        cleanup method, designed to be called by Flet's on_disconnect event.
-        """
-        self.logger.info("Cleanup initiated. Saving window configuration.")
+        """Saves state before the application exits."""
         self.window_manager.save_current_window_config()
-        self.logger.info("Application cleanup finished.")
 
     def apply_theme_and_update_views(self):
         """Applies the current theme to the page and refreshes all visible views."""
-        self.logger.debug("Applying theme and updating views.")
         self.page.theme_mode = (
             ft.ThemeMode.DARK
             if self.theme_manager.mode == "dark"
             else ft.ThemeMode.LIGHT
         )
         self.page.theme = self.theme_manager.get_theme_data()
-
-        # 1. Refresh the main application shell (AppBar, Sidebar, etc.)
         self.main_view.refresh_theme()
-
-        # 2. To refresh the current page's content, we force it to be rebuilt.
         current_page_name = self.navigation_manager.get_current_page()
-
-        # Remove the old, stale view from the cache so it's forced to be re-created.
         if current_page_name in self.views:
             self.views.pop(current_page_name, None)
-            self.logger.debug(
-                f"Removed '{current_page_name}' from view cache to force refresh."
-            )
-
-        # 3. Re-run the navigation logic for the current page.
-        # This will create a new view instance which will use the updated theme.
         self.navigate_to(current_page_name)
-
-    # --- Business Logic Methods (Called by Views) ---
 
     def navigate_to(self, page_name: str):
         """Handles navigation requests from any part of the UI."""
+        self.logger.info(f"Navigation requested for '{page_name}'...")
+        sidebar_page_name = page_name
+
+        if page_name == "project_view":
+            if self.project_state_manager.has_loaded_project():
+                page_name = "project_dashboard"
+                self.logger.info(f"Project is loaded. Redirecting to '{page_name}'.")
+            else:
+                page_name = "new_project"
+                self.logger.info(f"No project loaded. Redirecting to '{page_name}'.")
+
+        if page_name == "recent_projects":
+            self._validate_recent_projects()
+
         self.navigation_manager.set_current_page(page_name)
 
-        if page_name not in self.views:
-            self.views[page_name] = self._create_view_for_page(page_name)
+        if page_name in self.views:
+            self.views.pop(page_name)
+            self.logger.info(f"Popped '{page_name}' from view cache to force refresh.")
+
+        self.views[page_name] = self._create_view_for_page(page_name)
 
         view_instance = self.views.get(page_name)
         if view_instance:
-            # Check if the instance is a custom view class with a .build() method,
-            # or if it's already a Flet control (like the error message).
-            if hasattr(view_instance, "build") and callable(
-                getattr(view_instance, "build")
-            ):
-                content_to_display = view_instance.build()
-            else:
-                # It's already a Flet control, so we can use it directly.
-                content_to_display = view_instance
-
+            content_to_display = (
+                view_instance.build()
+                if hasattr(view_instance, "build")
+                and callable(getattr(view_instance, "build"))
+                else view_instance
+            )
             self.main_view.set_content(content_to_display)
-            self.main_view.update_navigation(page_name)
+            self.main_view.update_navigation(sidebar_page_name)
+            self.logger.info(f"Navigation to '{page_name}' complete.")
         else:
-            self.logger.error(f"No view class found for page '{page_name}'")
+            self.logger.error(
+                f"Could not navigate to '{page_name}' because view instance is null."
+            )
 
-    def open_project(self, project_path_str: str):
+    def open_project(self, project_path: Path):
         """Handles the business logic of opening a project."""
-        project_path = Path(project_path_str)
         try:
             project_model = self.data_service.load_project(project_path)
             if project_model:
@@ -196,64 +190,65 @@ class AppController:
                 self.user_config_manager.add_recent_project(
                     project_model.title, str(project_path)
                 )
-                self.navigate_to("project_view")
+                self.navigate_to("project_dashboard")
             else:
                 self.logger.warning(
-                    f"Could not open project at {project_path_str}. File might be empty or corrupt."
+                    f"Could not open project at {project_path}. File might be empty or corrupt."
                 )
         except Exception as e:
             self.logger.error(
-                f"Failed to open project at {project_path_str}", exc_info=True
+                f"Failed to open project at {project_path}", exc_info=True
             )
 
     def handle_display_name_change(self):
         """Handles display name updates from the settings manager."""
         self.main_view.update_greeting()
         if self.navigation_manager.get_current_page() == "settings":
-            self.views.pop("settings", None)  # Force re-creation of the view
+            self.views.pop("settings", None)
             self.navigate_to("settings")
 
     def show_create_project_dialog(self, parent_path: Path):
-        """Creates and shows the project creation dialog."""
+        """Creates and shows the project creation dialog, pre-filling the BE number if found."""
+        initial_be_number = None
+        match = re.search(r"^(\d{4}[A-Z]{2}\d{4}|\d{10})", parent_path.name)
+        if match:
+            initial_be_number = match.group(1)
 
         def on_dialog_close():
-            # This callback could be used to refresh the file list in NewProjectView
             current_view = self.views.get("new_project")
             if current_view and hasattr(current_view, "_update_view"):
                 current_view._update_view()
 
         dialog = ProjectCreationDialog(
-            self.page, self, parent_path, on_close=on_dialog_close
+            self.page,
+            self,
+            parent_path,
+            on_close=on_dialog_close,
+            initial_be_number=initial_be_number,
         )
         dialog.show()
 
     def submit_new_project(self, parent_path: Path, form_data: Dict[str, Any]):
-        """
-        Receives data from the dialog and uses the DataService to create the project.
-        This is where all the creation logic now lives.
-        """
-        self.logger.info(f"Submitting new project data for path: {parent_path}")
+        """Receives data from the dialog and uses the DataService to create the project."""
         try:
-            # The DataService should have a method that accepts this raw form data
-            new_project = self.data_service.create_new_project(
+            success, message, new_project = self.data_service.create_new_project(
                 parent_dir=parent_path, form_data=form_data
             )
-            if new_project:
-                self.logger.info(f"Successfully created project: {new_project.title}")
-                # Optionally, auto-open the newly created project
-                self.open_project(str(new_project.file_path))
+            if success and new_project:
+                self.open_project(new_project.file_path)
             else:
-                # Handle the case where the data service returns None (e.g., validation failed)
-                self.logger.error("Project creation failed. DataService returned None.")
-
+                self.logger.error(f"Project creation failed: {message}")
         except Exception as e:
             self.logger.error(
                 f"An exception occurred during project creation: {e}", exc_info=True
             )
-            # Here you would show an error message to the user
 
     def show_create_folder_dialog(self, parent_path: Path):
-        """Creates and shows the folder creation dialog."""
+        """Creates and shows the folder creation dialog, pre-filling the parent name."""
+        parent_name_prefix = f"{parent_path.name} "
+        self.logger.info(
+            f"Showing create folder dialog for parent: {parent_path} with prefix: {parent_name_prefix}"
+        )
 
         def on_dialog_close():
             current_view = self.views.get("new_project")
@@ -261,46 +256,93 @@ class AppController:
                 current_view._update_view()
 
         dialog = FolderCreationDialog(
-            self.page, self, parent_path, on_close=on_dialog_close
+            self.page,
+            self,
+            parent_path,
+            on_close=on_dialog_close,
+            initial_prefix=parent_name_prefix,
         )
         dialog.show()
 
     def submit_new_folder(self, parent_path: Path, folder_name: str, description: str):
-        """
-        Receives data from the folder dialog and uses the DataService to create the folder.
-        """
+        """Receives data from the folder dialog, validates it, and uses the DataService to create the folder."""
+        parent_name = parent_path.name
+
+        if not folder_name.strip().startswith(parent_name):
+            self.logger.error(
+                f"Validation failed: Folder name '{folder_name}' does not start with parent name '{parent_name}'."
+            )
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text(f"Error: Folder name must start with '{parent_name}'."),
+                bgcolor=ft.colors.ERROR_CONTAINER,
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
         self.logger.info(
             f"Submitting new folder '{folder_name}' for path: {parent_path}"
         )
         try:
-            success = self.data_service.create_new_folder(
-                parent_path=parent_path, folder_name=folder_name, description=description
+            success, message = self.data_service.create_new_folder(
+                parent_path=parent_path,
+                folder_name=folder_name.strip(),
+                description=description,
             )
             if success:
                 self.logger.info(f"Successfully created folder: {folder_name}")
                 self.project_browser_manager.update_state()
+                self.navigate_to("new_project")  # Refresh the view
             else:
                 self.logger.error(
-                    f"Folder creation failed for '{folder_name}'. DataService returned False."
+                    f"Folder creation failed for '{folder_name}': {message}"
                 )
         except Exception as e:
             self.logger.error(
                 f"An exception occurred during folder creation: {e}", exc_info=True
             )
 
-    # --- Private Helper Methods ---
+    def _validate_recent_projects(self):
+        """Checks the recent projects list and removes any that no longer exist on disk."""
+        self.logger.info("Validating recent projects list...")
+        for project in list(self.user_config_manager.get_recent_projects()):
+            if not Path(project.path).exists():
+                self.logger.warning(
+                    f"Recent project file not found, removing from list: {project.path}"
+                )
+                self.user_config_manager.remove_recent_project(project.path)
+
+    def clear_recent_projects(self):
+        """Clears all recent projects from the user's config."""
+        self.logger.info("Clearing all recent projects.")
+        self.user_config_manager.clear_recent_projects()
+        if self.navigation_manager.get_current_page() == "recent_projects":
+            self.navigate_to("recent_projects")
+
+    def remove_recent_project(self, path: str):
+        """Removes a single recent project from the user's config."""
+        self.logger.info(f"Removing recent project: {path}")
+        self.user_config_manager.remove_recent_project(path)
+        if self.navigation_manager.get_current_page() == "recent_projects":
+            self.navigate_to("recent_projects")
+
+    def update_project_metadata(self, updated_data: Dict[str, Any]):
+        """Updates the metadata of the currently loaded project."""
+        self.logger.info(f"Updating project metadata: {updated_data}")
+        project = self.project_state_manager.current_project
+        if project:
+            project.metadata.update(updated_data)
+            self.data_service.save_project(project)
+            self.logger.info("Project metadata saved successfully.")
+        else:
+            self.logger.error("Attempted to update metadata, but no project is loaded.")
 
     def _create_view_for_page(self, page_name: str) -> Optional[ft.Control]:
         """Factory method to create view instances on demand using the config."""
         view_class = self._view_class_map.get(page_name)
         if view_class:
             return view_class(self.page, self)
-
-        error_view = ft.Text(f"View for '{page_name}' not implemented.", color="red")
-        self.logger.error(
-            f"Attempted to create a view for '{page_name}', but it was not found in the view map."
-        )
-        return error_view
+        return ft.Text(f"View for '{page_name}' not implemented.", color="red")
 
     def _show_first_time_setup(self):
         """Shows the initial setup dialog for new users."""
