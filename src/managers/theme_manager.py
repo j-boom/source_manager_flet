@@ -17,7 +17,6 @@ class ThemeManager:
     COLOR_SEEDS: Dict[str, str] = {
         "blue": ft.colors.BLUE,
         "orange": ft.colors.ORANGE,
-        "red": ft.colors.RED,
         "green": ft.colors.GREEN,
         "yellow": ft.colors.YELLOW,
         "purple": ft.colors.PURPLE,

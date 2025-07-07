@@ -20,5 +20,21 @@
         "request_year": "2023 Q3",
         "relook": false
     },
-    "sources": []
+    "sources": [
+        {
+            "source_id": "src_d8a05991",
+            "order": 1,
+            "notes": ""
+        },
+        {
+            "source_id": "src_ddfed72f",
+            "order": 2,
+            "notes": ""
+        },
+        {
+            "source_id": "src_4e861222",
+            "order": 3,
+            "notes": ""
+        }
+    ]
 }

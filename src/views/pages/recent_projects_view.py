@@ -5,7 +5,7 @@ from typing import List
 import logging
 
 # --- FIX: Import the new component ---
-from ..components.recent_project_card import RecentProjectCard
+from ..components.cards.recent_project_card import RecentProjectCard
 
 
 class RecentProjectsView(BaseView):

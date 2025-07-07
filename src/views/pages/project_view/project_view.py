@@ -24,7 +24,7 @@ class ProjectView(BaseView):
         # Initialize all tab view classes, passing the controller to each
         self.metadata_tab = ProjectMetadataTab(controller=self.controller)
         self.sources_tab = ProjectSourcesTab(controller=self.controller)
-        self.cite_sources_tab = CiteSourcesTab(controller=self.controller)
+        # self.cite_sources_tab = CiteSourcesTab(controller=self.controller)
 
     def build(self) -> ft.Control:
         """
@@ -38,7 +38,7 @@ class ProjectView(BaseView):
 
         self.metadata_tab.update_project_data(project.metadata, str(project.file_path))
         self.sources_tab.update_project_data(project.metadata, str(project.file_path))
-        self.cite_sources_tab.update_project_data(project.metadata, str(project.file_path))
+        # self.cite_sources_tab.update_project_data(project.metadata, str(project.file_path))
 
         project_info = f"Project: {project.title}"
         
@@ -90,11 +90,11 @@ class ProjectView(BaseView):
                     icon=ft.icons.SOURCE,
                     content=self.sources_tab.build()
                 ),
-                ft.Tab(
-                    text="Cite Slides",
-                    icon=ft.icons.COMPARE_ARROWS,
-                    content=self.cite_sources_tab.build()
-                ),
+                # ft.Tab(
+                #     text="Cite Slides",
+                #     icon=ft.icons.COMPARE_ARROWS,
+                #     content=self.cite_sources_tab.build()
+                # ),
             ],
             expand=True
         )

@@ -38,6 +38,8 @@ from views.components.dialogs import (
     FirstTimeSetupDialog,
     ProjectCreationDialog,
     FolderCreationDialog,
+    SourceCreationDialog,
+    SourceEditorDialog
 )
 
 
@@ -337,6 +339,55 @@ class AppController:
         else:
             self.logger.error("Attempted to update metadata, but no project is loaded.")
 
+    def show_create_source_dialog(self):
+        """Shows the dialog to create a new master source."""
+        project = self.project_state_manager.current_project
+        if not project:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text("Open a project first to determine the source region."),
+                open=True,
+            )
+            self.page.update()
+            return
+
+        def on_dialog_close():
+            # Refresh the sources tab
+            current_view = self.views.get("project_dashboard")
+            if (
+                current_view
+                and hasattr(current_view, "sources_tab")
+                and hasattr(current_view.sources_tab, "_update_view")
+            ):
+                current_view.sources_tab._update_view()
+
+        dialog = SourceCreationDialog(self.page, self, on_close=on_dialog_close)
+        dialog.show()
+
+    def submit_new_source(self, form_data: Dict[str, Any]):
+        """Receives data from the source dialog and tells the DataService to create it."""
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.error(
+                "Attempted to submit new source, but no project is loaded."
+            )
+            return
+
+        region = self.data_service.get_region_for_project(project.file_path)
+
+        success, message, _ = self.data_service.create_new_source(region, form_data)
+
+        if success:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(message), bgcolor=ft.colors.GREEN
+            )
+        else:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(message), bgcolor=ft.colors.ERROR_CONTAINER
+            )
+
+        self.page.snack_bar.open = True
+        self.page.update()
+
     def _create_view_for_page(self, page_name: str) -> Optional[ft.Control]:
         """Factory method to create view instances on demand using the config."""
         view_class = self._view_class_map.get(page_name)
@@ -355,3 +406,76 @@ class AppController:
 
         dialog = FirstTimeSetupDialog(self.page, on_setup_complete)
         dialog.show()
+
+    def add_source_to_project(self, source_id: str):
+        """Adds a master source to the currently loaded project."""
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.error("Attempted to add a source, but no project is loaded.")
+            return
+
+        self.logger.info(f"Adding source '{source_id}' to project '{project.title}'.")
+        self.data_service.add_source_to_project(project, source_id)
+        
+        # Refresh the sources tab to show the change
+        current_view = self.views.get("project_dashboard")
+        if current_view and hasattr(current_view, 'sources_tab') and hasattr(current_view.sources_tab, "_update_view"):
+            current_view.sources_tab._update_view()
+
+    def reorder_project_sources(self, new_ordered_ids: list):
+        """Tells the DataService to reorder the sources for the current project."""
+        project = self.project_state_manager.current_project
+        if project:
+            self.logger.info(f"Reordering sources for project '{project.title}'.")
+            self.data_service.reorder_sources_in_project(project, new_ordered_ids)
+        else:
+            self.logger.error("Attempted to reorder sources, but no project is loaded.")
+
+    # --- FIX: Added method to remove a source from the project ---
+    def remove_source_from_project(self, source_id: str):
+        """Removes a source link from the currently loaded project."""
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.error("Attempted to remove a source, but no project is loaded.")
+            return
+
+        self.logger.info(f"Removing source '{source_id}' from project '{project.title}'.")
+        self.data_service.remove_source_from_project(project, source_id)
+        
+        # Refresh the sources tab to show the change
+        current_view = self.views.get("project_dashboard")
+        if current_view and hasattr(current_view, 'sources_tab') and hasattr(current_view.sources_tab, "_update_view"):
+            current_view.sources_tab._update_view()
+    # --- END FIX ---
+
+    def show_source_editor_dialog(self, source_id: str):
+        """Shows a dialog to view and edit a master source's details."""
+        source = self.data_service.get_source_by_id(source_id)
+        if not source:
+            self.page.snack_bar = ft.SnackBar(ft.Text(f"Error: Could not find source with ID {source_id}."), open=True)
+            self.page.update()
+            return
+
+        def on_dialog_close():
+            # Refresh the sources tab to show any changes
+            current_view = self.views.get("project_dashboard")
+            if (current_view and hasattr(current_view, 'sources_tab') and 
+                hasattr(current_view.sources_tab, "_update_view")):
+                current_view.sources_tab._update_view()
+
+        dialog = SourceEditorDialog(self.page, self, source, on_close=on_dialog_close)
+        dialog.show()
+
+    def submit_source_update(self, source_id: str, form_data: Dict[str, Any]):
+        """Receives updated data from the source editor and tells the DataService to save it."""
+        self.logger.info(f"Submitting update for source ID {source_id} with data: {form_data}")
+        
+        success, message = self.data_service.update_master_source(source_id, form_data)
+        
+        if success:
+            self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.GREEN)
+        else:
+            self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.ERROR_CONTAINER)
+            
+        self.page.snack_bar.open = True
+        self.page.update()
