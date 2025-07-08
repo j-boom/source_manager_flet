@@ -1,6 +1,5 @@
 import flet as ft
 from typing import Dict, Any
-from functools import partial
 from .base_tab import BaseTab
 from views.components import ProjectSourceCard, OnDeckCard
 

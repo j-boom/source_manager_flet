@@ -2,7 +2,7 @@
 Project State Manager - Tracks currently loaded project
 """
 from typing import Optional, Dict, Any
-from models.database_manager import Project
+from models.project_models import Project
 
 
 class ProjectStateManager:

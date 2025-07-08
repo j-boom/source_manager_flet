@@ -28,7 +28,7 @@ from managers import (
 )
 
 # --- Services: Handle I/O and business logic ---
-from services import DataService
+from services import DataService, PowerPointService
 
 # --- Views: Handle UI presentation ---
 from views import MainView
@@ -56,6 +56,7 @@ class AppController:
 
         # --- Initialize Core Components ---
         self.data_service = DataService()
+        self.powerpoint_service = PowerPointService()
         self.user_config_manager = UserConfigManager()
         self.theme_manager = ThemeManager(
             initial_mode=self.user_config_manager.get_theme_mode(),
@@ -69,10 +70,15 @@ class AppController:
         self.project_state_manager = ProjectStateManager()
         self.project_browser_manager = ProjectBrowserManager(self.data_service)
 
-        # --- Views ---
+        # --- UI Components ---
         self.main_view = MainView(page, controller=self)
         self.views: Dict[str, ft.Control] = {}
         self._view_class_map = self._build_view_class_map()
+        self.powerpoint_file_picker = ft.FilePicker(on_result=self._on_powerpoint_selected)
+        self.page.overlay.append(self.powerpoint_file_picker)
+
+        # --- State Flags ---
+        self._add_new_source_to_project_context: bool = False
 
         self._setup_callbacks()
         self.logger.info("AppController initialized successfully")
@@ -150,6 +156,7 @@ class AppController:
         """Handles navigation requests from any part of the UI."""
         self.logger.info(f"Navigation requested for '{page_name}'...")
         sidebar_page_name = page_name
+        self.page.floating_action_button = None # Clear FAB on all navigation
 
         if page_name == "project_view":
             if self.project_state_manager.has_loaded_project():
@@ -213,7 +220,7 @@ class AppController:
             self.navigate_to("settings")
 
     def show_create_project_dialog(self, parent_path: Path):
-        """Creates and shows the project creation dialog, pre-filling the BE number if found."""
+        """Creates and shows the project creation dialog."""
         initial_be_number = None
         match = re.search(r"^(\d{4}[A-Z]{2}\d{4}|\d{10})", parent_path.name)
         if match:
@@ -249,7 +256,7 @@ class AppController:
             )
 
     def show_create_folder_dialog(self, parent_path: Path):
-        """Creates and shows the folder creation dialog, pre-filling the parent name."""
+        """Creates and shows the folder creation dialog."""
         parent_name_prefix = f"{parent_path.name} "
         self.logger.info(
             f"Showing create folder dialog for parent: {parent_path} with prefix: {parent_name_prefix}"
@@ -270,19 +277,13 @@ class AppController:
         dialog.show()
 
     def submit_new_folder(self, parent_path: Path, folder_name: str, description: str):
-        """Receives data from the folder dialog, validates it, and uses the DataService to create the folder."""
+        """Receives data from the folder dialog and creates the folder."""
         parent_name = parent_path.name
 
         if not folder_name.strip().startswith(parent_name):
             self.logger.error(
                 f"Validation failed: Folder name '{folder_name}' does not start with parent name '{parent_name}'."
             )
-            self.page.snack_bar = ft.SnackBar(
-                content=ft.Text(f"Error: Folder name must start with '{parent_name}'."),
-                bgcolor=ft.colors.ERROR_CONTAINER,
-            )
-            self.page.snack_bar.open = True
-            self.page.update()
             return
 
         self.logger.info(
@@ -295,9 +296,8 @@ class AppController:
                 description=description,
             )
             if success:
-                self.logger.info(f"Successfully created folder: {folder_name}")
                 self.project_browser_manager.update_state()
-                self.navigate_to("new_project")  # Refresh the view
+                self.navigate_to("new_project")
             else:
                 self.logger.error(
                     f"Folder creation failed for '{folder_name}': {message}"
@@ -308,7 +308,7 @@ class AppController:
             )
 
     def _validate_recent_projects(self):
-        """Checks the recent projects list and removes any that no longer exist on disk."""
+        """Checks the recent projects list and removes any that no longer exist."""
         self.logger.info("Validating recent projects list...")
         for project in list(self.user_config_manager.get_recent_projects()):
             if not Path(project.path).exists():
@@ -318,81 +318,70 @@ class AppController:
                 self.user_config_manager.remove_recent_project(project.path)
 
     def clear_recent_projects(self):
-        """Clears all recent projects from the user's config."""
-        self.logger.info("Clearing all recent projects.")
+        """Clears all recent projects."""
         self.user_config_manager.clear_recent_projects()
         if self.navigation_manager.get_current_page() == "recent_projects":
             self.navigate_to("recent_projects")
 
     def remove_recent_project(self, path: str):
-        """Removes a single recent project from the user's config."""
-        self.logger.info(f"Removing recent project: {path}")
+        """Removes a single recent project."""
         self.user_config_manager.remove_recent_project(path)
         if self.navigation_manager.get_current_page() == "recent_projects":
             self.navigate_to("recent_projects")
 
     def update_project_metadata(self, updated_data: Dict[str, Any]):
         """Updates the metadata of the currently loaded project."""
-        self.logger.info(f"Updating project metadata: {updated_data}")
         project = self.project_state_manager.current_project
         if project:
             project.metadata.update(updated_data)
             self.data_service.save_project(project)
-            self.logger.info("Project metadata saved successfully.")
         else:
             self.logger.error("Attempted to update metadata, but no project is loaded.")
 
-    def show_create_source_dialog(self):
-        """Shows the dialog to create a new master source."""
+    def show_create_source_dialog(self, add_to_project_on_create: bool = False):
+        """
+        Shows the dialog to create a new master source.
+        Sets a flag to determine if the new source should be added to the current project.
+        """
+        self._add_new_source_to_project_context = add_to_project_on_create
+
         project = self.project_state_manager.current_project
-        if not project:
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text("Open a project first to determine the source region."),
-                open=True,
-            )
+        if not project and add_to_project_on_create:
+            self.page.snack_bar = ft.SnackBar(ft.Text("Open a project first to create and add a source."), open=True)
             self.page.update()
             return
 
         def on_dialog_close():
-            # Refresh the sources tab
-            current_view = self.views.get("project_dashboard")
-            if (
-                current_view
-                and hasattr(current_view, "sources_tab")
-                and hasattr(current_view.sources_tab, "_update_view")
-            ):
-                current_view.sources_tab._update_view()
+            self.refresh_current_view()
 
         dialog = SourceCreationDialog(self.page, self, on_close=on_dialog_close)
         dialog.show()
 
     def submit_new_source(self, form_data: Dict[str, Any]):
-        """Receives data from the source dialog and tells the DataService to create it."""
+        """
+        Receives data from the source dialog, creates it, and adds it to the project if context is set.
+        """
         project = self.project_state_manager.current_project
-        if not project:
-            self.logger.error(
-                "Attempted to submit new source, but no project is loaded."
-            )
-            return
+        region = "General" # Default region
+        if project:
+            region = self.data_service.get_region_for_project(project.file_path)
 
-        region = self.data_service.get_region_for_project(project.file_path)
-
-        success, message, _ = self.data_service.create_new_source(region, form_data)
+        success, message, new_source = self.data_service.create_new_source(region, form_data)
 
         if success:
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text(message), bgcolor=ft.colors.GREEN
-            )
+            self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.GREEN)
+            if new_source and self._add_new_source_to_project_context:
+                self.logger.info(f"Automatically adding new source '{new_source.id}' to project due to context.")
+                self.add_source_to_project(new_source.id)
         else:
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text(message), bgcolor=ft.colors.ERROR_CONTAINER
-            )
+            self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.ERROR_CONTAINER)
 
+        self._add_new_source_to_project_context = False
         self.page.snack_bar.open = True
         self.page.update()
 
     def _create_view_for_page(self, page_name: str) -> Optional[ft.Control]:
-        """Factory method to create view instances on demand using the config."""
+        """Factory method to create view instances on demand."""
         view_class = self._view_class_map.get(page_name)
         if view_class:
             return view_class(self.page, self)
@@ -400,7 +389,6 @@ class AppController:
 
     def _show_first_time_setup(self):
         """Shows the initial setup dialog for new users."""
-
         def on_setup_complete(display_name: str):
             self.settings_manager.save_display_name(display_name)
             self.user_config_manager.mark_setup_completed()
@@ -414,11 +402,8 @@ class AppController:
         """Adds a source ID to the on_deck_sources list in the current project's metadata."""
         project = self.project_state_manager.current_project
         if not project:
-            self.page.snack_bar = ft.SnackBar(ft.Text("You must have a project open to add sources to its 'On Deck' list."), open=True)
-            self.page.update()
             return
 
-        # Ensure the 'on_deck_sources' key exists in metadata
         if "on_deck_sources" not in project.metadata:
             project.metadata["on_deck_sources"] = []
         
@@ -434,57 +419,50 @@ class AppController:
         self.page.update()
 
     def add_source_to_project(self, source_id: str):
-        """Adds a master source to the currently loaded project and removes it from 'On Deck'."""
+        """Adds a master source to the currently loaded project."""
         project = self.project_state_manager.current_project
         if not project:
-            self.logger.error("Attempted to add a source, but no project is loaded.")
             return
 
-        self.logger.info(f"Adding source '{source_id}' to project '{project.title}'.")
         self.data_service.add_source_to_project(project, source_id)
-        
-        # --- FIX: Also remove the source from the on-deck list ---
-        if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
-            project.metadata["on_deck_sources"].remove(source_id)
-            self.data_service.save_project(project)
-        # --- END FIX ---
-        
-        # Refresh the sources tab to show the change
-        current_view = self.views.get("project_dashboard")
-        if current_view and hasattr(current_view, 'sources_tab') and hasattr(current_view.sources_tab, "_update_view"):
-            current_view.sources_tab._update_view()
+        self.refresh_current_view()
 
     def reorder_project_sources(self, new_ordered_ids: list):
         """Tells the DataService to reorder the sources for the current project."""
         project = self.project_state_manager.current_project
         if project:
-            self.logger.info(f"Reordering sources for project '{project.title}'.")
             self.data_service.reorder_sources_in_project(project, new_ordered_ids)
-        else:
-            self.logger.error("Attempted to reorder sources, but no project is loaded.")
+
+    def remove_source_from_project(self, source_id: str):
+        """Removes a source link from the project and adds it back to the 'On Deck' list."""
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+
+        if "on_deck_sources" not in project.metadata:
+            project.metadata["on_deck_sources"] = []
+        
+        on_deck_list = project.metadata["on_deck_sources"]
+        if source_id not in on_deck_list:
+            on_deck_list.append(source_id)
+        
+        self.data_service.remove_source_from_project(project, source_id)
+        self.refresh_current_view()
 
     def show_source_editor_dialog(self, source_id: str):
         """Shows a dialog to view and edit a master source's details."""
         source = self.data_service.get_source_by_id(source_id)
         if not source:
-            self.page.snack_bar = ft.SnackBar(ft.Text(f"Error: Could not find source with ID {source_id}."), open=True)
-            self.page.update()
             return
 
         def on_dialog_close():
-            # Refresh the sources tab to show any changes
-            current_view = self.views.get("project_dashboard")
-            if (current_view and hasattr(current_view, 'sources_tab') and 
-                hasattr(current_view.sources_tab, "_update_view")):
-                current_view.sources_tab._update_view()
+            self.refresh_current_view()
 
         dialog = SourceEditorDialog(self.page, self, source, on_close=on_dialog_close)
         dialog.show()
 
     def submit_source_update(self, source_id: str, form_data: Dict[str, Any]):
-        """Receives updated data from the source editor and tells the DataService to save it."""
-        self.logger.info(f"Submitting update for source ID {source_id} with data: {form_data}")
-        
+        """Receives updated data from the source editor and saves it."""
         success, message = self.data_service.update_master_source(source_id, form_data)
         
         if success:
@@ -495,84 +473,103 @@ class AppController:
         self.page.snack_bar.open = True
         self.page.update()
 
-    def promote_source_from_on_deck(self, source_id: str):
-        """
-        Moves a source from the "On Deck" list to the main project sources list.
-        """
-        project = self.project_state_manager.current_project
-        if not project:
-            logging.warning("Attempted to promote a source with no project loaded.")
+    def refresh_current_view(self):
+        """Finds the currently visible view instance and calls its update method."""
+        current_page_name = self.navigation_manager.get_current_page()
+        if not current_page_name:
             return
 
-        logging.info(f"Promoting source '{source_id}' from On Deck to project sources.")
+        current_view_instance = self.views.get(current_page_name)
+        
+        if not current_view_instance:
+            self.page.update()
+            return
 
-        # 1. Remove the source from the "On Deck" list in metadata
+        if hasattr(current_view_instance, "update_view"):
+            current_view_instance.update_view()
+        else:
+            self.page.update()
+
+    def promote_source_from_on_deck(self, source_id: str):
+        """Moves a source from the "On Deck" list to the main project sources list."""
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+
         try:
-            # The user's hunch was correct, we access 'on_deck_sources' via metadata
             project.metadata["on_deck_sources"].remove(source_id)
         except (ValueError, KeyError):
             logging.warning(f"Source ID '{source_id}' not found in On Deck list during promotion.")
 
-        # 2. Add the source to the main project sources list
         if not any(link.source_id == source_id for link in project.sources):
             new_order = len(project.sources)
             new_link = ProjectSourceLink(source_id=source_id, order=new_order)
             project.sources.append(new_link)
         
-        # 3. Save and refresh
         self.data_service.save_project(project)
         self.refresh_current_view()
 
-    def remove_source_from_project(self, source_id: str):
-        """
-        Removes a source link from the project AND adds it back to the "On Deck" list.
-        """
+    def _on_powerpoint_selected(self, e: ft.FilePickerResultEvent):
+        """Callback that runs after the user selects a .pptx file."""
+        if not e.files:
+            return
+
+        selected_file_path = e.files[0].path
+        project = self.project_state_manager.current_project
+        if project:
+            project.metadata["powerpoint_path"] = selected_file_path
+            self.data_service.save_project(project)
+            self.refresh_current_view()
+
+    def get_slides_for_current_project(self) -> Optional[list[tuple[str, str]]]:
+        """Gets slide data for the current project, prompting for a file if needed."""
         project = self.project_state_manager.current_project
         if not project:
-            logging.error("Attempted to remove a source, but no project is loaded.")
+            return None
+
+        ppt_path = project.metadata.get("powerpoint_path")
+        
+        if not ppt_path:
+            self.powerpoint_file_picker.pick_files(
+                dialog_title="Select Presentation for this Project",
+                file_type="custom",
+                allowed_extensions=["pptx"],
+            )
+            return None
+
+        presentation = self.powerpoint_service.load_presentation(ppt_path)
+        if not presentation:
+            project.metadata["powerpoint_path"] = None
+            self.data_service.save_project(project)
+            return None
+
+        return self.powerpoint_service.get_slide_data(presentation)
+
+    def add_citations_to_slide(self, slide_id: str, source_ids: list[str]):
+        """Adds a list of source IDs as citations for a specific slide."""
+        project = self.project_state_manager.current_project
+        if not project or not slide_id:
             return
 
-        logging.info(f"Removing source '{source_id}' from project '{project.title}'.")
+        if "citations" not in project.metadata:
+            project.metadata["citations"] = {}
         
-        # --- THIS IS THE FIX FOR THE "DELETE" ISSUE ---
-        # 1. Add the source back to the "On Deck" list first.
-        if "on_deck_sources" not in project.metadata:
-            project.metadata["on_deck_sources"] = []
+        slide_citations = set(project.metadata["citations"].get(str(slide_id), []))
+        slide_citations.update(source_ids)
+        project.metadata["citations"][str(slide_id)] = sorted(list(slide_citations))
         
-        on_deck_list = project.metadata["on_deck_sources"]
-        if source_id not in on_deck_list:
-            on_deck_list.append(source_id)
-        # --- END FIX ---
-        
-        # 2. Remove the source from the project (this now just affects the main list)
-        self.data_service.remove_source_from_project(project, source_id)
-        
-        # 3. Refresh the view to show the changes
+        self.data_service.save_project(project)
         self.refresh_current_view()
 
-    def refresh_current_view(self):
-        """
-        Finds the currently visible view instance from the controller's state
-        and calls its update method.
-        """
-        # Get the name of the current page from your navigation manager
-        current_page_name = self.navigation_manager.get_current_page() #
-        if not current_page_name:
-            logging.warning("refresh_current_view: No current page found in navigation manager.")
+    def remove_citations_from_slide(self, slide_id: str, source_ids: list[str]):
+        """Removes a list of source IDs from a specific slide's citations."""
+        project = self.project_state_manager.current_project
+        if not project or not slide_id or "citations" not in project.metadata:
             return
 
-        # Get the actual view instance that is currently displayed from the controller's cache
-        current_view_instance = self.views.get(current_page_name)
-        
-        if not current_view_instance:
-            logging.warning(f"refresh_current_view: Could not find view instance for page '{current_page_name}'.")
-            self.page.update() # Fallback to a simple page update
-            return
+        slide_citations = set(project.metadata["citations"].get(str(slide_id), []))
+        slide_citations.difference_update(source_ids)
+        project.metadata["citations"][str(slide_id)] = sorted(list(slide_citations))
 
-        # Check if this specific view instance has our update_view method
-        if hasattr(current_view_instance, "update_view"):
-            logging.info(f"Calling update_view() on instance for page '{current_page_name}'.")
-            current_view_instance.update_view()
-        else:
-            logging.info(f"View for page '{current_page_name}' has no update method, calling page.update().")
-            self.page.update()
+        self.data_service.save_project(project)
+        self.refresh_current_view()

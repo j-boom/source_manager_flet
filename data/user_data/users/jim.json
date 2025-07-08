@@ -14,12 +14,8 @@
     "setup_completed": true,
     "recent_projects": [
         {
-            "display_name": "AB 123 Project",
-            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/Singapore/1234/1234CA0123 Singapore Site/1234CA0123 - CA123 - STD - 2025.json"
-        },
-        {
-            "display_name": "Sample Design Project",
-            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/Europe/France/0001/0001CA0123/0001CA0123 - CA123 - STD - 2025.json"
+            "display_name": "Facility Change Request Project",
+            "path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/Singapore/1235/1235AC1204 Sample Site 2/1235AC1204 - CA123 - FCR - 2025.json"
         }
     ],
     "last_page": "help"

@@ -1,0 +1,28 @@
+{
+    "project_id": "e49d1fb0-1f25-4b90-be72-41f8b95d1701",
+    "project_type": "FCR",
+    "title": "Facility Change Request Project",
+    "file_path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/Singapore/1235/1235AC1204 Sample Site 2/1235AC1204 - CA123 - FCR - 2025.json",
+    "metadata": {
+        "project_title": "Facility Change Request Project",
+        "be_number": "1235AC1204",
+        "osuffix": "CA123",
+        "facility_name": "Nekkar Island",
+        "project_type": "FCR",
+        "current_year": "2025",
+        "facility_number": "12334237539",
+        "engineer": "Jim Halpert",
+        "imagery": "Pam Beasley",
+        "analyst": "Dwight Shrute",
+        "geologist": "Kevin Malone",
+        "reviewer": "Michael Scott",
+        "requestor": "Dunder Mifflin",
+        "request_year": "2023 Q3",
+        "relook": false,
+        "on_deck_sources": [
+            "0f17ed34-87ec-4a81-a165-44974cf1daf4",
+            "884712de-a8f8-4994-8f13-f5b6252650f8"
+        ]
+    },
+    "sources": []
+}

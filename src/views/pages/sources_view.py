@@ -1,13 +1,13 @@
 import flet as ft
 from typing import Dict, Any, List
-from functools import partial
 from views import BaseView
 from models import SourceRecord
 from views.components import OnDeckCard
-from config.source_types_config import get_filterable_fields, ALL_SOURCE_FIELDS
+from config.source_types_config import get_filterable_fields
+from views.components.app_fab import AppFab
 
 class SourcesView(BaseView):
-    """A dedicated page for Browse, searching, and filtering all master sources."""
+    """A dedicated page for browsing, searching, and filtering all master sources."""
 
     def __init__(self, page: ft.Page, controller):
         super().__init__(page, controller)
@@ -26,6 +26,14 @@ class SourcesView(BaseView):
     def build(self) -> ft.Control:
         """Builds the UI for the sources browser page."""
         self._initialize_view()
+
+        # Set the Floating Action Button for this view
+        self.page.floating_action_button = AppFab(
+            icon=ft.icons.ADD_ROUNDED,
+            text="New Source",
+            tooltip="Create a new master source",
+            on_click=lambda e: self.controller.show_create_source_dialog(add_to_project_on_create=False)
+        )
 
         filters_panel = ft.Container(
             content=ft.Column(
@@ -77,7 +85,6 @@ class SourcesView(BaseView):
             self.all_sources = self.controller.data_service.get_all_master_sources()
             self.current_sources = self.all_sources
             self._build_filter_controls()
-            # Initial UI update based on project state
             self.update_view_for_project_state()
 
     def update_view_for_project_state(self):
@@ -89,7 +96,6 @@ class SourcesView(BaseView):
         else:
             self.project_title_header.visible = False
         
-        # Re-render the list of sources to show/hide add buttons
         self._update_results_list(self.current_sources)
         if self.page:
             self.page.update()
@@ -99,18 +105,14 @@ class SourcesView(BaseView):
         self.filter_controls_column.controls.clear()
         self.filter_controls = {}
         
-        # Create a TextField for each filterable field
-        # Add a text field for the title first
         title_field = ft.TextField(label="Title", border_radius=8, dense=True)
         self.filter_controls["title"] = title_field
         self.filter_controls_column.controls.append(title_field)
         
-        # Add one for authors
         authors_field = ft.TextField(label="Authors", border_radius=8, dense=True)
         self.filter_controls["authors"] = authors_field
         self.filter_controls_column.controls.append(authors_field)
         
-        # Add fields from the config
         for field_config in get_filterable_fields():
             field = ft.TextField(label=field_config.label, border_radius=8, dense=True)
             self.filter_controls[field_config.name] = field
@@ -137,17 +139,15 @@ class SourcesView(BaseView):
             else:
                 filtered_sources = [s for s in filtered_sources if search_term in str(getattr(s, field_name, '')).lower()]
 
-        self.current_sources = filtered_sources # Store the current filtered list
+        self.current_sources = filtered_sources
         self._update_results_list(self.current_sources)
         self.page.update()
         
     def _remove_filter_chip(self, e):
         """Removes a filter when a chip's delete icon is clicked."""
         field_to_remove = e.control.data
-        # Clear the corresponding text field
         if field_to_remove in self.filter_controls:
             self.filter_controls[field_to_remove].value = ""
-        # Re-apply all filters
         self._apply_all_filters(e)
             
     def _clear_all_filters(self, e):
@@ -166,15 +166,17 @@ class SourcesView(BaseView):
         self.results_list.controls.clear()
         if sources:
             for source in sorted(sources, key=lambda s: s.title):
-                # We just create the card. Its default context is "library",
-                # which correctly calls 'add_source_to_on_deck'.
                 self.results_list.controls.append(
                     OnDeckCard(
                         source=source,
                         controller=self.controller,
-                        show_add_button=bool(project)
-                        # No context needed, it defaults to "library"
+                        show_add_button=bool(project),
+                        context="library"
                     )
                 )
         else:
             self.results_list.controls.append(ft.Text("No sources match your criteria.", italic=True, text_align=ft.TextAlign.CENTER))
+
+    def update_view(self):
+        """Refreshes the view, for example when a project is opened or closed."""
+        self.update_view_for_project_state()

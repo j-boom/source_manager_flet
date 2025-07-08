@@ -1,48 +1,30 @@
 {
     "sources": [
         {
-            "id": "src_ddfed72f",
-            "source_type": "book",
-            "title": "Happenings, The",
+            "id": "0f17ed34-87ec-4a81-a165-44974cf1daf4",
+            "source_type": "standard",
+            "title": "Standard Source #1",
             "region": "General",
-            "authors": [
-                "Smith",
-                "J."
-            ],
+            "authors": [],
             "publication_year": "2023",
-            "publisher": "Harper's Ferry Publishing",
+            "publisher": "Journal of American Coders",
             "url": null,
-            "date_created": "2025-07-07T01:20:51.361685",
-            "last_modified": "2025-07-07T20:55:22.276621"
+            "date_created": "2025-07-07T22:32:42.408865",
+            "last_modified": "2025-07-07T22:32:42.408880",
+            "report_number": "1238734"
         },
         {
-            "id": "src_d8a05991",
-            "source_type": "website",
-            "title": "Another website source",
+            "id": "884712de-a8f8-4994-8f13-f5b6252650f8",
+            "source_type": "standard",
+            "title": "asdf",
             "region": "General",
-            "authors": [
-                "Spiderman",
-                "P"
-            ],
-            "publication_year": null,
-            "publisher": null,
-            "url": "www.google.com",
-            "date_created": "2025-07-07T20:09:00.771274",
-            "last_modified": "2025-07-07T20:09:00.771801"
-        },
-        {
-            "id": "src_4e861222",
-            "source_type": "report",
-            "title": "A third project",
-            "region": "General",
-            "authors": [
-                "New Authors"
-            ],
-            "publication_year": "2012",
-            "publisher": null,
+            "authors": [],
+            "publication_year": "asdf",
+            "publisher": "asdf",
             "url": null,
-            "date_created": "2025-07-07T20:32:15.331779",
-            "last_modified": "2025-07-07T20:32:15.332210"
+            "date_created": "2025-07-07T22:42:26.173968",
+            "last_modified": "2025-07-07T22:42:26.173985",
+            "report_number": "asdf"
         }
     ]
 }
