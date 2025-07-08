@@ -1,0 +1,29 @@
+{
+    "project_id": "e736fa66-644d-44f9-9693-77f37f5dbcee",
+    "project_type": "STD",
+    "title": "AB 123 Project",
+    "file_path": "/Users/jim/Documents/Development/source_manager_flet/data/Directory_Source_Citations/ROW/Singapore/1234/1234CA0123 Singapore Site/1234CA0123 - CA123 - STD - 2025.json",
+    "metadata": {
+        "project_title": "AB 123 Project",
+        "be_number": "1234CA0123",
+        "osuffix": "CA123",
+        "facility_name": "New Facility Name",
+        "project_type": "STD",
+        "current_year": "2025",
+        "on_deck_sources": [
+            "src_ddfed72f"
+        ]
+    },
+    "sources": [
+        {
+            "source_id": "src_4e861222",
+            "order": 0,
+            "notes": ""
+        },
+        {
+            "source_id": "src_d8a05991",
+            "order": 1,
+            "notes": ""
+        }
+    ]
+}

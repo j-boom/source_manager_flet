@@ -1,403 +1,180 @@
-"""
-Sources View - Manage and add sources to the on-deck circle
-"""
-
 import flet as ft
-from typing import Optional, List, Dict, Any
-from views.base_view import BaseView
-from views.components.source_ui_factory import SourceUIFactory, SourceItem
-
+from typing import Dict, Any, List
+from functools import partial
+from views import BaseView
+from models import SourceRecord
+from views.components import OnDeckCard
+from config.source_types_config import get_filterable_fields, ALL_SOURCE_FIELDS
 
 class SourcesView(BaseView):
-    """View for managing sources and adding them to the on-deck circle"""
-    
-    def __init__(self, page: ft.Page, theme_manager=None, 
-                 user_config=None, on_navigate=None):
-        super().__init__(page)
-        self.theme_manager = theme_manager
-        self.user_config = user_config
-        self.on_navigate = on_navigate
+    """A dedicated page for Browse, searching, and filtering all master sources."""
+
+    def __init__(self, page: ft.Page, controller):
+        super().__init__(page, controller)
+        self.all_sources: List[SourceRecord] = []
+        self.current_sources: List[SourceRecord] = []
         
-        # UI Factory
-        self.ui_factory = SourceUIFactory()
-        
-        # Dummy data for UI testing
-        self.all_sources: List[SourceItem] = self._create_dummy_all_sources()
-        self.on_deck_sources: List[SourceItem] = self._create_dummy_on_deck_sources()
-        
-        # Initialize UI components
-        self._init_components()
-    
-    def _create_dummy_all_sources(self) -> List[SourceItem]:
-        """Create dummy source library for UI testing"""
-        return [
-            SourceItem(
-                uuid="lib-1",
-                title="2024 Annual Report - Financial Performance",
-                source_type="FCR",
-                description="Comprehensive financial analysis and performance metrics",
-                citation="Corporate Finance Department, Annual Report 2024"
-            ),
-            SourceItem(
-                uuid="lib-2",
-                title="Market Research Study - Consumer Trends",
-                source_type="GSC",
-                description="Quarterly consumer behavior and market trend analysis",
-                citation="Market Research Inc., Q4 2024 Consumer Study"
-            ),
-            SourceItem(
-                uuid="lib-3",
-                title="Internal Operations Assessment",
-                source_type="STD",
-                description="Operational efficiency and process improvement analysis",
-                citation="Operations Department, Internal Assessment 2024"
-            ),
-            SourceItem(
-                uuid="lib-4",
-                title="Compliance Audit Results",
-                source_type="CRS",
-                description="Annual regulatory compliance review and findings",
-                citation="External Audit Firm, Compliance Report 2024"
-            ),
-            SourceItem(
-                uuid="lib-5",
-                title="Strategic Planning Document",
-                source_type="STD",
-                description="Five-year strategic plan with goals and initiatives",
-                citation="Executive Team, Strategic Plan 2025-2030"
-            ),
-            SourceItem(
-                uuid="lib-6",
-                title="Customer Satisfaction Survey",
-                source_type="GSC",
-                description="Annual customer feedback and satisfaction metrics",
-                citation="Customer Experience Team, Survey 2024"
-            ),
-            SourceItem(
-                uuid="lib-7",
-                title="Budget Allocation Analysis",
-                source_type="FCR",
-                description="Departmental budget breakdown and variance analysis",
-                citation="Finance Team, Budget Analysis 2024"
-            ),
-            SourceItem(
-                uuid="lib-8",
-                title="Technology Infrastructure Report",
-                source_type="STD",
-                description="IT systems assessment and modernization recommendations",
-                citation="IT Department, Infrastructure Report 2024"
-            ),
-            SourceItem(
-                uuid="lib-9",
-                title="Risk Management Assessment",
-                source_type="CRS",
-                description="Enterprise risk evaluation and mitigation strategies",
-                citation="Risk Management Team, Assessment 2024"
-            ),
-            SourceItem(
-                uuid="lib-10",
-                title="Employee Engagement Study",
-                source_type="GSC",
-                description="Workforce satisfaction and engagement analysis",
-                citation="HR Department, Engagement Study 2024"
-            )
-        ]
-    
-    def _create_dummy_on_deck_sources(self) -> List[SourceItem]:
-        """Create dummy on-deck sources for UI testing"""
-        return [
-            SourceItem(
-                uuid="lib-1",
-                title="2024 Annual Report - Financial Performance",
-                source_type="FCR",
-                description="Comprehensive financial analysis and performance metrics",
-                citation="Corporate Finance Department, Annual Report 2024"
-            ),
-            SourceItem(
-                uuid="lib-3",
-                title="Internal Operations Assessment",
-                source_type="STD",
-                description="Operational efficiency and process improvement analysis",
-                citation="Operations Department, Internal Assessment 2024"
-            )
-        ]
-    
-    def _get_theme_color(self) -> str:
-        """Get theme color for buttons and UI elements"""
-        if self.theme_manager:
-            return self.theme_manager.get_primary_color() if hasattr(self.theme_manager, 'get_primary_color') else ft.colors.BLUE_600
-        return ft.colors.BLUE_600 if self.page.theme_mode != ft.ThemeMode.DARK else ft.colors.BLUE_400
-    
-    def _init_components(self):
-        """Initialize UI components"""
-        # Search/filter controls
-        self.search_field = ft.TextField(
-            hint_text="Search sources...",
-            prefix_icon=ft.icons.SEARCH,
-            border_radius=8,
-            on_change=self._on_search_change
-        )
-        
-        self.filter_dropdown = ft.Dropdown(
-            label="Filter by type",
-            options=[
-                ft.dropdown.Option("ALL", "All Types"),
-                ft.dropdown.Option("FCR", "Financial Reports"),
-                ft.dropdown.Option("STD", "Standard Documents"),
-                ft.dropdown.Option("GSC", "General Sources"),
-                ft.dropdown.Option("CRS", "Compliance Reports")
-            ],
-            value="ALL",
-            width=200,
-            on_change=self._on_filter_change
-        )
-        
-        # Source lists
-        self.source_library_list = ft.ListView(
-            controls=[],
-            spacing=5,
-            expand=True,
-            padding=ft.padding.all(10)
-        )
-        
-        self.on_deck_list = ft.ListView(
-            controls=[],
-            spacing=5,
-            height=300,
-            padding=ft.padding.all(10)
-        )
-        
-        # Populate initial data
-        self._refresh_source_library()
-        self._refresh_on_deck()
-    
-    def _create_library_source_card(self, source: SourceItem) -> ft.Card:
-        """Create a source card for the library"""
-        is_in_on_deck = any(s.uuid == source.uuid for s in self.on_deck_sources)
-        
-        action_btn = ft.IconButton(
-            icon=ft.icons.REMOVE_CIRCLE_OUTLINE if is_in_on_deck else ft.icons.ADD_CIRCLE_OUTLINE,
-            icon_color=ft.colors.ORANGE_600 if is_in_on_deck else ft.colors.GREEN_600,
-            tooltip="Remove from on-deck" if is_in_on_deck else "Add to on-deck circle",
-            on_click=lambda _, src=source: self._remove_from_on_deck(src.uuid) if is_in_on_deck else self._add_to_on_deck(src.uuid)
-        )
-        
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Column([
-                            ft.Text(
-                                source.title,
-                                weight=ft.FontWeight.BOLD,
-                                size=14,
-                                max_lines=2,
-                                overflow=ft.TextOverflow.ELLIPSIS
-                            ),
-                            ft.Text(
-                                source.source_type,
-                                size=12,
-                                color=self._get_theme_color(),
-                                weight=ft.FontWeight.W_500
-                            )
-                        ], spacing=2, expand=True),
-                        action_btn
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Text(
-                        source.description,
-                        size=12,
-                        color=ft.colors.GREY_600,
-                        max_lines=2,
-                        overflow=ft.TextOverflow.ELLIPSIS
-                    )
-                ], spacing=5),
-                padding=ft.padding.all(12),
-                bgcolor=ft.colors.GREEN_50 if is_in_on_deck else None
-            ),
-            elevation=1,
-            margin=ft.margin.symmetric(vertical=2)
-        )
-    
-    def _create_on_deck_source_card(self, source: SourceItem) -> ft.Card:
-        """Create a compact card for on-deck sources"""
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Row([
-                    ft.Column([
-                        ft.Text(
-                            source.title,
-                            weight=ft.FontWeight.BOLD,
-                            size=12,
-                            max_lines=1,
-                            overflow=ft.TextOverflow.ELLIPSIS
-                        ),
-                        ft.Text(
-                            source.source_type,
-                            size=10,
-                            color=self._get_theme_color(),
-                            weight=ft.FontWeight.W_500
-                        )
-                    ], spacing=2, expand=True),
-                    ft.IconButton(
-                        icon=ft.icons.REMOVE_CIRCLE_OUTLINE,
-                        icon_color=ft.colors.RED_600,
-                        tooltip="Remove from on-deck",
-                        icon_size=16,
-                        on_click=lambda _, src=source: self._remove_from_on_deck(src.uuid)
-                    )
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                padding=ft.padding.all(8)
-            ),
-            elevation=1,
-            margin=ft.margin.symmetric(vertical=1)
-        )
-    
-    def _refresh_source_library(self):
-        """Refresh the source library list"""
-        self.source_library_list.controls.clear()
-        
-        # Filter sources based on search and filter criteria
-        filtered_sources = self._get_filtered_sources()
-        
-        for source in filtered_sources:
-            self.source_library_list.controls.append(
-                self._create_library_source_card(source)
-            )
-        
-        if hasattr(self, 'page') and self.page:
-            self.page.update()
-    
-    def _refresh_on_deck(self):
-        """Refresh the on-deck circle list"""
-        self.on_deck_list.controls.clear()
-        
-        for source in self.on_deck_sources:
-            self.on_deck_list.controls.append(
-                self._create_on_deck_source_card(source)
-            )
-        
-        if hasattr(self, 'page') and self.page:
-            self.page.update()
-    
-    def _get_filtered_sources(self) -> List[SourceItem]:
-        """Get sources filtered by search and type"""
-        sources = self.all_sources.copy()
-        
-        # Apply search filter
-        if hasattr(self.search_field, 'value') and self.search_field.value:
-            search_term = self.search_field.value.lower()
-            sources = [s for s in sources if search_term in s.title.lower() or search_term in s.description.lower()]
-        
-        # Apply type filter
-        if hasattr(self.filter_dropdown, 'value') and self.filter_dropdown.value != "ALL":
-            sources = [s for s in sources if s.source_type == self.filter_dropdown.value]
-        
-        return sources
-    
-    def _add_to_on_deck(self, source_uuid: str):
-        """Add a source to the on-deck circle"""
-        source = next((s for s in self.all_sources if s.uuid == source_uuid), None)
-        if source and not any(s.uuid == source_uuid for s in self.on_deck_sources):
-            self.on_deck_sources.append(source)
-            self._refresh_source_library()  # Refresh to update button states
-            self._refresh_on_deck()
-    
-    def _remove_from_on_deck(self, source_uuid: str):
-        """Remove a source from the on-deck circle"""
-        self.on_deck_sources = [s for s in self.on_deck_sources if s.uuid != source_uuid]
-        self._refresh_source_library()  # Refresh to update button states
-        self._refresh_on_deck()
-    
-    def _on_search_change(self, e):
-        """Handle search field changes"""
-        self._refresh_source_library()
-    
-    def _on_filter_change(self, e):
-        """Handle filter dropdown changes"""
-        self._refresh_source_library()
-    
+        # UI for showing current project title
+        self.project_title_header = ft.Text(visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY)
+
+        # UI Components
+        self.filter_controls: Dict[str, ft.TextField] = {}
+        self.active_filter_chips = ft.Row(wrap=True)
+        self.filter_controls_column = ft.Column(spacing=10)
+        self.results_list = ft.ListView(expand=True, spacing=10, padding=ft.padding.only(top=10))
+
     def build(self) -> ft.Control:
-        """Build the sources view"""
-        return ft.Column([
-            # Header
-            ft.Container(
-                content=ft.Row([
-                    ft.Column([
-                        ft.Text("Sources Library", size=24, weight=ft.FontWeight.BOLD),
-                        ft.Text("Manage your source collection and build your on-deck circle", size=14, color=ft.colors.GREY_600)
-                    ], spacing=2),
-                ], spacing=10),
-                padding=ft.padding.all(20),
-                bgcolor=ft.colors.GREY_100 if self.page.theme_mode != ft.ThemeMode.DARK else ft.colors.GREY_800,
-                border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.GREY_300))
-            ),
-            
-            # Main content
-            ft.Container(
-                content=ft.Row([
-                    # Left column - Source Library
-                    ft.Container(
-                        content=ft.Column([
-                            # Search and filter controls
-                            ft.Container(
-                                content=ft.Row([
-                                    ft.Container(content=self.search_field, expand=True),
-                                    self.filter_dropdown
-                                ], spacing=10),
-                                padding=ft.padding.only(bottom=15)
-                            ),
-                            
-                            # Source library header
-                            ft.Text(
-                                "Source Library",
-                                size=18,
-                                weight=ft.FontWeight.BOLD,
-                                color=self._get_theme_color()
-                            ),
-                            
-                            # Source library list
-                            ft.Container(
-                                content=self.source_library_list,
-                                bgcolor=ft.colors.WHITE,
-                                border_radius=8,
-                                border=ft.border.all(1, ft.colors.GREY_300),
-                                expand=True
-                            )
-                        ], expand=True),
-                        expand=True,
-                        padding=ft.padding.all(20)
-                    ),
-                    
-                    # Divider
-                    ft.VerticalDivider(width=1, color=ft.colors.GREY_300),
-                    
-                    # Right column - On Deck Circle
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Text(
-                                "On Deck Circle",
-                                size=18,
-                                weight=ft.FontWeight.BOLD,
-                                color=self._get_theme_color()
-                            ),
-                            ft.Text(
-                                "Sources ready for project assignment",
-                                size=12,
-                                color=ft.colors.GREY_600
-                            ),
-                            ft.Container(height=10),
-                            ft.Container(
-                                content=self.on_deck_list,
-                                bgcolor=ft.colors.GREY_50,
-                                border_radius=8,
-                                border=ft.border.all(1, ft.colors.GREY_300),
-                                expand=True
-                            )
-                        ], expand=True),
-                        width=350,
-                        padding=ft.padding.all(20)
+        """Builds the UI for the sources browser page."""
+        self._initialize_view()
+
+        filters_panel = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("Filters", style=ft.TextThemeStyle.TITLE_MEDIUM),
+                    ft.Divider(),
+                    self.filter_controls_column,
+                    ft.Container(height=10),
+                    ft.Row(
+                        [
+                            ft.ElevatedButton("Clear", on_click=self._clear_all_filters, expand=True),
+                            ft.FilledButton("Apply", on_click=self._apply_all_filters, expand=True),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
                     )
-                ], expand=True),
-                expand=True
+                ],
+                spacing=10,
+            ),
+            width=280,
+            padding=15,
+            bgcolor=ft.colors.SURFACE_VARIANT,
+            border_radius=8,
+        )
+
+        results_panel = ft.Column(
+            [
+                ft.Row([
+                    ft.Text("Master Source Library", style=ft.TextThemeStyle.HEADLINE_MEDIUM),
+                    self.project_title_header,
+                ], spacing=10),
+                ft.Text("Use the filters on the left to search the library.", color=ft.colors.ON_SURFACE_VARIANT),
+                ft.Divider(),
+                self.active_filter_chips,
+                ft.Container(self.results_list, expand=True),
+            ],
+            expand=True,
+            spacing=10,
+        )
+
+        return ft.Container(
+            content=ft.Row([filters_panel, results_panel], expand=True, spacing=20),
+            padding=20,
+            expand=True,
+        )
+
+    def _initialize_view(self):
+        """Fetches data and builds the dynamic filter controls. Called once."""
+        if not self.all_sources:
+            self.all_sources = self.controller.data_service.get_all_master_sources()
+            self.current_sources = self.all_sources
+            self._build_filter_controls()
+            # Initial UI update based on project state
+            self.update_view_for_project_state()
+
+    def update_view_for_project_state(self):
+        """Updates the view based on the current project state."""
+        project = self.controller.project_state_manager.current_project
+        if project:
+            self.project_title_header.value = f"| Adding to: {project.title}"
+            self.project_title_header.visible = True
+        else:
+            self.project_title_header.visible = False
+        
+        # Re-render the list of sources to show/hide add buttons
+        self._update_results_list(self.current_sources)
+        if self.page:
+            self.page.update()
+
+    def _build_filter_controls(self):
+        """Dynamically creates filter TextFields based on config and source data."""
+        self.filter_controls_column.controls.clear()
+        self.filter_controls = {}
+        
+        # Create a TextField for each filterable field
+        # Add a text field for the title first
+        title_field = ft.TextField(label="Title", border_radius=8, dense=True)
+        self.filter_controls["title"] = title_field
+        self.filter_controls_column.controls.append(title_field)
+        
+        # Add one for authors
+        authors_field = ft.TextField(label="Authors", border_radius=8, dense=True)
+        self.filter_controls["authors"] = authors_field
+        self.filter_controls_column.controls.append(authors_field)
+        
+        # Add fields from the config
+        for field_config in get_filterable_fields():
+            field = ft.TextField(label=field_config.label, border_radius=8, dense=True)
+            self.filter_controls[field_config.name] = field
+            self.filter_controls_column.controls.append(field)
+
+    def _apply_all_filters(self, e):
+        """Applies all active filters from the text fields."""
+        filtered_sources = self.all_sources
+        self.active_filter_chips.controls.clear()
+
+        for field_name, control in self.filter_controls.items():
+            search_term = control.value.lower().strip()
+            if not search_term: continue
+                
+            chip = ft.Chip(
+                label=ft.Text(f"{control.label}: '{search_term}'"),
+                data=field_name,
+                on_delete=self._remove_filter_chip,
             )
-        ], expand=True, spacing=0)
+            self.active_filter_chips.controls.append(chip)
+
+            if field_name == "authors":
+                 filtered_sources = [s for s in filtered_sources if s.authors and any(search_term in author.lower() for author in s.authors)]
+            else:
+                filtered_sources = [s for s in filtered_sources if search_term in str(getattr(s, field_name, '')).lower()]
+
+        self.current_sources = filtered_sources # Store the current filtered list
+        self._update_results_list(self.current_sources)
+        self.page.update()
+        
+    def _remove_filter_chip(self, e):
+        """Removes a filter when a chip's delete icon is clicked."""
+        field_to_remove = e.control.data
+        # Clear the corresponding text field
+        if field_to_remove in self.filter_controls:
+            self.filter_controls[field_to_remove].value = ""
+        # Re-apply all filters
+        self._apply_all_filters(e)
+            
+    def _clear_all_filters(self, e):
+        """Resets all filter text fields and clears results."""
+        for control in self.filter_controls.values():
+            control.value = ""
+        
+        self.active_filter_chips.controls.clear()
+        self.current_sources = self.all_sources
+        self._update_results_list(self.current_sources)
+        self.page.update()
+
+    def _update_results_list(self, sources: List[SourceRecord]):
+        """Clears and repopulates the results list."""
+        project = self.controller.project_state_manager.current_project
+        self.results_list.controls.clear()
+        if sources:
+            for source in sorted(sources, key=lambda s: s.title):
+                # We just create the card. Its default context is "library",
+                # which correctly calls 'add_source_to_on_deck'.
+                self.results_list.controls.append(
+                    OnDeckCard(
+                        source=source,
+                        controller=self.controller,
+                        show_add_button=bool(project)
+                        # No context needed, it defaults to "library"
+                    )
+                )
+        else:
+            self.results_list.controls.append(ft.Text("No sources match your criteria.", italic=True, text_align=ft.TextAlign.CENTER))

@@ -1,77 +1,68 @@
+"""
+Base View (Simplified)
+
+A simple base class for all page views in the application. It provides
+common helper methods and a safe 'colors' property for consistent theming.
+"""
 import flet as ft
-from abc import ABC, abstractmethod
-from typing import Optional
 
-
-class BaseView(ABC):
-    """Base class for all views in the application"""
+class BaseView:
+    """Base class for all views in the application."""
     
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, controller):
         self.page = page
-        self._content: Optional[ft.Control] = None
-    
-    @abstractmethod
+        self.controller = controller
+
+    @property
+    def colors(self) -> ft.ColorScheme:
+        """
+        A safe property to access the application's color scheme.
+        It returns the current page's color scheme if it exists, otherwise,
+        it returns a failsafe default ColorScheme from the ThemeManager.
+        """
+        if self.page.theme and self.page.theme.color_scheme:
+            return self.page.theme.color_scheme
+        
+        # This is now much simpler. It just asks the ThemeManager for a default
+        # ColorScheme object, removing all complex logic from the view.
+        return self.controller.theme_manager.get_default_color_scheme()
+
     def build(self) -> ft.Control:
-        """Build and return the view's content"""
-        pass
-    
-    def get_content(self) -> ft.Control:
-        """Get the view's content, building it if necessary"""
-        if self._content is None:
-            self._content = self.build()
-        return self._content
-    
-    def refresh(self):
-        """Refresh the view by rebuilding its content"""
-        self._content = None
-        return self.get_content()
-    
-    def show_loading(self, message: str = "Loading...") -> ft.Control:
-        """Show a loading indicator"""
-        return ft.Container(
-            content=ft.Column([
-                ft.ProgressRing(),
-                ft.Text(message, size=16, color=ft.colors.GREY_600)
-            ], 
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=20),
-            alignment=ft.alignment.center,
-            expand=True
-        )
-    
+        """
+        Builds and returns the view's root Flet control.
+        This method must be implemented by all subclasses.
+        """
+        raise NotImplementedError("Each view must implement the build method.")
+
     def show_error(self, message: str, details: str = "") -> ft.Control:
-        """Show an error message"""
+        """Returns a standardized error message control using the safe colors property."""
+        colors = self.colors # This is now guaranteed to be a valid ColorScheme
+        
         content = [
-            ft.Icon(ft.icons.ERROR, color=ft.colors.RED, size=48),
-            ft.Text("Error", size=20, weight=ft.FontWeight.BOLD, color=ft.colors.RED),
-            ft.Text(message, size=16, color=ft.colors.GREY_700),
+            ft.Icon(ft.icons.ERROR, color=colors.error, size=48),
+            ft.Text("Error", size=20, weight=ft.FontWeight.BOLD, color=colors.error),
+            ft.Text(message, size=16, color=colors.on_surface_variant),
         ]
         
         if details:
-            content.append(
-                ft.Text(details, size=12, color=ft.colors.GREY_500)
-            )
+            content.append(ft.Text(details, size=12, color=colors.on_surface_variant))
         
         return ft.Container(
-            content=ft.Column(
-                content,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=10
-            ),
+            content=ft.Column(content, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
             alignment=ft.alignment.center,
             expand=True,
-            padding=20
+            padding=20,
+            bgcolor=colors.error_container,
+            border_radius=8
         )
     
-    def show_empty_state(self, 
-                        message: str = "No data available", 
-                        icon: str = ft.icons.INBOX,
-                        action_text: str = "",
-                        on_action=None) -> ft.Control:
-        """Show an empty state message"""
+    def show_empty_state(self, message: str, icon: str = ft.icons.INBOX, action_text: str = "", on_action=None) -> ft.Control:
+        """Returns a standardized empty state control using the safe colors property."""
+        colors = self.colors # This is now guaranteed to be a valid ColorScheme
+
         content = [
-            ft.Icon(icon, color=ft.colors.GREY_400, size=64),
-            ft.Text(message, size=18, color=ft.colors.GREY_600),
+            ft.Icon(icon, color=colors.on_surface_variant, size=64),
+            ft.Text(message, size=18, color=colors.on_surface_variant),
         ]
         
         if action_text and on_action:
@@ -80,18 +71,14 @@ class BaseView(ABC):
                     text=action_text,
                     on_click=on_action,
                     style=ft.ButtonStyle(
-                        bgcolor=ft.colors.BLUE_700,
-                        color=ft.colors.WHITE
+                        bgcolor=colors.primary,
+                        color=colors.on_primary
                     )
                 )
             )
         
         return ft.Container(
-            content=ft.Column(
-                content,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=20
-            ),
+            content=ft.Column(content, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20),
             alignment=ft.alignment.center,
             expand=True,
             padding=40

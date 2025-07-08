@@ -1,0 +1,48 @@
+{
+    "sources": [
+        {
+            "id": "src_ddfed72f",
+            "source_type": "book",
+            "title": "Happenings, The",
+            "region": "General",
+            "authors": [
+                "Smith",
+                "J."
+            ],
+            "publication_year": "2023",
+            "publisher": "Harper's Ferry Publishing",
+            "url": null,
+            "date_created": "2025-07-07T01:20:51.361685",
+            "last_modified": "2025-07-07T20:55:22.276621"
+        },
+        {
+            "id": "src_d8a05991",
+            "source_type": "website",
+            "title": "Another website source",
+            "region": "General",
+            "authors": [
+                "Spiderman",
+                "P"
+            ],
+            "publication_year": null,
+            "publisher": null,
+            "url": "www.google.com",
+            "date_created": "2025-07-07T20:09:00.771274",
+            "last_modified": "2025-07-07T20:09:00.771801"
+        },
+        {
+            "id": "src_4e861222",
+            "source_type": "report",
+            "title": "A third project",
+            "region": "General",
+            "authors": [
+                "New Authors"
+            ],
+            "publication_year": "2012",
+            "publisher": null,
+            "url": null,
+            "date_created": "2025-07-07T20:32:15.331779",
+            "last_modified": "2025-07-07T20:32:15.332210"
+        }
+    ]
+}

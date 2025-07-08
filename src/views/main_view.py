@@ -1,140 +1,26 @@
 import flet as ft
-from typing import Optional, Callable
+from typing import Callable
+
+# --- Component Imports ---
+from .components import AppBar, Sidebar
+# --- Configuration ---
+from config.app_config import PAGES
 
 
 class MainView:
-    def __init__(self, page: ft.Page, theme_manager=None, user_config=None):
+    """The main application shell."""
+
+    def __init__(self, page: ft.Page, controller):
         self.page = page
-        self.theme_manager = theme_manager
-        self.user_config = user_config
-        self.page.window_width = 1200
-        self.page.window_height = 800
-        self.page.window_min_width = 800
-        self.page.window_min_height = 600
-        
-        # Callbacks for navigation
-        self.on_navigation_change: Optional[Callable[[str], None]] = None
-        
-        # UI Components
-        self.sidebar = self._create_sidebar()
-        self.app_bar = self._create_app_bar()
-        self.content_area = self._create_content_area()
-        self.main_layout = self._create_main_layout()
-        
-    def _create_app_bar(self) -> ft.AppBar:
-        """Create the application bar"""
-        # Create greeting text for the right side
-        greeting_text = None
-        if self.user_config:
-            greeting = self.user_config.get_greeting()
-            if greeting:
-                greeting_text = ft.Text(
-                    greeting,
-                    size=16,
-                    weight=ft.FontWeight.W_500,
-                    color=ft.colors.WHITE
-                )
-        
-        # Create actions list with greeting first (if exists)
-        actions = []
-        if greeting_text:
-            actions.append(ft.Container(
-                content=greeting_text,
-                padding=ft.padding.only(right=10)
-            ))
-        
-        actions.extend([
-            ft.IconButton(
-                icon=ft.icons.SETTINGS,
-                icon_color=ft.colors.WHITE,
-                tooltip="Settings",
-                on_click=self._on_settings_click
-            ),
-            ft.IconButton(
-                icon=ft.icons.HELP,
-                icon_color=ft.colors.WHITE,
-                tooltip="Help",
-                on_click=self._on_help_click
-            ),
-        ])
-        
-        return ft.AppBar(
-            title=ft.Text("Source Manager", size=20, weight=ft.FontWeight.BOLD),
-            bgcolor=ft.colors.BLUE_700,
-            color=ft.colors.WHITE,
-            actions=actions
-        )
-    
-    def _create_sidebar(self) -> ft.NavigationRail:
-        """Create the sidebar navigation"""
-        return ft.NavigationRail(
-            selected_index=0,
-            label_type=ft.NavigationRailLabelType.ALL,
-            min_width=100,
-            min_extended_width=200,
-            group_alignment=-0.9,
-            destinations=[
-                ft.NavigationRailDestination(
-                    icon=ft.icons.HOME_OUTLINED,
-                    selected_icon=ft.icons.HOME,
-                    label="Home"
-                ),
-                ft.NavigationRailDestination(
-                    icon=ft.icons.FOLDER_OUTLINED,
-                    selected_icon=ft.icons.FOLDER,
-                    label="Projects"
-                ),
-                ft.NavigationRailDestination(
-                    icon=ft.icons.CODE_OUTLINED,
-                    selected_icon=ft.icons.CODE,
-                    label="Sources"
-                ),
-                ft.NavigationRailDestination(
-                    icon=ft.icons.ANALYTICS_OUTLINED,
-                    selected_icon=ft.icons.ANALYTICS,
-                    label="Reports"
-                ),
-            ],
-            on_change=self._on_navigation_change,
-            bgcolor=self._get_sidebar_color(),
-        )
-    
-    def _create_content_area(self) -> ft.Container:
-        """Create the main content area"""
-        return ft.Container(
-            content=ft.Column([
-                ft.Text(
-                    "Welcome to Source Manager",
-                    size=24,
-                    weight=ft.FontWeight.BOLD,
-                    color=ft.colors.BLUE_700
-                ),
-                ft.Text(
-                    "Select an option from the sidebar to get started.",
-                    size=16,
-                    color=ft.colors.GREY_700
-                ),
-                ft.Divider(height=20, thickness=1),
-                ft.Container(
-                    content=ft.Text(
-                        "Content will be loaded here based on your selection.",
-                        size=14,
-                        color=ft.colors.GREY_600
-                    ),
-                    padding=20,
-                    bgcolor=self._get_secondary_bg_color(),
-                    border_radius=8,
-                    margin=ft.margin.only(top=20)
-                )
-            ]),
-            padding=20,
-            expand=True,
-            bgcolor=self._get_content_bg_color(),
-        )
-    
-    def _create_main_layout(self) -> ft.Row:
-        """Create the main layout combining sidebar and content"""
-        return ft.Row(
+        self.controller = controller
+
+        # --- Initialize UI Components ---
+        self.app_bar = self._build_app_bar()
+        self.sidebar = self._build_sidebar()
+        self.content_area = self._build_content_area()
+
+        # --- Main Layout ---
+        self.main_layout = ft.Row(
             [
                 self.sidebar,
                 ft.VerticalDivider(width=1),
@@ -143,109 +29,69 @@ class MainView:
             spacing=0,
             expand=True,
         )
-    
-    def _on_navigation_change(self, e: ft.ControlEvent):
-        """Handle navigation rail selection changes"""
-        selected_index = e.control.selected_index
-        
-        # Map indices to page names
-        pages = ["home", "projects", "sources", "reports"]
-        if 0 <= selected_index < len(pages):
-            page_name = pages[selected_index]
-            if self.on_navigation_change:
-                self.on_navigation_change(page_name)
-    
-    def _on_settings_click(self, e: ft.ControlEvent):
-        """Handle settings button click"""
-        if self.on_navigation_change:
-            self.on_navigation_change("settings")
-    
-    def _on_help_click(self, e: ft.ControlEvent):
-        """Handle help button click"""
-        if self.on_navigation_change:
-            self.on_navigation_change("help")
-    
-    def set_content(self, content: ft.Control):
-        """Update the content area with new content"""
-        self.content_area.content = content
-        self.page.update()
-    
-    def set_navigation_callback(self, callback: Callable[[str], None]):
-        """Set the callback function for navigation changes"""
-        self.on_navigation_change = callback
-    
+
+    def _build_app_bar(self) -> AppBar:
+        """Builds the AppBar component."""
+        return AppBar(
+            greeting=self.controller.user_config_manager.get_greeting(),
+            on_settings_click=lambda e: self.controller.navigate_to("settings"),
+            on_help_click=lambda e: self.controller.navigate_to("help"),
+        )
+
+    def _build_sidebar(self) -> Sidebar:
+        """Builds the Sidebar component dynamically from config."""
+        return Sidebar(pages_config=PAGES, on_change=self.controller.navigate_to)
+
+    def _build_content_area(self) -> ft.Container:
+        """Creates the container that will hold the current page's content."""
+        return ft.Container(
+            content=ft.ProgressRing(),  # Show a loading ring initially
+            alignment=ft.alignment.center,
+            expand=True,
+        )
+
     def show(self):
-        """Display the main view on the page"""
+        """Clears the page and displays the main application layout."""
         self.page.appbar = self.app_bar
+        self.page.controls.clear()
         self.page.add(self.main_layout)
         self.page.update()
-    
-    def update_selected_navigation(self, page_name: str):
-        """Update the selected navigation item"""
-        page_mapping = {
-            "home": 0,
-            "projects": 1,
-            "sources": 2,
-            "reports": 3
-        }
-        
-        if page_name in page_mapping:
-            self.sidebar.selected_index = page_mapping[page_name]
-            self.page.update()
-    
-    def _get_sidebar_color(self) -> str:
-        """Get sidebar background color based on theme"""
-        if self.theme_manager:
-            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
-            return self.theme_manager.get_sidebar_color(current_mode)
-        # Fallback
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.GREY_900
-        return ft.colors.GREY_100
-    
-    def _get_content_bg_color(self) -> str:
-        """Get content area background color based on theme"""
-        if self.theme_manager:
-            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
-            return self.theme_manager.get_content_bg_color(current_mode)
-        # Fallback
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.GREY_800
-        return ft.colors.WHITE
-    
-    def _get_secondary_bg_color(self) -> str:
-        """Get secondary background color based on theme"""
-        if self.theme_manager:
-            current_mode = "dark" if self.page.theme_mode == ft.ThemeMode.DARK else "light"
-            return self.theme_manager.get_secondary_bg_color(current_mode)
-        # Fallback
-        if self.page.theme_mode == ft.ThemeMode.DARK:
-            return ft.colors.GREY_700
-        return ft.colors.GREY_50
-    
-    def set_theme_color(self, color_data: dict):
-        """Set the theme color for the application"""
-        self.current_theme_color = color_data
-        # Update app bar color
-        if self.app_bar:
-            self.app_bar.bgcolor = color_data["primary"]
+
+    def set_content(self, content: ft.Control):
+        """Updates the content area with a new view/page."""
+        self.content_area.content = content
         self.page.update()
 
-    def update_theme_colors(self):
-        """Update colors when theme changes"""
-        self.sidebar.bgcolor = self._get_sidebar_color()
-        self.content_area.bgcolor = self._get_content_bg_color()
-        # Update the nested container's background color if it exists
-        if (self.content_area.content and 
-            hasattr(self.content_area.content, 'controls') and 
-            len(self.content_area.content.controls) > 3):
-            nested_container = self.content_area.content.controls[3]
-            if hasattr(nested_container, 'bgcolor'):
-                nested_container.bgcolor = self._get_secondary_bg_color()
-        self.page.update()
+    def update_navigation(self, page_name: str):
+        """Updates the sidebar's selected item."""
+        self.sidebar.update_selection(page_name)
 
-    def refresh_app_bar(self):
-        """Refresh the app bar with updated greeting"""
-        self.app_bar = self._create_app_bar()
-        self.page.appbar = self.app_bar
+    def update_greeting(self):
+        """Refreshes the greeting message in the app bar."""
+        new_greeting = self.controller.user_config_manager.get_greeting()
+        self.app_bar.update_greeting(new_greeting)
+
+    def refresh_theme(self):
+        """
+        Updates the colors of all components when the theme changes.
+        The AppBar is now styled automatically by the page.theme.
+        """
+        if not self.page.theme or not self.page.theme.color_scheme:
+            return
+
+        colors = self.page.theme.color_scheme
+
+        # --- SIMPLIFIED: No manual AppBar styling needed ---
+        # The AppBar's theme is now defined in the ThemeManager.
+        # We only need to style the components MainView directly owns.
+
+        # We do, however, need to update the greeting text color manually
+        # as it's a child control inside the custom AppBar.
+        self.app_bar.greeting_text.color = colors.on_primary
+
+        self.sidebar.bgcolor = colors.surface
+        self.content_area.bgcolor = colors.background
+
+        # Refresh the components themselves to apply internal color changes
+        self.sidebar.refresh_theme()
         self.page.update()
