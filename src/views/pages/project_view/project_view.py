@@ -36,21 +36,16 @@ class ProjectView(BaseView):
         if not project:
             return self.show_error("No project is currently loaded.")
 
-        self.metadata_tab.update_project_data(project.metadata, str(project.file_path))
-        self.sources_tab.update_project_data(project.metadata, str(project.file_path))
-        # self.cite_sources_tab.update_project_data(project.metadata, str(project.file_path))
+        # Update the tabs with the latest project data
+        self.update_view()
 
         project_info = f"Project: {project.title}"
-        
-        # --- FIX: Add project type to the header ---
         project_type_config = get_project_type_config(project.project_type.value)
         project_type_display = f"({project_type_config.display_name})" if project_type_config else ""
-        # --- END FIX ---
 
         return ft.Column([
             ft.Container(
                 content=ft.Row([
-                    # This group will stay on the left
                     ft.Row([
                         ft.IconButton(
                             icon=ft.icons.ARROW_BACK,
@@ -59,9 +54,7 @@ class ProjectView(BaseView):
                         ),
                         ft.Text(project_info, size=20, weight=ft.FontWeight.BOLD),
                     ]),
-                    # This spacer will push the next item to the right
                     ft.Container(expand=True),
-                    # This will be on the right
                     ft.Text(project_type_display, size=20, color=ft.colors.ON_SURFACE_VARIANT),
                 ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=ft.padding.all(20),
@@ -101,6 +94,19 @@ class ProjectView(BaseView):
 
     def update_view(self):
         """
-        Refreshes the entire view.
+        This method is called by the controller's refresh_current_view.
+        It ensures all child tabs have their data refreshed before redrawing the page.
         """
-        self.page.update()
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+
+        # Call the update method on the child tabs that need refreshing
+        if hasattr(self, 'metadata_tab') and hasattr(self.metadata_tab, 'update_project_data'):
+            self.metadata_tab.update_project_data(project.metadata, str(project.file_path))
+        
+        if hasattr(self, 'sources_tab') and hasattr(self.sources_tab, 'update_project_data'):
+            self.sources_tab.update_project_data(project.metadata, str(project.file_path))
+
+        # The update_project_data method in the tab already calls page.update(),
+        # so we don't need an extra call here.

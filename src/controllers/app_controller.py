@@ -42,6 +42,9 @@ from views.components.dialogs import (
     SourceEditorDialog
 )
 
+# --- Models: Define data structures ---
+from models import ProjectSourceLink
+
 
 class AppController:
     """The central orchestrator of the application."""
@@ -407,8 +410,31 @@ class AppController:
         dialog = FirstTimeSetupDialog(self.page, on_setup_complete)
         dialog.show()
 
+    def add_source_to_on_deck(self, source_id: str):
+        """Adds a source ID to the on_deck_sources list in the current project's metadata."""
+        project = self.project_state_manager.current_project
+        if not project:
+            self.page.snack_bar = ft.SnackBar(ft.Text("You must have a project open to add sources to its 'On Deck' list."), open=True)
+            self.page.update()
+            return
+
+        # Ensure the 'on_deck_sources' key exists in metadata
+        if "on_deck_sources" not in project.metadata:
+            project.metadata["on_deck_sources"] = []
+        
+        on_deck_list = project.metadata["on_deck_sources"]
+        
+        if source_id not in on_deck_list:
+            on_deck_list.append(source_id)
+            self.data_service.save_project(project)
+            self.page.snack_bar = ft.SnackBar(ft.Text(f"Source added to On Deck for '{project.title}'."), open=True)
+        else:
+            self.page.snack_bar = ft.SnackBar(ft.Text("This source is already on deck."), open=True)
+            
+        self.page.update()
+
     def add_source_to_project(self, source_id: str):
-        """Adds a master source to the currently loaded project."""
+        """Adds a master source to the currently loaded project and removes it from 'On Deck'."""
         project = self.project_state_manager.current_project
         if not project:
             self.logger.error("Attempted to add a source, but no project is loaded.")
@@ -416,6 +442,12 @@ class AppController:
 
         self.logger.info(f"Adding source '{source_id}' to project '{project.title}'.")
         self.data_service.add_source_to_project(project, source_id)
+        
+        # --- FIX: Also remove the source from the on-deck list ---
+        if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
+            project.metadata["on_deck_sources"].remove(source_id)
+            self.data_service.save_project(project)
+        # --- END FIX ---
         
         # Refresh the sources tab to show the change
         current_view = self.views.get("project_dashboard")
@@ -430,23 +462,6 @@ class AppController:
             self.data_service.reorder_sources_in_project(project, new_ordered_ids)
         else:
             self.logger.error("Attempted to reorder sources, but no project is loaded.")
-
-    # --- FIX: Added method to remove a source from the project ---
-    def remove_source_from_project(self, source_id: str):
-        """Removes a source link from the currently loaded project."""
-        project = self.project_state_manager.current_project
-        if not project:
-            self.logger.error("Attempted to remove a source, but no project is loaded.")
-            return
-
-        self.logger.info(f"Removing source '{source_id}' from project '{project.title}'.")
-        self.data_service.remove_source_from_project(project, source_id)
-        
-        # Refresh the sources tab to show the change
-        current_view = self.views.get("project_dashboard")
-        if current_view and hasattr(current_view, 'sources_tab') and hasattr(current_view.sources_tab, "_update_view"):
-            current_view.sources_tab._update_view()
-    # --- END FIX ---
 
     def show_source_editor_dialog(self, source_id: str):
         """Shows a dialog to view and edit a master source's details."""
@@ -479,3 +494,85 @@ class AppController:
             
         self.page.snack_bar.open = True
         self.page.update()
+
+    def promote_source_from_on_deck(self, source_id: str):
+        """
+        Moves a source from the "On Deck" list to the main project sources list.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            logging.warning("Attempted to promote a source with no project loaded.")
+            return
+
+        logging.info(f"Promoting source '{source_id}' from On Deck to project sources.")
+
+        # 1. Remove the source from the "On Deck" list in metadata
+        try:
+            # The user's hunch was correct, we access 'on_deck_sources' via metadata
+            project.metadata["on_deck_sources"].remove(source_id)
+        except (ValueError, KeyError):
+            logging.warning(f"Source ID '{source_id}' not found in On Deck list during promotion.")
+
+        # 2. Add the source to the main project sources list
+        if not any(link.source_id == source_id for link in project.sources):
+            new_order = len(project.sources)
+            new_link = ProjectSourceLink(source_id=source_id, order=new_order)
+            project.sources.append(new_link)
+        
+        # 3. Save and refresh
+        self.data_service.save_project(project)
+        self.refresh_current_view()
+
+    def remove_source_from_project(self, source_id: str):
+        """
+        Removes a source link from the project AND adds it back to the "On Deck" list.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            logging.error("Attempted to remove a source, but no project is loaded.")
+            return
+
+        logging.info(f"Removing source '{source_id}' from project '{project.title}'.")
+        
+        # --- THIS IS THE FIX FOR THE "DELETE" ISSUE ---
+        # 1. Add the source back to the "On Deck" list first.
+        if "on_deck_sources" not in project.metadata:
+            project.metadata["on_deck_sources"] = []
+        
+        on_deck_list = project.metadata["on_deck_sources"]
+        if source_id not in on_deck_list:
+            on_deck_list.append(source_id)
+        # --- END FIX ---
+        
+        # 2. Remove the source from the project (this now just affects the main list)
+        self.data_service.remove_source_from_project(project, source_id)
+        
+        # 3. Refresh the view to show the changes
+        self.refresh_current_view()
+
+    def refresh_current_view(self):
+        """
+        Finds the currently visible view instance from the controller's state
+        and calls its update method.
+        """
+        # Get the name of the current page from your navigation manager
+        current_page_name = self.navigation_manager.get_current_page() #
+        if not current_page_name:
+            logging.warning("refresh_current_view: No current page found in navigation manager.")
+            return
+
+        # Get the actual view instance that is currently displayed from the controller's cache
+        current_view_instance = self.views.get(current_page_name)
+        
+        if not current_view_instance:
+            logging.warning(f"refresh_current_view: Could not find view instance for page '{current_page_name}'.")
+            self.page.update() # Fallback to a simple page update
+            return
+
+        # Check if this specific view instance has our update_view method
+        if hasattr(current_view_instance, "update_view"):
+            logging.info(f"Calling update_view() on instance for page '{current_page_name}'.")
+            current_view_instance.update_view()
+        else:
+            logging.info(f"View for page '{current_page_name}' has no update method, calling page.update().")
+            self.page.update()

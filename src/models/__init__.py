@@ -5,7 +5,7 @@ relationship to source records.
 """
 
 from .project_models import Project, ProjectSourceLink, ProjectType
-from .source_models import SourceRecord
+from .source_models import SourceRecord, SourceType
 from .user_config_models import UserConfig, WindowConfig, ThemeConfig, RecentProject
 
 __all__ = [
@@ -15,6 +15,7 @@ __all__ = [
     "ProjectType",
     # Source Models
     "SourceRecord",
+    "SourceType",
     # User Config Models
     "UserConfig",
     "WindowConfig",

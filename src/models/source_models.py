@@ -44,8 +44,9 @@ class SourceRecord:
     url: Optional[str] = None
     
     # Timestamps for the master record
-    date_created: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    last_modified: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    date_created: str = field(default_factory=lambda: datetime.now().isoformat())
+    last_modified: str = field(default_factory=lambda: datetime.now().isoformat())
+    report_number: Optional[str] = None  # For reports and standards
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the dataclass to a dictionary."""
