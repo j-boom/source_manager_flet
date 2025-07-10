@@ -13,9 +13,18 @@ class SourcesView(BaseView):
         super().__init__(page, controller)
         self.all_sources: List[SourceRecord] = []
         self.current_sources: List[SourceRecord] = []
+        self.selected_country: str = "General"  # Default selection
         
         # UI for showing current project title
         self.project_title_header = ft.Text(visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY)
+
+        # Country selection dropdown
+        self.country_dropdown = ft.Dropdown(
+            label="Country/Region",
+            width=200,
+            on_change=self._on_country_changed,
+            border_radius=8,
+        )
 
         # UI Components
         self.filter_controls: Dict[str, ft.TextField] = {}
@@ -54,7 +63,7 @@ class SourcesView(BaseView):
         add_source_button = ft.ElevatedButton(
             text="Add Source",
             icon=ft.icons.ADD,
-            on_click=lambda e: self.controller.show_create_source_dialog(),
+            on_click=self._on_add_source_clicked,
             style=ft.ButtonStyle(
                 bgcolor=ft.colors.PRIMARY,
                 color=ft.colors.ON_PRIMARY,
@@ -66,8 +75,9 @@ class SourcesView(BaseView):
                 ft.Row([
                     ft.Text("Master Source Library", style=ft.TextThemeStyle.HEADLINE_MEDIUM),
                     self.project_title_header,
-                    # Move the add button to the header row
-                    ft.Container(expand=True),  # Spacer to push button to the right
+                    # Add country dropdown to header
+                    ft.Container(expand=True),  # Spacer
+                    self.country_dropdown,
                     add_source_button,
                 ], spacing=10, alignment=ft.MainAxisAlignment.START),
                 ft.Text("Use the filters on the left to search the library.", color=ft.colors.ON_SURFACE_VARIANT),
@@ -89,12 +99,85 @@ class SourcesView(BaseView):
 
     def _initialize_view(self):
         """Fetches data and builds the dynamic filter controls. Called once."""
-        if not self.all_sources:
+        # Populate country dropdown from available source files
+        self._populate_country_dropdown()
+        
+        # Load sources for the default country
+        self._load_sources_for_country(self.selected_country)
+        self._build_filter_controls()
+        
+        # Initial UI update based on project state
+        self.update_view_for_project_state()
+
+    def _populate_country_dropdown(self):
+        """Populate the country dropdown with available countries from source files."""
+        available_countries = self.controller.data_service.get_available_countries()
+        
+        # Add "All Countries" option
+        self.country_dropdown.options = [ft.dropdown.Option("All", "All Countries")]
+        
+        # Add each available country
+        for country in sorted(available_countries):
+            self.country_dropdown.options.append(ft.dropdown.Option(country, country))
+        
+        # Set default selection
+        self.country_dropdown.value = "All"
+        self.selected_country = "All"
+
+    def _on_country_changed(self, e):
+        """Handle country dropdown selection change."""
+        self.selected_country = e.control.value
+        self._load_sources_for_country(self.selected_country)
+        self._clear_all_filters(e)  # Reset filters when country changes
+
+    def _load_sources_for_country(self, country: str):
+        """Load sources for the selected country."""
+        if country == "All":
             self.all_sources = self.controller.data_service.get_all_master_sources()
-            self.current_sources = self.all_sources
-            self._build_filter_controls()
-            # Initial UI update based on project state
-            self.update_view_for_project_state()
+        else:
+            self.all_sources = self.controller.data_service.get_master_sources_for_country(country)
+        self.current_sources = self.all_sources
+
+    def _on_add_source_clicked(self, e):
+        """Handle add source button click."""
+        if self.selected_country == "All":
+            # Show dialog to select country first
+            self._show_country_selection_dialog()
+        else:
+            # Use selected country
+            self.controller.show_create_source_dialog_for_country(self.selected_country)
+
+    def _show_country_selection_dialog(self):
+        """Show dialog to select country when 'All Countries' is selected."""
+        available_countries = self.controller.data_service.get_available_countries()
+        
+        country_dropdown = ft.Dropdown(
+            label="Select Country/Region",
+            options=[ft.dropdown.Option(country, country) for country in sorted(available_countries)],
+            width=300,
+        )
+        
+        def on_country_select(e):
+            if country_dropdown.value:
+                self.controller.show_create_source_dialog_for_country(country_dropdown.value)
+                dialog.open = False
+                self.page.update()
+        
+        dialog = ft.AlertDialog(
+            title=ft.Text("Select Country/Region"),
+            content=ft.Column([
+                ft.Text("Please select a country/region for the new source:"),
+                country_dropdown,
+            ], tight=True),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: setattr(dialog, 'open', False) or self.page.update()),
+                ft.ElevatedButton("Create Source", on_click=on_country_select),
+            ],
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
 
     def update_view_for_project_state(self):
         """Updates the view based on the current project state."""
@@ -138,7 +221,7 @@ class SourcesView(BaseView):
         self.active_filter_chips.controls.clear()
 
         for field_name, control in self.filter_controls.items():
-            search_term = control.value.lower().strip()
+            search_term = (control.value or "").lower().strip()
             if not search_term: continue
                 
             chip = ft.Chip(

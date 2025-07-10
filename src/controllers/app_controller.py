@@ -377,9 +377,9 @@ class AppController:
             )
             return
 
-        region = self.data_service.get_region_for_project(project.file_path)
+        country = self.data_service.get_country_for_project(project.file_path)
 
-        success, message, _ = self.data_service.create_new_source(region, form_data)
+        success, message, _ = self.data_service.create_new_source(country, form_data)
 
         if success:
             self.page.snack_bar = ft.SnackBar(
@@ -392,6 +392,38 @@ class AppController:
 
         self.page.snack_bar.open = True
         self.page.update()
+
+    def show_create_source_dialog_for_country(self, country: str):
+        """Shows the dialog to create a new master source for a specific country."""
+        def on_dialog_close():
+            # Refresh the sources view if it's the current view
+            if hasattr(self, 'current_view_name') and self.current_view_name == "sources":
+                current_view = self.views.get("sources")
+                if current_view and hasattr(current_view, "_load_sources_for_country"):
+                    # Refresh the view by reloading sources
+                    if hasattr(current_view, "selected_country"):
+                        current_view._load_sources_for_country(current_view.selected_country)
+                        current_view._clear_all_filters(None)
+        
+        dialog = SourceCreationDialog(self.page, self, on_close=on_dialog_close, target_country=country)
+        dialog.show()
+
+    def submit_new_source_for_country(self, country: str, form_data: Dict[str, Any]):
+        """Creates a new source for a specific country (independent of loaded project)."""
+        success, message, _ = self.data_service.create_new_source(country, form_data)
+
+        if success:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(message), bgcolor=ft.colors.GREEN
+            )
+        else:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(message), bgcolor=ft.colors.ERROR_CONTAINER
+            )
+
+        if self.page.snack_bar:
+            self.page.snack_bar.open = True
+            self.page.update()
 
     def _create_view_for_page(self, page_name: str) -> Optional[ft.Control]:
         """Factory method to create view instances on demand using the config."""

@@ -19,8 +19,9 @@ class _CompatibleFieldConfig:
 class SourceCreationDialog(BaseDialog):
     """A dialog for creating a new master source record."""
     
-    def __init__(self, page: ft.Page, controller, on_close: callable):
+    def __init__(self, page: ft.Page, controller, on_close, target_country = None):
         self.controller = controller
+        self.target_country = target_country  # If specified, create source for this country
         self.form_fields: Dict[str, ft.Control] = {}
         self.dynamic_fields_container = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
         self.source_type_dropdown = ft.Dropdown(
@@ -74,15 +75,21 @@ class SourceCreationDialog(BaseDialog):
 
     def _on_submit(self, e):
         """Gathers data and passes it to the controller."""
-        form_data = {name: control.value for name, control in self.form_fields.items()}
+        form_data = {name: getattr(control, 'value', '') for name, control in self.form_fields.items()}
         form_data["source_type"] = self.source_type_dropdown.value
         
         title_field = self.form_fields.get("title")
         if not form_data.get("title") and title_field:
-            title_field.error_text = "Title is required"
+            if hasattr(title_field, 'error_text'):
+                title_field.error_text = "Title is required"
             self.page.update()
             return
-            
-        self.controller.submit_new_source(form_data)
+        
+        # Use target_country if specified, otherwise use project-based submission
+        if self.target_country:
+            self.controller.submit_new_source_for_country(self.target_country, form_data)
+        else:
+            self.controller.submit_new_source(form_data)
+        
         self._close_dialog(e)
 

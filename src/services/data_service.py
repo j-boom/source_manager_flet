@@ -15,10 +15,11 @@ from datetime import datetime
 
 # Import the application's configuration and data models
 from config import (
-    REGIONAL_MAPPINGS,
     MASTER_SOURCES_DIR,
     PROJECT_DATA_DIR,
     get_project_type_config,
+    get_country_from_project_path,
+    get_source_file_for_country,
 )
 from src.models.project_models import Project, ProjectType
 from src.models.source_models import SourceRecord, SourceType
@@ -57,7 +58,7 @@ class DataService:
             return False, f"Invalid folder name '{folder_name}'."
         new_folder_path = (parent_path / f"{sanitized_filename} {sanitized_description}" if sanitized_description else parent_path / sanitized_filename)
         if new_folder_path.exists():
-            return False, f"A folder or file named '{sanitized_filename}' already exists."
+            return False, f"A folder or file named '{sanitizedFilename}' already exists."
         try:
             new_folder_path.mkdir(parents=True, exist_ok=False)
             return True, f"Successfully created folder '{sanitized_filename}'."
@@ -104,40 +105,44 @@ class DataService:
             return False, "An error occurred while saving the project.", None
 
     # --- Master Source Management ---
-    def _load_master_sources_for_region(self, region: str) -> Dict[str, SourceRecord]:
-        if region in self._master_source_cache:
-            return self._master_source_cache[region]
-        source_file_path = self.master_sources_dir / f"{region}_sources.json"
+    def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
+        """Load master sources for a specific country."""
+        if country in self._master_source_cache:
+            return self._master_source_cache[country]
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
         if not source_file_path.exists():
-            self._master_source_cache[region] = {}
+            self._master_source_cache[country] = {}
             return {}
         try:
             with open(source_file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             sources_list = data.get("sources", [])
             source_map = {record_data["id"]: SourceRecord.from_dict(record_data) for record_data in sources_list}
-            self._master_source_cache[region] = source_map
+            self._master_source_cache[country] = source_map
             return source_map
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"Error loading master sources for region '{region}': {e}")
+            print(f"Error loading master sources for country '{country}': {e}")
             return {}
 
-    def get_master_sources_for_region(self, region: str) -> List[SourceRecord]:
-        source_map = self._load_master_sources_for_region(region)
+    def get_master_sources_for_country(self, country: str) -> List[SourceRecord]:
+        """Get all master sources for a specific country."""
+        source_map = self._load_master_sources_for_country(country)
         return list(source_map.values())
 
     def get_all_master_sources(self) -> List[SourceRecord]:
+        """Get all master sources from all countries."""
         all_sources = []
         source_files = list(self.master_sources_dir.glob("*_sources.json"))
         for f in source_files:
-            region_name = f.name.replace("_sources.json", "")
-            all_sources.extend(self.get_master_sources_for_region(region_name))
+            country_name = f.name.replace("_sources.json", "")
+            all_sources.extend(self.get_master_sources_for_country(country_name))
         return all_sources
 
     def get_source_by_id(self, source_id: str) -> Optional[SourceRecord]:
-        for region_cache in self._master_source_cache.values():
-            if source_id in region_cache:
-                return region_cache[source_id]
+        """Find a source by ID across all countries."""
+        for country_cache in self._master_source_cache.values():
+            if source_id in country_cache:
+                return country_cache[source_id]
         
         all_sources = self.get_all_master_sources()
         for source in all_sources:
@@ -145,14 +150,15 @@ class DataService:
                 return source
         return None
 
-    def create_new_source(self, region: str, form_data: Dict[str, Any]) -> Tuple[bool, str, Optional[SourceRecord]]:
+    def create_new_source(self, country: str, form_data: Dict[str, Any]) -> Tuple[bool, str, Optional[SourceRecord]]:
+        """Create a new master source for a specific country."""
         source_type_str = form_data.get("source_type")
         if not source_type_str:
             return False, "Source type not specified.", None
 
         source_data = form_data.copy()
         source_data['id'] = str(uuid.uuid4())
-        source_data['region'] = region
+        source_data['region'] = country  # Keep 'region' field for backward compatibility, but store country
         
         if 'authors' in source_data and isinstance(source_data['authors'], str):
             source_data['authors'] = [author.strip() for author in source_data['authors'].split(',') if author.strip()]
@@ -162,7 +168,7 @@ class DataService:
         except Exception as e:
             return False, f"Failed to create source model: {e}", None
 
-        source_file_path = self.master_sources_dir / f"{region}_sources.json"
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
         if source_file_path.exists():
             with open(source_file_path, "r", encoding="utf-8") as f:
                 master_data = json.load(f)
@@ -177,8 +183,8 @@ class DataService:
             with open(source_file_path, "w", encoding="utf-8") as f:
                 json.dump(master_data, f, indent=4)
             
-            if region in self._master_source_cache:
-                del self._master_source_cache[region]
+            if country in self._master_source_cache:
+                del self._master_source_cache[country]
                 
             return True, "Source created successfully.", new_source
         except Exception as e:
@@ -186,7 +192,7 @@ class DataService:
 
     # --- FIX: Add method to update an existing source ---
     def update_master_source(self, source_id: str, updated_data: Dict[str, Any]) -> Tuple[bool, str]:
-        """Finds a master source, updates it with new data, and saves the regional file."""
+        """Finds a master source, updates it with new data, and saves the country file."""
         source = self.get_source_by_id(source_id)
         if not source:
             return False, f"Source with ID '{source_id}' not found."
@@ -200,11 +206,11 @@ class DataService:
         
         source.last_modified = datetime.utcnow().isoformat()
 
-        region = source.region
-        source_file_path = self.master_sources_dir / f"{region}_sources.json"
+        country = source.region  # For backward compatibility, the 'region' field stores the country
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
         
         if not source_file_path.exists():
-            return False, f"Master source file for region '{region}' does not exist."
+            return False, f"Master source file for country '{country}' does not exist."
 
         try:
             with open(source_file_path, "r", encoding="utf-8") as f:
@@ -225,27 +231,31 @@ class DataService:
             with open(source_file_path, "w", encoding="utf-8") as f:
                 json.dump(master_data, f, indent=4)
             
-            if region in self._master_source_cache:
-                del self._master_source_cache[region]
+            if country in self._master_source_cache:
+                del self._master_source_cache[country]
             
             return True, "Source updated successfully."
         except Exception as e:
             return False, f"Failed to save updated source: {e}"
 
     # --- Project and Source Relationship Logic ---
-    def get_region_for_project(self, project_path: Path) -> str:
-        sorted_mappings = sorted(REGIONAL_MAPPINGS, key=lambda m: m.priority, reverse=True)
-        for mapping in sorted_mappings:
-            for pattern in mapping.directory_patterns:
-                if project_path.match(pattern):
-                    return mapping.region_name
-        return "General"
+    def get_country_for_project(self, project_path: Path) -> str:
+        """Get the country name for a project based on its path."""
+        return get_country_from_project_path(project_path)
 
     def get_hydrated_sources_for_project(self, project: Project) -> List[SourceRecord]:
-        if not project: return []
-        region = self.get_region_for_project(project.file_path)
-        master_sources = self._load_master_sources_for_region(region)
-        return [master_sources.get(link.source_id) for link in project.sources if link.source_id in master_sources]
+        """Get all master sources linked to a project."""
+        if not project: 
+            return []
+        country = self.get_country_for_project(project.file_path)
+        master_sources = self._load_master_sources_for_country(country)
+        hydrated_sources = []
+        for link in project.sources:
+            if link.source_id in master_sources:
+                source = master_sources.get(link.source_id)
+                if source is not None:
+                    hydrated_sources.append(source)
+        return hydrated_sources
 
     # --- Project Data Modification ---
     def add_source_to_project(self, project: Project, source_id: str):
@@ -270,3 +280,12 @@ class DataService:
 
     def save_project(self, project: Project):
         project.save()
+
+    def get_available_countries(self) -> List[str]:
+        """Get list of available countries from existing source files."""
+        countries = []
+        source_files = list(self.master_sources_dir.glob("*_sources.json"))
+        for f in source_files:
+            country_name = f.name.replace("_sources.json", "")
+            countries.append(country_name)
+        return countries

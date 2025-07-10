@@ -85,43 +85,47 @@ SPECIAL_PAGES = {
 
 
 # =============================================================================
-# Regional Source Mapping Configuration
+# Country-Based Source Mapping Configuration
 # =============================================================================
-@dataclass
-class RegionalMapping:
-    """Configuration for a regional source mapping."""
 
-    region_name: str
-    directory_patterns: List[str]
-    source_file: str
-    display_name: str
-    description: str
-    priority: int = 0
+def get_country_from_project_path(project_path: Path) -> str:
+    """
+    Extracts the country name from a project path structure.
+    
+    Expected structure: {BASE_DIR}/Directory Source Citations/{REGION}/{COUNTRY}/{PROJECT}/...
+    
+    Args:
+        project_path: Path to the project file or directory
+        
+    Returns:
+        Country name if found in the expected structure, otherwise "General"
+    """
+    try:
+        # Convert to relative path from PROJECT_DATA_DIR to normalize
+        if PROJECT_DATA_DIR in project_path.parents:
+            relative_path = project_path.relative_to(PROJECT_DATA_DIR)
+            path_parts = relative_path.parts
+            
+            # Expected structure: REGION/COUNTRY/PROJECT/...
+            if len(path_parts) >= 2:
+                country = path_parts[1]  # Second level is country
+                return country
+                
+    except (ValueError, IndexError):
+        pass
+    
+    # Fallback to "General" if structure doesn't match
+    return "General"
 
 
-REGIONAL_MAPPINGS = [
-    RegionalMapping(
-        region_name="ROW",
-        directory_patterns=["**/ROW/**", "**/Right_of_Way/**"],
-        source_file="ROW_sources.json",
-        display_name="Right of Way",
-        description="Sources specific to Right of Way projects",
-        priority=10,
-    ),
-    RegionalMapping(
-        region_name="Other",
-        directory_patterns=["**/Other_Projects/**", "**/Other/**"],
-        source_file="Other_sources.json",
-        display_name="Other Projects",
-        description="General project sources",
-        priority=5,
-    ),
-    RegionalMapping(
-        region_name="General",
-        directory_patterns=["**"],
-        source_file="General_sources.json",
-        display_name="General Sources",
-        description="Default sources for all other projects",
-        priority=1,
-    ),
-]
+def get_source_file_for_country(country: str) -> str:
+    """
+    Returns the source filename for a given country.
+    
+    Args:
+        country: Country name
+        
+    Returns:
+        Filename for the country's source file
+    """
+    return f"{country}_sources.json"
