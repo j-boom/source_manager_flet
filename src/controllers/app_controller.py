@@ -11,6 +11,7 @@ from pathlib import Path
 import logging
 import re
 import os
+from datetime import datetime
 
 import flet as ft
 
@@ -745,3 +746,162 @@ class AppController:
         self.data_service.save_project(project)
         
         self.logger.info(f"Removed {len(source_ids)} citations from slide {slide_id}")
+
+    # --- Source Group Management Methods ---
+    
+    def create_source_group(self, group_name: str, source_ids: list):
+        """
+        Creates a new source group for the current project.
+        
+        Args:
+            group_name: Name of the group
+            source_ids: List of source IDs to include in the group
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.warning("Cannot create source group: No project loaded")
+            return False
+        
+        # Initialize source groups if not exists
+        if "source_groups" not in project.metadata:
+            project.metadata["source_groups"] = {}
+        
+        # Check if group name already exists
+        if group_name in project.metadata["source_groups"]:
+            self.logger.warning(f"Source group '{group_name}' already exists")
+            return False
+        
+        # Create the group
+        project.metadata["source_groups"][group_name] = {
+            "source_ids": source_ids,
+            "created_date": datetime.now().isoformat()
+        }
+        
+        # Save project
+        self.data_service.save_project(project)
+        
+        self.logger.info(f"Created source group '{group_name}' with {len(source_ids)} sources")
+        return True
+    
+    def get_source_groups(self):
+        """
+        Gets all source groups for the current project.
+        
+        Returns:
+            Dict of group_name -> group_data
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return {}
+        
+        return project.metadata.get("source_groups", {})
+    
+    def delete_source_group(self, group_name: str):
+        """
+        Deletes a source group from the current project.
+        
+        Args:
+            group_name: Name of the group to delete
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return False
+        
+        if "source_groups" not in project.metadata:
+            return False
+        
+        if group_name in project.metadata["source_groups"]:
+            del project.metadata["source_groups"][group_name]
+            self.data_service.save_project(project)
+            self.logger.info(f"Deleted source group '{group_name}'")
+            return True
+        
+        return False
+    
+    def add_source_group_to_slide(self, slide_id: str, group_name: str):
+        """
+        Adds all sources from a group to a specific slide.
+        
+        Args:
+            slide_id: ID of the slide
+            group_name: Name of the source group
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return False
+        
+        # Get the group
+        source_groups = project.metadata.get("source_groups", {})
+        if group_name not in source_groups:
+            self.logger.warning(f"Source group '{group_name}' not found")
+            return False
+        
+        # Get source IDs from the group
+        source_ids = source_groups[group_name]["source_ids"]
+        
+        # Add citations to slide using existing method
+        self.add_citations_to_slide(slide_id, source_ids)
+        
+        self.logger.info(f"Added source group '{group_name}' ({len(source_ids)} sources) to slide {slide_id}")
+        return True
+    
+    def show_create_source_group_dialog(self):
+        """
+        Shows the dialog for creating a new source group.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+        
+        # Get all project sources to create checkboxes
+        all_source_checkboxes = []
+        for source_link in project.sources:
+            # Get the actual source record for the title
+            source_record = self.data_service.get_source_by_id(source_link.source_id)
+            if source_record:
+                checkbox = ft.Checkbox(
+                    label=source_record.title,
+                    value=False,
+                    data=source_link.source_id
+                )
+                all_source_checkboxes.append(checkbox)
+        
+        # Import and create the dialog
+        from views.components.dialogs.create_source_group_dialog import CreateSourceGroupDialog
+        
+        def on_group_save(group_name: str, selected_ids: list):
+            """Callback when group is saved"""
+            success = self.create_source_group(group_name, selected_ids)
+            if success:
+                if self.page:
+                    self.page.show_snack_bar(
+                        ft.SnackBar(
+                            ft.Text(f"Source group '{group_name}' created successfully!"),
+                            bgcolor=ft.colors.GREEN
+                        )
+                    )
+                    self.page.snack_bar.open = True
+                    self.page.update()
+                
+                # Refresh the current view to show updated groups
+                self.refresh_current_view()
+            else:
+                if self.page:
+                    self.page.show_snack_bar(
+                        ft.SnackBar(
+                            ft.Text(f"Failed to create group '{group_name}'. Name may already exist."),
+                            bgcolor=ft.colors.RED
+                        )
+                    )
+                    self.page.snack_bar.open = True
+                    self.page.update()
+        
+        dialog = CreateSourceGroupDialog(
+            all_sources=all_source_checkboxes,
+            on_save=on_group_save
+        )
+        
+        if self.page:
+            self.page.dialog = dialog
+            dialog.open = True
+            self.page.update()

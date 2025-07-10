@@ -54,6 +54,13 @@ class CiteSourcesTab(BaseTab):
             icon=ft.icons.GROUP_ADD,
             on_click=self._show_create_group_dialog,
         )
+        
+        # Source groups section
+        self.source_groups_row = ft.Row(
+            wrap=True,
+            spacing=10,
+            run_spacing=10,
+        )
 
         self.main_view = self._build_main_view()
         self.prompt_view = self._build_associate_file_prompt()
@@ -140,6 +147,14 @@ class CiteSourcesTab(BaseTab):
                     ],
                     expand=True,
                 ),
+                ft.Divider(height=15),
+                ft.Row([
+                    ft.Text("Source Groups:", weight=ft.FontWeight.BOLD),
+                    ft.Text("(Quick add groups of sources to slides)", 
+                           style=ft.TextThemeStyle.BODY_SMALL, 
+                           color=ft.colors.ON_SURFACE_VARIANT)
+                ], spacing=10),
+                self.source_groups_row,
                 ft.Divider(height=15),
                 ft.Text("Select Slide:", weight=ft.FontWeight.BOLD),
                 self.slide_carousel.view,
@@ -281,10 +296,8 @@ class CiteSourcesTab(BaseTab):
                 self.page.update()
 
     def _show_create_group_dialog(self, e):
-        """Placeholder for showing a dialog to group sources."""
-        # Future implementation: show a dialog to create a source group.
-        if self.page:
-            self.page.show_snack_bar(ft.SnackBar(ft.Text("Grouping not yet implemented."), open=True))
+        """Shows the dialog to create a new source group."""
+        self.controller.show_create_source_group_dialog()
 
 
     def update_view(self):
@@ -370,6 +383,164 @@ class CiteSourcesTab(BaseTab):
                 else:
                     self.available_list.controls.append(checkbox)
 
+        # Refresh source groups display
+        self._refresh_source_groups()
+
         if self.page:
+            self.page.update()
+
+    def _refresh_source_groups(self):
+        """
+        Refreshes the source groups display by getting groups from the controller
+        and creating buttons for each group.
+        """
+        # Clear existing controls
+        self.source_groups_row.controls.clear()
+        
+        # Get source groups from controller
+        source_groups = self.controller.get_source_groups()
+        
+        if not source_groups:
+            # Show message if no groups exist
+            self.source_groups_row.controls.append(
+                ft.Text(
+                    "No source groups created yet. Use 'Create Group' to make your first group.",
+                    style=ft.TextThemeStyle.BODY_SMALL,
+                    color=ft.colors.ON_SURFACE_VARIANT,
+                    italic=True
+                )
+            )
+        else:
+            # Create button for each group
+            for group_name, group_data in source_groups.items():
+                source_count = len(group_data.get("source_ids", []))
+                
+                group_button = ft.ElevatedButton(
+                    text=f"{group_name} ({source_count})",
+                    icon=ft.icons.GROUP,
+                    on_click=lambda e, gn=group_name: self._add_group_to_slide(gn),
+                    tooltip=f"Add all {source_count} sources from '{group_name}' to current slide"
+                )
+                
+                # Add context menu for group management
+                group_container = ft.MenuBar(
+                    controls=[
+                        ft.SubmenuButton(
+                            content=group_button,
+                            controls=[
+                                ft.MenuItemButton(
+                                    content=ft.Text("Add to slide"),
+                                    leading=ft.Icon(ft.icons.ADD),
+                                    on_click=lambda e, gn=group_name: self._add_group_to_slide(gn)
+                                ),
+                                ft.MenuItemButton(
+                                    content=ft.Text("Delete group"),
+                                    leading=ft.Icon(ft.icons.DELETE),
+                                    on_click=lambda e, gn=group_name: self._delete_group(gn)
+                                ),
+                            ]
+                        )
+                    ]
+                )
+                
+                self.source_groups_row.controls.append(group_container)
+    
+    def _add_group_to_slide(self, group_name: str):
+        """
+        Adds all sources from a group to the current slide.
+        
+        Args:
+            group_name: Name of the source group to add
+        """
+        # Get current slide ID
+        project = self.controller.project_state_manager.current_project
+        if not project:
+            return
+        
+        slides = project.metadata.get("slides", [])
+        if not slides or self.current_slide_index >= len(slides):
+            return
+        
+        current_slide_id, _ = slides[self.current_slide_index]
+        
+        # Use controller method to add group to slide
+        success = self.controller.add_source_group_to_slide(current_slide_id, group_name)
+        
+        if success:
+            # Show success message
+            if self.page:
+                self.page.show_snack_bar(
+                    ft.SnackBar(
+                        ft.Text(f"Added group '{group_name}' to current slide!"),
+                        bgcolor=ft.colors.GREEN
+                    )
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
+            
+            # Refresh the view to show the new citations
+            self.update_view()
+        else:
+            # Show error message
+            if self.page:
+                self.page.show_snack_bar(
+                    ft.SnackBar(
+                        ft.Text(f"Failed to add group '{group_name}' to slide."),
+                        bgcolor=ft.colors.RED
+                    )
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
+    
+    def _delete_group(self, group_name: str):
+        """
+        Deletes a source group after confirmation.
+        
+        Args:
+            group_name: Name of the source group to delete
+        """
+        def confirm_delete(e):
+            success = self.controller.delete_source_group(group_name)
+            if success:
+                # Show success message
+                if self.page:
+                    self.page.show_snack_bar(
+                        ft.SnackBar(
+                            ft.Text(f"Deleted group '{group_name}'"),
+                            bgcolor=ft.colors.GREEN
+                        )
+                    )
+                    self.page.snack_bar.open = True
+                    self.page.update()
+                
+                # Refresh the source groups display
+                self._refresh_source_groups()
+                if self.page:
+                    self.page.update()
+            
+            # Close dialog
+            if hasattr(e, 'control') and hasattr(e.control, 'page'):
+                e.control.page.dialog.open = False
+                e.control.page.update()
+        
+        def cancel_delete(e):
+            if hasattr(e, 'control') and hasattr(e.control, 'page'):
+                e.control.page.dialog.open = False
+                e.control.page.update()
+        
+        # Show confirmation dialog
+        if self.page:
+            confirm_dialog = ft.AlertDialog(
+                modal=True,
+                title=ft.Text("Delete Source Group"),
+                content=ft.Text(f"Are you sure you want to delete the group '{group_name}'? This action cannot be undone."),
+                actions=[
+                    ft.TextButton("Cancel", on_click=cancel_delete),
+                    ft.FilledButton("Delete", on_click=confirm_delete, color=ft.colors.ERROR),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+            self.page.dialog = confirm_dialog
+            confirm_dialog.open = True
             self.page.update()
 
