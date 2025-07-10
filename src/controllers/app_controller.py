@@ -6,7 +6,7 @@ DataService for all data operations and the app_config for navigation,
 acting as the central hub for all application logic.
 """
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from pathlib import Path
 import logging
 import re
@@ -191,6 +191,7 @@ class AppController:
 
     def open_project(self, project_path: Path):
         """Handles the business logic of opening a project."""
+        self.logger.info(f"Opening project at path: {project_path}")
         try:
             project_model = self.data_service.load_project(project_path)
             if project_model:
@@ -198,6 +199,9 @@ class AppController:
                 self.user_config_manager.add_recent_project(
                     project_model.title, str(project_path)
                 )
+                # Clear project-dependent views to refresh their state
+                self.logger.info("Clearing project-dependent view cache...")
+                self._clear_project_dependent_views()
                 self.navigate_to("project_dashboard")
             else:
                 self.logger.warning(
@@ -611,6 +615,14 @@ class AppController:
             logging.info(f"View for page '{current_page_name}' has no update method, calling page.update().")
             self.page.update()
 
+    def _clear_project_dependent_views(self):
+        """Clear views that depend on project state when project is loaded/unloaded"""
+        project_dependent_views = ['reports', 'sources', 'project_dashboard']
+        for view_name in project_dependent_views:
+            if view_name in self.views:
+                self.views.pop(view_name)
+                self.logger.info(f"Cleared cached view '{view_name}' due to project state change.")
+
     # --- PowerPoint Integration Methods ---
     
     def get_slides_for_current_project(self, force_reselect: bool = False):
@@ -937,3 +949,80 @@ class AppController:
             self.page.dialog = dialog
             dialog.open = True
             self.page.update()
+
+    # --- Export Methods ---
+    
+    def export_bibliography_to_word(self, export_path: str) -> bool:
+        """Export bibliography as Word document"""
+        try:
+            project = self.project_state_manager.current_project
+            if not project:
+                self.logger.warning("No project loaded for bibliography export")
+                return False
+            
+            # Get project sources - use the existing country approach from data service
+            from config.app_config import get_country_from_project_path
+            country = get_country_from_project_path(project.file_path)
+            sources = self.data_service.get_master_sources_for_country(country)
+            
+            if not sources:
+                self.logger.warning("No sources found for bibliography export")
+                return False
+            
+            # TODO: Implement actual Word document creation
+            # For now, just create a simple text file with bibliography
+            from utils.citation_generator import generate_citation
+            
+            bibliography_lines = []
+            for source in sources:
+                citation = generate_citation(source)
+                bibliography_lines.append(citation)
+            
+            bibliography_content = "\n\n".join(bibliography_lines)
+            
+            # Write to file (for now as text, replace with Word generation later)
+            with open(export_path, 'w', encoding='utf-8') as f:
+                f.write(f"Bibliography - {project.metadata.get('title', 'Untitled Project')}\n")
+                f.write("=" * 60 + "\n\n")
+                f.write(bibliography_content)
+            
+            self.logger.info(f"Bibliography exported to: {export_path}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error exporting bibliography to Word: {e}")
+            return False
+    
+    def get_project_sources_for_bibliography(self) -> List:
+        """Get sources for the current project for bibliography generation"""
+        project = self.project_state_manager.current_project
+        if not project:
+            return []
+        
+        try:
+            from config.app_config import get_country_from_project_path
+            country = get_country_from_project_path(project.file_path)
+            return self.data_service.get_master_sources_for_country(country)
+        except Exception as e:
+            self.logger.error(f"Error getting project sources: {e}")
+            return []
+    
+    def get_bibliography_preview(self) -> str:
+        """Generate a preview of the bibliography"""
+        sources = self.get_project_sources_for_bibliography()
+        if not sources:
+            return "No sources found for the current project."
+        
+        try:
+            from utils.citation_generator import generate_citation
+            
+            bibliography_lines = []
+            for source in sources:
+                citation = generate_citation(source)
+                bibliography_lines.append(citation)
+            
+            return "\n\n".join(bibliography_lines)
+            
+        except Exception as e:
+            self.logger.error(f"Error generating bibliography preview: {e}")
+            return "Error generating bibliography preview."

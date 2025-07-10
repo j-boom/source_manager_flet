@@ -1,5 +1,39 @@
 """
-Reports View - Modern export-focused interface for generating bibliographies and citations
+Reports View - Generate bibliographies and export citations
+"""
+
+import flet as ft
+import os
+from typing import Optional, List, Dict, Any
+from views.base_view import BaseView
+from views.components.source_ui_factory import SourceUIFactory, SourceItem
+
+
+class ReportsView(BaseView):
+    """View for generating reports, bibliographies, and exporting citations"""
+    
+    def __init__(self, page: ft.Page, theme_manager=None, 
+                 user_config=None, on_navigate=None):
+        super().__init__(page)
+        self.theme_manager = theme_manager
+        self.user_config = user_config
+        self.on_navigate = on_navigate
+        
+        # Current project data
+        self.current_project = "Strategic Analysis 2025"
+        self.slide_citations = self._create_dummy_slide_citations()
+        self.project_sources = self._create_dummy_project_sources()
+        
+        # Export file paths
+        self.word_export_path = ""
+        self.pdf_export_path = ""
+        self.powerpoint_export_path = ""
+        
+        # Initialize UI components
+        self._init_components()
+    
+"""
+Reports View - Generate bibliographies and export citations
 """
 
 import flet as ft
@@ -12,8 +46,8 @@ from views.components.source_ui_factory import SourceUIFactory, SourceItem
 class ReportsView(BaseView):
     """Modern export-focused view for generating reports and managing citations"""
     
-    def __init__(self, page: ft.Page, controller=None, theme_manager=None, 
-                 user_config=None, on_navigate=None):
+    def __init__(self, page: ft.Page, theme_manager=None, 
+                 user_config=None, on_navigate=None, controller=None):
         super().__init__(page, controller)
         self.theme_manager = theme_manager
         self.user_config = user_config
@@ -27,6 +61,7 @@ class ReportsView(BaseView):
         # Export settings
         self.export_paths = {
             'word': "",
+            'pdf': "",
             'powerpoint': ""
         }
         
@@ -91,6 +126,9 @@ class ReportsView(BaseView):
     
     def _init_components(self):
         """Initialize modern UI components"""
+        # Project overview card
+        self.project_overview = self._create_project_overview()
+        
         # Export cards
         self.word_export_card = self._create_export_card(
             title="Word Document",
@@ -98,6 +136,14 @@ class ReportsView(BaseView):
             icon=ft.icons.DESCRIPTION,
             color=ft.colors.BLUE_600,
             export_type="word"
+        )
+        
+        self.pdf_export_card = self._create_export_card(
+            title="PDF Export",
+            subtitle="Portable document format",
+            icon=ft.icons.PICTURE_AS_PDF,
+            color=ft.colors.RED_600,
+            export_type="pdf"
         )
         
         self.powerpoint_export_card = self._create_export_card(
@@ -236,7 +282,7 @@ class ReportsView(BaseView):
                     ft.Row([
                         ft.Icon(ft.icons.LIBRARY_BOOKS, size=24, color=self._get_theme_color()),
                         ft.Text("Bibliography Preview", size=18, weight=ft.FontWeight.BOLD),
-                        ft.Container(expand=True),  # Acts as spacer
+                        ft.Spacer(),
                         ft.IconButton(
                             icon=ft.icons.COPY,
                             tooltip="Copy to clipboard",
@@ -250,7 +296,7 @@ class ReportsView(BaseView):
                         content=ft.Column([
                             ft.Text(bibliography_text, size=12, selectable=True)
                         ], scroll=ft.ScrollMode.AUTO),
-                        height=400,
+                        height=300,
                         bgcolor=ft.colors.GREY_50,
                         border_radius=8,
                         padding=ft.padding.all(15)
@@ -263,13 +309,14 @@ class ReportsView(BaseView):
     
     def _generate_bibliography_text(self) -> str:
         """Generate formatted bibliography text"""
-        if self.controller:
-            bibliography = self.controller.get_bibliography_preview()
-            if bibliography and bibliography != "No sources found for the current project.":
-                return bibliography
-        
-        # If no project or no sources, show helpful message
-        return "No sources found for the current project.\n\nTo add sources to your bibliography:\n1. Navigate to the Sources tab\n2. Add sources to your project\n3. Return here to see your formatted bibliography"
+        sources = [
+            "Corporate Finance Department. (2024). Annual Financial Report 2024. Company Publications.",
+            "Customer Experience Team. (2024). Customer Satisfaction Survey 2024. Internal Report.",
+            "Executive Team. (2025). Strategic Plan 2025-2030. Internal Documentation.",
+            "Finance Team. (2024). Budget Allocation Analysis 2024. Financial Reports.",
+            "Market Research Inc. (2024). Consumer Trends Study Q4. Market Research Publications."
+        ]
+        return "\n\n".join(sources)
     
     def _choose_export_location(self, export_type: str):
         """Open file picker to choose export location"""
@@ -281,6 +328,7 @@ class ReportsView(BaseView):
         # File extensions based on export type
         extensions = {
             'word': ['docx'],
+            'pdf': ['pdf'],
             'powerpoint': ['pptx']
         }
         
@@ -308,6 +356,8 @@ class ReportsView(BaseView):
         # Here you would integrate with your existing export logic
         if export_type == "word":
             self._export_word()
+        elif export_type == "pdf":
+            self._export_pdf()
         elif export_type == "powerpoint":
             self._attach_to_powerpoint()
     
@@ -341,43 +391,21 @@ class ReportsView(BaseView):
     # Export methods (integrate with your existing production code)
     def _export_word(self):
         """Export bibliography as Word document"""
-        if self.controller and self.export_paths.get('word'):
-            success = self.controller.export_bibliography_to_word(self.export_paths['word'])
-            if success:
-                self._show_success("Word document exported successfully!")
-            else:
-                self._show_error("Failed to export Word document")
-        else:
-            self._show_error("No export location selected or controller not available")
+        # TODO: Integrate with your existing Word export logic
+        self._show_success("Word document exported successfully!")
+    
+    def _export_pdf(self):
+        """Export bibliography as PDF"""
+        # TODO: Integrate with your existing PDF export logic
+        self._show_success("PDF exported successfully!")
     
     def _attach_to_powerpoint(self):
         """Attach citations to PowerPoint slides"""
         # TODO: Integrate with your existing PowerPoint service
-        if self.controller and hasattr(self.controller, 'powerpoint_service'):
-            self._show_success("Citations attached to PowerPoint successfully!")
-        else:
-            self._show_success("PowerPoint integration will be available when a presentation is loaded")
+        self._show_success("Citations attached to PowerPoint successfully!")
     
     def build(self) -> ft.Control:
         """Build the modern reports view"""
-        # Check if a project is loaded
-        if not self.controller or not hasattr(self.controller, 'project_state_manager') or not self.controller.project_state_manager.has_loaded_project():
-            return ft.Column([
-                ft.Container(
-                    content=ft.Column([
-                        ft.Icon(ft.icons.FOLDER_OPEN, size=64, color=ft.colors.GREY_400),
-                        ft.Text("No Project Loaded", size=24, weight=ft.FontWeight.BOLD, color=ft.colors.GREY_600),
-                        ft.Text("Please load a project to access the Reports & Export features", 
-                               size=16, color=ft.colors.GREY_500, text_align=ft.TextAlign.CENTER),
-                    ], 
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=20),
-                    padding=ft.padding.all(50),
-                    expand=True,
-                    alignment=ft.alignment.center
-                )
-            ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER)
-        
         return ft.Column([
             # Header
             ft.Container(
@@ -395,21 +423,29 @@ class ReportsView(BaseView):
             # Main content
             ft.Container(
                 content=ft.Column([
+                    # Project overview
+                    self.project_overview,
+                    
+                    ft.Container(height=20),
+                    
                     # Export options grid
                     ft.ResponsiveRow([
                         ft.Column([
                             self.word_export_card
-                        ], col={"md": 6}),
+                        ], col={"md": 4}),
+                        ft.Column([
+                            self.pdf_export_card
+                        ], col={"md": 4}),
                         ft.Column([
                             self.powerpoint_export_card
-                        ], col={"md": 6})
+                        ], col={"md": 4})
                     ]),
                     
-                    ft.Container(height=30),
+                    ft.Container(height=20),
                     
                     # Bibliography preview
                     self.bibliography_preview
-                ], spacing=20, scroll=ft.ScrollMode.AUTO),
+                ], spacing=20),
                 padding=ft.padding.all(30),
                 expand=True
             )
