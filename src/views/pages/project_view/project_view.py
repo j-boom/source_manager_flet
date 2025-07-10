@@ -107,3 +107,7 @@ class ProjectView(BaseView):
         
         if hasattr(self, 'sources_tab') and hasattr(self.sources_tab, 'update_project_data'):
             self.sources_tab.update_project_data(project.metadata, str(project.file_path))
+        
+        # Update the cite sources tab as well
+        if hasattr(self, 'cite_sources_tab') and hasattr(self.cite_sources_tab, 'update_view'):
+            self.cite_sources_tab.update_view()

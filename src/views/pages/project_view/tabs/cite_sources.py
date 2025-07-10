@@ -1,6 +1,7 @@
 import flet as ft
 from .base_tab import BaseTab
 from typing import List
+from pathlib import Path
 from views.components import SlideCarousel
 
 class CiteSourcesTab(BaseTab):
@@ -34,7 +35,7 @@ class CiteSourcesTab(BaseTab):
         self.change_ppt_btn = ft.ElevatedButton(
             "Sync With PowerPoint",
             icon=ft.icons.SYNC_OUTLINED,
-            on_click=lambda e: self.controller.citation.get_slides_for_current_project(
+            on_click=lambda e: self.controller.get_slides_for_current_project(
                 force_reselect=True
             ),
         )
@@ -58,6 +59,9 @@ class CiteSourcesTab(BaseTab):
 
         self.main_view = self._build_main_view()
         self.prompt_view = self._build_associate_file_prompt()
+        
+        # Initialize the view state based on current project
+        self.update_view()
 
     def build(self) -> ft.Control:
         """
@@ -84,14 +88,14 @@ class CiteSourcesTab(BaseTab):
                 ft.FilledButton(
                     "Select Presentation File",
                     icon=ft.icons.ATTACH_FILE,
-                    on_click=lambda e: self.controller.citation.get_slides_for_current_project(),
+                    on_click=lambda e: self.controller.get_slides_for_current_project(),
                 ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=10,
             expand=True,
-            visible=False, # Initially hidden
+            visible=True, # Show by default
         )
 
     def _build_main_view(self) -> ft.Column:
@@ -140,7 +144,7 @@ class CiteSourcesTab(BaseTab):
                 ),
                 ft.Divider(height=15),
                 ft.Text("Select Slide:", weight=ft.FontWeight.BOLD),
-                self.slide_carousel,
+                self.slide_carousel.view,
             ],
             expand=True,
             spacing=10,
@@ -175,19 +179,20 @@ class CiteSourcesTab(BaseTab):
             expand=True,
         )
 
-    def _on_slide_selected(self, slide_index: int):
+    def _on_slide_selected(self, slide_id: str):
         """
         Callback for when a new slide is selected from the carousel.
-        Updates the current slide index and refreshes the view.
+        Updates the current slide and refreshes the view.
         """
-        self.current_slide_index = slide_index
+        # Find the slide index from the slide_id
         project = self.controller.project_state_manager.current_project
         if project:
             slides = project.metadata.get("slides", [])
-            if 0 <= slide_index < len(slides):
-                self.current_slide_title.value = slides[slide_index].get(
-                    "title", f"Slide {slide_index + 1}"
-                )
+            for i, (sid, title) in enumerate(slides):
+                if sid == slide_id:
+                    self.current_slide_index = i
+                    self.current_slide_title.value = title
+                    break
         self.update_view()
 
     def _get_selected_ids(self, source_list: ft.ListView) -> List[str]:
@@ -201,9 +206,9 @@ class CiteSourcesTab(BaseTab):
             A list of source IDs for the selected items.
         """
         return [
-            cb.data
+            str(cb.data)
             for cb in source_list.controls
-            if isinstance(cb, ft.Checkbox) and cb.value
+            if isinstance(cb, ft.Checkbox) and cb.value and cb.data is not None
         ]
 
     def _move_to_cited(self, e):
@@ -213,10 +218,13 @@ class CiteSourcesTab(BaseTab):
         """
         selected_ids = self._get_selected_ids(self.available_list)
         if selected_ids:
-            self.controller.citation.add_citations_to_slide(
-                self.current_slide_index, selected_ids
-            )
-            self.update_view() # Refresh UI after data change
+            # Get the current slide ID (not index)
+            project = self.controller.project_state_manager.current_project
+            slides = project.metadata.get("slides", [])
+            if 0 <= self.current_slide_index < len(slides):
+                current_slide_id = slides[self.current_slide_index][0]
+                self.controller.add_citations_to_slide(current_slide_id, selected_ids)
+                self.update_view() # Refresh UI after data change
 
     def _move_to_available(self, e):
         """
@@ -225,10 +233,13 @@ class CiteSourcesTab(BaseTab):
         """
         selected_ids = self._get_selected_ids(self.cited_list)
         if selected_ids:
-            self.controller.citation.remove_citations_from_slide(
-                self.current_slide_index, selected_ids
-            )
-            self.update_view() # Refresh UI after data change
+            # Get the current slide ID (not index)
+            project = self.controller.project_state_manager.current_project
+            slides = project.metadata.get("slides", [])
+            if 0 <= self.current_slide_index < len(slides):
+                current_slide_id = slides[self.current_slide_index][0]
+                self.controller.remove_citations_from_slide(current_slide_id, selected_ids)
+                self.update_view() # Refresh UI after data change
 
     def _show_create_group_dialog(self, e):
         """Placeholder for showing a dialog to group sources."""
@@ -240,14 +251,42 @@ class CiteSourcesTab(BaseTab):
     def update_view(self):
         """
         Refreshes the entire view based on the current project state.
-        This is the main method for synchronizing the UI with the data model.
+        Automatically checks for existing PowerPoint files and loads slide data if available.
         """
         project = self.controller.project_state_manager.current_project
+        if not project:
+            return
 
-        # Determine which view to show: the prompt or the main interface.
-        has_slides = project and "slides" in project.metadata and project.metadata["slides"]
+        # Check if there's an existing PowerPoint file path in metadata
+        ppt_path = project.metadata.get("powerpoint_path")
+        has_slides = project.metadata.get("slides")
+        
+        # If we have a PowerPoint path but no slides, try to reload the slides
+        if ppt_path and not has_slides:
+            if Path(ppt_path).exists():
+                # File exists but we don't have slide data - reload it
+                self.controller._process_powerpoint_file(ppt_path)
+                # Force a refresh after processing
+                project = self.controller.project_state_manager.current_project
+                has_slides = project.metadata.get("slides") if project else None
+            else:
+                # File doesn't exist anymore - clear the path and show prompt
+                project.metadata.pop("powerpoint_path", None)
+                project.metadata.pop("slides", None)
+                self.controller.data_service.save_project(project)
+                has_slides = False
+        
+        # If we have a PowerPoint path and the file exists, but slides are empty, reload
+        if ppt_path and has_slides and Path(ppt_path).exists():
+            if not has_slides or len(has_slides) == 0:
+                self.controller._process_powerpoint_file(ppt_path)
+                project = self.controller.project_state_manager.current_project
+                has_slides = project.metadata.get("slides") if project else None
+        
+        # Determine which view to show: the prompt or the main interface
+        has_slides = project.metadata.get("slides")
         self.prompt_view.visible = not has_slides
-        self.main_view.visible = has_slides
+        self.main_view.visible = bool(has_slides)
 
         if not has_slides:
             if self.page:
@@ -256,20 +295,23 @@ class CiteSourcesTab(BaseTab):
 
         # --- Populate Main View ---
         slides = project.metadata.get("slides", [])
-        self.slide_carousel.update_slides(slides)
+        current_slide_id = slides[self.current_slide_index][0] if 0 <= self.current_slide_index < len(slides) else ""
+        self.slide_carousel.update(slides, current_slide_id)
 
         # Update slide title if it's out of sync
         if 0 <= self.current_slide_index < len(slides):
-            self.current_slide_title.value = slides[self.current_slide_index].get(
-                "title", f"Slide {self.current_slide_index + 1}"
-            )
+            self.current_slide_title.value = slides[self.current_slide_index][1]
 
         # Get all sources for the project and the sources cited on the current slide.
         all_project_source_ids = {link.source_id for link in project.sources}
         citations = project.metadata.get("citations", {})
-        cited_on_this_slide_ids = set(
-            citations.get(str(self.current_slide_index), [])
-        )
+        
+        # Get the current slide ID to look up citations
+        current_slide_id = ""
+        if 0 <= self.current_slide_index < len(slides):
+            current_slide_id = slides[self.current_slide_index][0]
+            
+        cited_on_this_slide_ids = set(citations.get(current_slide_id, []))
 
         # Clear and repopulate the available and cited lists.
         self.available_list.controls.clear()
@@ -281,7 +323,7 @@ class CiteSourcesTab(BaseTab):
             if source_record:
                 # Create a checkbox for each source.
                 checkbox = ft.Checkbox(
-                    label=f"{source_record.title} ({source_record.source_id})",
+                    label=f"{source_record.title} ({source_record.id})",
                     data=source_id
                 )
                 if source_id in cited_on_this_slide_ids:

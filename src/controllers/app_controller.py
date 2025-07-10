@@ -28,7 +28,7 @@ from managers import (
 )
 
 # --- Services: Handle I/O and business logic ---
-from services import DataService
+from services import DataService, PowerPointService
 
 # --- Views: Handle UI presentation ---
 from views import MainView
@@ -56,6 +56,7 @@ class AppController:
 
         # --- Initialize Core Components ---
         self.data_service = DataService()
+        self.powerpoint_service = PowerPointService()
         self.user_config_manager = UserConfigManager()
         self.theme_manager = ThemeManager(
             initial_mode=self.user_config_manager.get_theme_mode(),
@@ -576,3 +577,153 @@ class AppController:
         else:
             logging.info(f"View for page '{current_page_name}' has no update method, calling page.update().")
             self.page.update()
+
+    # --- PowerPoint Integration Methods ---
+    
+    def get_slides_for_current_project(self, force_reselect: bool = False):
+        """
+        Shows a file picker to select a PowerPoint file and extracts slide data.
+        Stores the slide data in the current project's metadata.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.warning("No project loaded for PowerPoint selection")
+            return
+        
+        # If force_reselect is False and we already have slides, return existing data
+        if not force_reselect and project.metadata.get("slides"):
+            return project.metadata.get("slides")
+        
+        # Create file picker for PowerPoint files
+        def on_file_result(e: ft.FilePickerResultEvent):
+            if e.files and len(e.files) > 0:
+                file_path = e.files[0].path
+                self._process_powerpoint_file(file_path)
+        
+        file_picker = ft.FilePicker(on_result=on_file_result)
+        self.page.overlay.append(file_picker)
+        self.page.update()
+        
+        # Open file picker dialog
+        file_picker.pick_files(
+            dialog_title="Select PowerPoint Presentation",
+            file_type=ft.FilePickerFileType.CUSTOM,
+            allowed_extensions=["pptx"]
+        )
+    
+    def _process_powerpoint_file(self, file_path: str):
+        """
+        Processes the selected PowerPoint file using the PowerPointService
+        and stores the slide data in the project metadata.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+        
+        try:
+            # Load the presentation using the service
+            presentation = self.powerpoint_service.load_presentation(file_path)
+            if not presentation:
+                self._show_error("Failed to load PowerPoint file")
+                return
+            
+            # Extract slide data
+            slide_data = self.powerpoint_service.get_slide_data(presentation)
+            
+            # Store in project metadata
+            project.metadata["powerpoint_path"] = file_path
+            project.metadata["slides"] = slide_data
+            
+            # Save the project
+            self.data_service.save_project(project)
+            
+            self.logger.info(f"Loaded {len(slide_data)} slides from {file_path}")
+            
+            # Update the cite sources tab specifically
+            current_view = self.views.get(self.navigation_manager.get_current_page())
+            if current_view and hasattr(current_view, 'cite_sources_tab'):
+                current_view.cite_sources_tab.update_view()
+                self.logger.info("Updated cite sources tab after PowerPoint load")
+            
+            # Refresh the current view to ensure everything is updated
+            self.refresh_current_view()
+            
+            # Show success message
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(f"Successfully loaded {len(slide_data)} slides"),
+                bgcolor=ft.colors.GREEN
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+            
+        except Exception as e:
+            self.logger.error(f"Error processing PowerPoint file: {e}", exc_info=True)
+            self._show_error(f"Error processing PowerPoint file: {str(e)}")
+    
+    def _show_error(self, message: str):
+        """Helper method to show error messages to the user"""
+        self.page.snack_bar = ft.SnackBar(
+            ft.Text(message),
+            bgcolor=ft.colors.ERROR_CONTAINER
+        )
+        self.page.snack_bar.open = True
+        self.page.update()
+
+    # --- Citation Management Methods (Placeholders) ---
+    
+    def add_citations_to_slide(self, slide_id: str, source_ids: list):
+        """
+        Placeholder method to add source citations to a specific slide.
+        Stores citations in project metadata.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+        
+        # Initialize citations if not exists
+        if "citations" not in project.metadata:
+            project.metadata["citations"] = {}
+        
+        # Get existing citations for this slide
+        existing_citations = set(project.metadata["citations"].get(slide_id, []))
+        
+        # Add new source IDs
+        existing_citations.update(source_ids)
+        
+        # Store back in metadata
+        project.metadata["citations"][slide_id] = list(existing_citations)
+        
+        # Save project
+        self.data_service.save_project(project)
+        
+        self.logger.info(f"Added {len(source_ids)} citations to slide {slide_id}")
+    
+    def remove_citations_from_slide(self, slide_id: str, source_ids: list):
+        """
+        Placeholder method to remove source citations from a specific slide.
+        Updates citations in project metadata.
+        """
+        project = self.project_state_manager.current_project
+        if not project:
+            return
+        
+        # Check if citations exist
+        if "citations" not in project.metadata:
+            return
+        
+        # Get existing citations for this slide
+        existing_citations = set(project.metadata["citations"].get(slide_id, []))
+        
+        # Remove specified source IDs
+        existing_citations.difference_update(source_ids)
+        
+        # Store back in metadata (or remove entry if empty)
+        if existing_citations:
+            project.metadata["citations"][slide_id] = list(existing_citations)
+        else:
+            project.metadata["citations"].pop(slide_id, None)
+        
+        # Save project
+        self.data_service.save_project(project)
+        
+        self.logger.info(f"Removed {len(source_ids)} citations from slide {slide_id}")
