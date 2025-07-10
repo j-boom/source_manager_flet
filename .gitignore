@@ -144,6 +144,10 @@ dmypy.json
 ehthumbs.db
 Thumbs.db
 
+# Text file exports
+*.txt
+text_files/
+
 # Project specific
 users/*/config.json
 *.log

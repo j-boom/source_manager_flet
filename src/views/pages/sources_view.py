@@ -50,12 +50,26 @@ class SourcesView(BaseView):
             border_radius=8,
         )
 
+        # Create an inline button for adding sources instead of FAB
+        add_source_button = ft.ElevatedButton(
+            text="Add Source",
+            icon=ft.icons.ADD,
+            on_click=lambda e: self.controller.show_create_source_dialog(),
+            style=ft.ButtonStyle(
+                bgcolor=ft.colors.PRIMARY,
+                color=ft.colors.ON_PRIMARY,
+            )
+        )
+
         results_panel = ft.Column(
             [
                 ft.Row([
                     ft.Text("Master Source Library", style=ft.TextThemeStyle.HEADLINE_MEDIUM),
                     self.project_title_header,
-                ], spacing=10),
+                    # Move the add button to the header row
+                    ft.Container(expand=True),  # Spacer to push button to the right
+                    add_source_button,
+                ], spacing=10, alignment=ft.MainAxisAlignment.START),
                 ft.Text("Use the filters on the left to search the library.", color=ft.colors.ON_SURFACE_VARIANT),
                 ft.Divider(),
                 self.active_filter_chips,
@@ -71,21 +85,7 @@ class SourcesView(BaseView):
             expand=True,
         )
 
-        # Add floating action button using AppFAB component
-        fab = AppFAB.create_add_source_fab(self.controller)
-
-        return ft.Stack(
-            [
-                main_content,
-                ft.Container(
-                    fab,
-                    right=20,
-                    bottom=20,
-                    alignment=ft.alignment.bottom_right,
-                )
-            ],
-            expand=True,
-        )
+        return main_content
 
     def _initialize_view(self):
         """Fetches data and builds the dynamic filter controls. Called once."""

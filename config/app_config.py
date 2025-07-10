@@ -15,12 +15,15 @@ import flet as ft
 # =============================================================================
 PROJECT_ROOT = Path(__file__).parent.parent
 SRC_DIR = PROJECT_ROOT / "src"
-DATA_DIR = PROJECT_ROOT / "data"
-LOGS_DIR = PROJECT_ROOT / "logs"
 
-PROJECT_DATA_DIR = DATA_DIR / "Directory_Source_Citations"
-MASTER_SOURCES_DIR = DATA_DIR / "master_sources"
-USER_DATA_DIR = DATA_DIR / "user_data"
+# Updated for production environment - data now lives in separate directory
+BASE_DATA_DIR = Path("/Users/jim/Documents/Source Manager")
+DATA_DIR = BASE_DATA_DIR  # For compatibility with existing code
+LOGS_DIR = PROJECT_ROOT / "logs"  # Keep logs with source code for development
+
+PROJECT_DATA_DIR = BASE_DATA_DIR / "Directory Source Citations"
+MASTER_SOURCES_DIR = BASE_DATA_DIR / "program_files" / "master_sources"
+USER_DATA_DIR = BASE_DATA_DIR / "user_data"
 
 # =============================================================================
 # Application Settings
