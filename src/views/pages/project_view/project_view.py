@@ -24,7 +24,7 @@ class ProjectView(BaseView):
         # Initialize all tab view classes, passing the controller to each
         self.metadata_tab = ProjectMetadataTab(controller=self.controller)
         self.sources_tab = ProjectSourcesTab(controller=self.controller)
-        # self.cite_sources_tab = CiteSourcesTab(controller=self.controller)
+        self.cite_sources_tab = CiteSourcesTab(controller=self.controller)
 
     def build(self) -> ft.Control:
         """
@@ -83,11 +83,11 @@ class ProjectView(BaseView):
                     icon=ft.icons.SOURCE,
                     content=self.sources_tab.build()
                 ),
-                # ft.Tab(
-                #     text="Cite Slides",
-                #     icon=ft.icons.COMPARE_ARROWS,
-                #     content=self.cite_sources_tab.build()
-                # ),
+                ft.Tab(
+                    text="Cite Slides",
+                    icon=ft.icons.COMPARE_ARROWS,
+                    content=self.cite_sources_tab.build()
+                ),
             ],
             expand=True
         )
@@ -107,6 +107,3 @@ class ProjectView(BaseView):
         
         if hasattr(self, 'sources_tab') and hasattr(self.sources_tab, 'update_project_data'):
             self.sources_tab.update_project_data(project.metadata, str(project.file_path))
-
-        # The update_project_data method in the tab already calls page.update(),
-        # so we don't need an extra call here.
