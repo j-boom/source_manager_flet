@@ -10,6 +10,7 @@ from typing import Dict, Optional, Any
 from pathlib import Path
 import logging
 import re
+import os
 
 import flet as ft
 
@@ -266,7 +267,6 @@ class AppController:
             self,
             parent_path,
             on_close=on_dialog_close,
-            initial_prefix=parent_name_prefix,
         )
         dialog.show()
 
@@ -583,6 +583,7 @@ class AppController:
     def get_slides_for_current_project(self, force_reselect: bool = False):
         """
         Shows a file picker to select a PowerPoint file and extracts slide data.
+        If force_reselect is True and there's an existing PowerPoint path, reloads that file.
         Stores the slide data in the current project's metadata.
         """
         project = self.project_state_manager.current_project
@@ -590,7 +591,24 @@ class AppController:
             self.logger.warning("No project loaded for PowerPoint selection")
             return
         
-        # If force_reselect is False and we already have slides, return existing data
+        # Check if we have an existing PowerPoint file path
+        existing_ppt_path = project.metadata.get("powerpoint_path")
+        
+        # If force_reselect is True and we have an existing path, sync with that file
+        if force_reselect and existing_ppt_path:
+            if os.path.exists(existing_ppt_path):
+                self.logger.info(f"Syncing with existing PowerPoint file: {existing_ppt_path}")
+                self._process_powerpoint_file(existing_ppt_path)
+                return
+            else:
+                self.logger.warning(f"Existing PowerPoint file not found: {existing_ppt_path}")
+                self._show_error(f"PowerPoint file not found: {existing_ppt_path}")
+                # Clear the invalid path and continue to file picker
+                project.metadata.pop("powerpoint_path", None)
+                project.metadata.pop("slides", None)
+                self.data_service.save_project(project)
+        
+        # If not force reselecting and we already have slides, return existing data
         if not force_reselect and project.metadata.get("slides"):
             return project.metadata.get("slides")
         

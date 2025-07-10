@@ -6,6 +6,7 @@ from .cards.recent_project_card import RecentProjectCard
 from .cards.on_deck_card import OnDeckCard
 from .dialogs.source_citation_dialog import SourceCitationDialog
 from .slide_carousel import SlideCarousel
+from .app_fab import AppFAB
 
 __all__ = [
     "Breadcrumb",
@@ -16,4 +17,5 @@ __all__ = [
     "OnDeckCard",
     "SourceCitationDialog",
     "SlideCarousel",
+    "AppFAB",
 ]

@@ -2,7 +2,7 @@ import flet as ft
 from typing import Dict, Any
 from functools import partial
 from .base_tab import BaseTab
-from views.components import ProjectSourceCard, OnDeckCard
+from views.components import ProjectSourceCard, OnDeckCard, AppFAB
 
 class ProjectSourcesTab(BaseTab):
     """A tab for managing project sources with a user-curated 'On Deck' list."""
@@ -36,13 +36,29 @@ class ProjectSourcesTab(BaseTab):
             spacing=5,
         )
 
-        return ft.Row(
+        main_content = ft.Row(
             [
                 ft.Container(on_deck_column, padding=10, bgcolor=ft.colors.SURFACE_VARIANT, border_radius=8),
                 project_sources_column,
             ],
             expand=True,
             spacing=20,
+        )
+
+        # Add floating action button using the AppFAB component
+        fab = AppFAB.create_add_source_fab(self.controller)
+
+        return ft.Stack(
+            [
+                main_content,
+                ft.Container(
+                    fab,
+                    right=20,
+                    bottom=20,
+                    alignment=ft.alignment.bottom_right,
+                )
+            ],
+            expand=True,
         )
 
     def _update_view(self):

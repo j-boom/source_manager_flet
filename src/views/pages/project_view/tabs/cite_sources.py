@@ -35,9 +35,7 @@ class CiteSourcesTab(BaseTab):
         self.change_ppt_btn = ft.ElevatedButton(
             "Sync With PowerPoint",
             icon=ft.icons.SYNC_OUTLINED,
-            on_click=lambda e: self.controller.get_slides_for_current_project(
-                force_reselect=True
-            ),
+            on_click=self._on_sync_clicked,
         )
         self.available_list = ft.ListView(expand=True, spacing=5)
         self.cited_list = ft.ListView(expand=True, spacing=5)
@@ -240,6 +238,47 @@ class CiteSourcesTab(BaseTab):
                 current_slide_id = slides[self.current_slide_index][0]
                 self.controller.remove_citations_from_slide(current_slide_id, selected_ids)
                 self.update_view() # Refresh UI after data change
+
+    def _on_sync_clicked(self, e):
+        """
+        Handle sync button click with visual feedback.
+        """
+        project = self.controller.project_state_manager.current_project
+        if not project:
+            return
+        
+        ppt_path = project.metadata.get("powerpoint_path")
+        if not ppt_path:
+            if self.page:
+                self.page.show_snack_bar(
+                    ft.SnackBar(
+                        ft.Text("No PowerPoint file associated with this project"),
+                        bgcolor=ft.colors.ORANGE
+                    )
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
+            return
+        
+        # Show loading state
+        original_text = self.change_ppt_btn.text
+        original_icon = self.change_ppt_btn.icon
+        self.change_ppt_btn.text = "Syncing..."
+        self.change_ppt_btn.icon = ft.icons.HOURGLASS_EMPTY
+        self.change_ppt_btn.disabled = True
+        if self.page:
+            self.page.update()
+        
+        # Perform the sync
+        try:
+            self.controller.get_slides_for_current_project(force_reselect=True)
+        finally:
+            # Restore button state
+            self.change_ppt_btn.text = original_text
+            self.change_ppt_btn.icon = original_icon
+            self.change_ppt_btn.disabled = False
+            if self.page:
+                self.page.update()
 
     def _show_create_group_dialog(self, e):
         """Placeholder for showing a dialog to group sources."""

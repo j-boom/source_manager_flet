@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from functools import partial
 from views import BaseView
 from models import SourceRecord
-from views.components import OnDeckCard
+from views.components import OnDeckCard, AppFAB
 from config.source_types_config import get_filterable_fields, ALL_SOURCE_FIELDS
 
 class SourcesView(BaseView):
@@ -65,9 +65,25 @@ class SourcesView(BaseView):
             spacing=10,
         )
 
-        return ft.Container(
+        main_content = ft.Container(
             content=ft.Row([filters_panel, results_panel], expand=True, spacing=20),
             padding=20,
+            expand=True,
+        )
+
+        # Add floating action button using AppFAB component
+        fab = AppFAB.create_add_source_fab(self.controller)
+
+        return ft.Stack(
+            [
+                main_content,
+                ft.Container(
+                    fab,
+                    right=20,
+                    bottom=20,
+                    alignment=ft.alignment.bottom_right,
+                )
+            ],
             expand=True,
         )
 
