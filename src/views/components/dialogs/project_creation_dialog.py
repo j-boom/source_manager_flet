@@ -12,6 +12,7 @@ from typing import Callable, Dict, Any, List
 # Configuration for dynamic form generation
 from .base_dialog import BaseDialog
 from config import get_dialog_fields, get_project_type_display_names, create_field_widget
+from config.project_types_config import validate_form_data
 
 
 class ProjectCreationDialog(BaseDialog):
@@ -100,13 +101,51 @@ class ProjectCreationDialog(BaseDialog):
             self._update_form_fields(e.control.value)
 
     def _on_create_clicked(self, e: ft.ControlEvent):
+        # Collect form data
         form_data = {}
         for name, control in self.form_fields.items():
             if hasattr(control, "value"):
                 form_data[name] = control.value
 
-        form_data["project_type"] = self.project_type_dropdown.value
+        project_type = self.project_type_dropdown.value
+        if not project_type:
+            # Show error if no project type selected
+            error_dialog = ft.AlertDialog(
+                title=ft.Text("Project Type Required"),
+                content=ft.Text("Please select a project type before creating the project."),
+                actions=[
+                    ft.TextButton("OK", on_click=lambda _: self.page.close(error_dialog))
+                ],
+            )
+            self.page.open(error_dialog)
+            return
 
+        form_data["project_type"] = project_type
+
+        # Validate the form data using the config validation rules
+        is_valid, error_messages = validate_form_data(project_type, form_data)
+        
+        if not is_valid:
+            # Show validation errors and keep dialog open for corrections
+            error_text = "Please fix the following errors and try again:\n\n" + "\n".join(f"• {msg}" for msg in error_messages)
+            
+            # Create error dialog
+            error_dialog = ft.AlertDialog(
+                title=ft.Text("Validation Errors", weight=ft.FontWeight.BOLD),
+                content=ft.Text(error_text, selectable=True),
+                actions=[
+                    ft.TextButton(
+                        "OK", 
+                        on_click=lambda _: self.page.close(error_dialog),
+                        style=ft.ButtonStyle(color=ft.colors.PRIMARY)
+                    )
+                ],
+            )
+            self.page.open(error_dialog)
+            # Dialog stays open - user can fix errors and try again
+            return
+
+        # If validation passes, submit the project
         self.controller.submit_new_project(
             parent_path=self.parent_path,
             form_data=form_data,

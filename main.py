@@ -2,23 +2,12 @@
 Source Manager Application Entry Point
 """
 import flet as ft
-import sys
 import logging
 from pathlib import Path
-
-# --- 1. Add Project Root to Python Path ---
-# This ensures that imports work correctly regardless of how the script is run.
-# It assumes main.py is in the project's root directory.
-project_root = Path(__file__).parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-# --- 2. Set up Logging (Crucial First Step) ---
-# Import directly from the logging_config module and run setup immediately.
-# This prevents circular dependencies.
 from config.logging_config import setup_logging
-setup_logging()
 
+
+setup_logging()
 # --- 3. Import Application Components ---
 # Now that logging is configured, it's safe to import the rest of the app.
 from src.controllers.app_controller import AppController
@@ -35,13 +24,16 @@ def main(page: ft.Page):
     logger = logging.getLogger(__name__)
     logger.info(f"--- Starting {APP_NAME} ---")
 
+    # Define project root directory
+    project_root = Path(__file__).parent
+
     # --- Page and Window Configuration ---
     page.title = APP_NAME
     page.window.width = DEFAULT_WINDOW_WIDTH
     page.window.height = DEFAULT_WINDOW_HEIGHT
     page.window.min_width = MIN_WINDOW_WIDTH
     page.window.min_height = MIN_WINDOW_HEIGHT
-    
+    page.window.center()
     # Set application icon
     try:
         icon_path = project_root / "assets/sm_icon.png" # Assuming icon is in an assets folder
@@ -89,7 +81,6 @@ def main(page: ft.Page):
             )
         )
         page.update()
-
 
 if __name__ == "__main__":
     ft.app(

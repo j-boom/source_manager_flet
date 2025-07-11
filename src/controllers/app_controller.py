@@ -77,6 +77,20 @@ class AppController:
         self.views: Dict[str, ft.Control] = {}
         self._view_class_map = self._build_view_class_map()
 
+        # --- Initialize Subcontrollers ---
+        from .base_controller import BaseController
+        from .navigation_controller import NavigationController
+        from .project_controller import ProjectController
+        from .source_controller import SourceController
+        from .powerpoint_controller import PowerPointController
+        from .dialog_controller import DialogController
+        
+        self.navigation_controller = NavigationController(self)
+        self.project_controller = ProjectController(self)
+        self.source_controller = SourceController(self)
+        self.powerpoint_controller = PowerPointController(self)
+        self.dialog_controller = DialogController(self)
+
         self._setup_callbacks()
         self.logger.info("AppController initialized successfully")
 
@@ -220,8 +234,6 @@ class AppController:
                 f"Failed to open project at {project_path}", exc_info=True
             )
             self._show_error_dialog("Error", f"Failed to open project: {str(e)}")
-            )
-            self._show_error_dialog("Project Error", f"Failed to open project: {str(e)}")
 
     def handle_display_name_change(self):
         """Handles display name updates from the settings manager."""
@@ -232,39 +244,11 @@ class AppController:
 
     def show_create_project_dialog(self, parent_path: Path):
         """Creates and shows the project creation dialog, pre-filling the BE number if found."""
-        initial_be_number = None
-        match = re.search(r"^(\d{4}[A-Z]{2}\d{4}|\d{10})", parent_path.name)
-        if match:
-            initial_be_number = match.group(1)
-
-        def on_dialog_close():
-            current_view = self.views.get("new_project")
-            if current_view and hasattr(current_view, "_update_view"):
-                current_view._update_view()
-
-        dialog = ProjectCreationDialog(
-            self.page,
-            self,
-            parent_path,
-            on_close=on_dialog_close,
-            initial_be_number=initial_be_number,
-        )
-        dialog.show()
+        return self.project_controller.show_create_project_dialog(parent_path)
 
     def submit_new_project(self, parent_path: Path, form_data: Dict[str, Any]):
         """Receives data from the dialog and uses the DataService to create the project."""
-        try:
-            success, message, new_project = self.data_service.create_new_project(
-                parent_dir=parent_path, form_data=form_data
-            )
-            if success and new_project:
-                self.open_project(new_project.file_path)
-            else:
-                self.logger.error(f"Project creation failed: {message}")
-        except Exception as e:
-            self.logger.error(
-                f"An exception occurred during project creation: {e}", exc_info=True
-            )
+        return self.project_controller.submit_new_project(parent_path, form_data)
 
     def show_create_folder_dialog(self, parent_path: Path):
         """Creates and shows the folder creation dialog, pre-filling the parent name."""
@@ -461,47 +445,11 @@ class AppController:
 
     def add_source_to_on_deck(self, source_id: str):
         """Adds a source ID to the on_deck_sources list in the current project's metadata."""
-        project = self.project_state_manager.current_project
-        if not project:
-            self.page.snack_bar = ft.SnackBar(ft.Text("You must have a project open to add sources to its 'On Deck' list."), open=True)
-            self.page.update()
-            return
-
-        # Ensure the 'on_deck_sources' key exists in metadata
-        if "on_deck_sources" not in project.metadata:
-            project.metadata["on_deck_sources"] = []
-        
-        on_deck_list = project.metadata["on_deck_sources"]
-        
-        if source_id not in on_deck_list:
-            on_deck_list.append(source_id)
-            self.data_service.save_project(project)
-            self.page.snack_bar = ft.SnackBar(ft.Text(f"Source added to On Deck for '{project.title}'."), open=True)
-        else:
-            self.page.snack_bar = ft.SnackBar(ft.Text("This source is already on deck."), open=True)
-            
-        self.page.update()
+        return self.source_controller.add_source_to_on_deck(source_id)
 
     def add_source_to_project(self, source_id: str):
         """Adds a master source to the currently loaded project and removes it from 'On Deck'."""
-        project = self.project_state_manager.current_project
-        if not project:
-            self.logger.error("Attempted to add a source, but no project is loaded.")
-            return
-
-        self.logger.info(f"Adding source '{source_id}' to project '{project.title}'.")
-        self.data_service.add_source_to_project(project, source_id)
-        
-        # --- FIX: Also remove the source from the on-deck list ---
-        if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
-            project.metadata["on_deck_sources"].remove(source_id)
-            self.data_service.save_project(project)
-        # --- END FIX ---
-        
-        # Refresh the sources tab to show the change
-        current_view = self.views.get("project_dashboard")
-        if current_view and hasattr(current_view, 'sources_tab') and hasattr(current_view.sources_tab, "_update_view"):
-            current_view.sources_tab._update_view()
+        return self.source_controller.add_source_to_project(source_id)
 
     def reorder_project_sources(self, new_ordered_ids: list):
         """Tells the DataService to reorder the sources for the current project."""
@@ -642,97 +590,14 @@ class AppController:
         If force_reselect is True and there's an existing PowerPoint path, reloads that file.
         Stores the slide data in the current project's metadata.
         """
-        project = self.project_state_manager.current_project
-        if not project:
-            self.logger.warning("No project loaded for PowerPoint selection")
-            return
-        
-        # Check if we have an existing PowerPoint file path
-        existing_ppt_path = project.metadata.get("powerpoint_path")
-        
-        # If force_reselect is True and we have an existing path, sync with that file
-        if force_reselect and existing_ppt_path:
-            if os.path.exists(existing_ppt_path):
-                self.logger.info(f"Syncing with existing PowerPoint file: {existing_ppt_path}")
-                self._process_powerpoint_file(existing_ppt_path)
-                return
-            else:
-                self.logger.warning(f"Existing PowerPoint file not found: {existing_ppt_path}")
-                self._show_error(f"PowerPoint file not found: {existing_ppt_path}")
-                # Clear the invalid path and continue to file picker
-                project.metadata.pop("powerpoint_path", None)
-                project.metadata.pop("slides", None)
-                self.data_service.save_project(project)
-        
-        # If not force reselecting and we already have slides, return existing data
-        if not force_reselect and project.metadata.get("slides"):
-            return project.metadata.get("slides")
-        
-        # Create file picker for PowerPoint files
-        def on_file_result(e: ft.FilePickerResultEvent):
-            if e.files and len(e.files) > 0:
-                file_path = e.files[0].path
-                self._process_powerpoint_file(file_path)
-        
-        file_picker = ft.FilePicker(on_result=on_file_result)
-        self.page.overlay.append(file_picker)
-        self.page.update()
-        
-        # Open file picker dialog
-        file_picker.pick_files(
-            dialog_title="Select PowerPoint Presentation",
-            file_type=ft.FilePickerFileType.CUSTOM,
-            allowed_extensions=["pptx"]
-        )
+        return self.powerpoint_controller.get_slides_for_current_project(force_reselect)
     
     def _process_powerpoint_file(self, file_path: str):
         """
         Processes the selected PowerPoint file using the PowerPointService
         and stores the slide data in the project metadata.
         """
-        project = self.project_state_manager.current_project
-        if not project:
-            return
-        
-        try:
-            # Load the presentation using the service
-            presentation = self.powerpoint_service.load_presentation(file_path)
-            if not presentation:
-                self._show_error("Failed to load PowerPoint file")
-                return
-            
-            # Extract slide data
-            slide_data = self.powerpoint_service.get_slide_data(presentation)
-            
-            # Store in project metadata
-            project.metadata["powerpoint_path"] = file_path
-            project.metadata["slides"] = slide_data
-            
-            # Save the project
-            self.data_service.save_project(project)
-            
-            self.logger.info(f"Loaded {len(slide_data)} slides from {file_path}")
-            
-            # Update the cite sources tab specifically
-            current_view = self.views.get(self.navigation_manager.get_current_page())
-            if current_view and hasattr(current_view, 'cite_sources_tab'):
-                current_view.cite_sources_tab.update_view()
-                self.logger.info("Updated cite sources tab after PowerPoint load")
-            
-            # Refresh the current view to ensure everything is updated
-            self.refresh_current_view()
-            
-            # Show success message
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text(f"Successfully loaded {len(slide_data)} slides"),
-                bgcolor=ft.colors.GREEN
-            )
-            self.page.snack_bar.open = True
-            self.page.update()
-            
-        except Exception as e:
-            self.logger.error(f"Error processing PowerPoint file: {e}", exc_info=True)
-            self._show_error(f"Error processing PowerPoint file: {str(e)}")
+        return self.powerpoint_controller.process_powerpoint_file(file_path)
     
     def _show_error(self, message: str):
         """Helper method to show error messages to the user"""
@@ -1062,85 +927,7 @@ class AppController:
     
     def _handle_old_format_file(self, project_path: Path):
         """Handle opening an old format project file by offering migration."""
-        import flet as ft
-        
-        def close_dialog(e):
-            dialog.open = False
-            self.page.update()
-        
-        def migrate_and_open(e):
-            """Migrate the old file and open the new one."""
-            dialog.open = False
-            self.page.update()
-            
-            # Show progress
-            progress_dialog = self._show_migration_progress_dialog()
-            
-            try:
-                # Import and use the migration service
-                from src.services.migration_service import MigrationService
-                from utils.citation_generator import parse_citation  # Your actual citation parser
-                
-                migration_service = MigrationService()
-                migration_service.set_citation_parser(parse_citation)
-                
-                # Migrate just this one file
-                migrated_project = migration_service.migrate_single_project(project_path)
-                
-                if migrated_project:
-                    # Save the migrated project
-                    migrated_project.save()
-                    
-                    # Archive the old file
-                    migration_service.archive_old_data([project_path])
-                    
-                    # Close progress dialog
-                    progress_dialog.open = False
-                    self.page.update()
-                    
-                    # Open the migrated project
-                    self.open_project(migrated_project.file_path)
-                    
-                    # Show success message
-                    self._show_success_dialog(
-                        "Migration Complete", 
-                        f"Project '{migrated_project.title}' has been successfully migrated to the new format!"
-                    )
-                else:
-                    progress_dialog.open = False
-                    self.page.update()
-                    self._show_error_dialog("Migration Failed", "Could not migrate the project. Please check the logs for details.")
-                    
-            except Exception as ex:
-                progress_dialog.open = False
-                self.page.update()
-                self.logger.error(f"Migration failed: {ex}")
-                self._show_error_dialog("Migration Error", f"Migration failed: {str(ex)}")
-        
-        dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Old Project Format Detected"),
-            content=ft.Column([
-                ft.Text("This project was created with an older version of Source Manager."),
-                ft.Text(""),
-                ft.Text("To open it, we need to update it to the new format."),
-                ft.Text(""),
-                ft.Text("• Your original file will be safely archived"),
-                ft.Text("• A new version will be created in the current format"),
-                ft.Text("• All your data will be preserved"),
-                ft.Text(""),
-                ft.Text("Would you like to proceed with the migration?"),
-            ], tight=True, spacing=5),
-            actions=[
-                ft.TextButton("Cancel", on_click=close_dialog),
-                ft.ElevatedButton("Migrate & Open", on_click=migrate_and_open)
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-        
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
+        return self.project_controller.handle_old_format_file(project_path)
     
     def _show_migration_progress_dialog(self):
         """Show a progress dialog during migration."""

@@ -58,7 +58,7 @@ class DataService:
             return False, f"Invalid folder name '{folder_name}'."
         new_folder_path = (parent_path / f"{sanitized_filename} {sanitized_description}" if sanitized_description else parent_path / sanitized_filename)
         if new_folder_path.exists():
-            return False, f"A folder or file named '{sanitizedFilename}' already exists."
+            return False, f"A folder or file named '{sanitized_filename}' already exists."
         try:
             new_folder_path.mkdir(parents=True, exist_ok=False)
             return True, f"Successfully created folder '{sanitized_filename}'."
@@ -289,3 +289,41 @@ class DataService:
             country_name = f.name.replace("_sources.json", "")
             countries.append(country_name)
         return countries
+
+    # --- Project Number Extraction Logic ---
+    def derive_project_number_from_path(self, parent_path: Path) -> str:
+        """
+        Extracts the project/BE number from a directory path.
+        
+        The method looks for numeric patterns in the directory name itself, 
+        typically in the format of year + sequential numbers (e.g., 2024333333).
+        
+        Args:
+            parent_path: Path to the directory that might contain a project number
+            
+        Returns:
+            The extracted project number as a string, empty string if not found
+        """
+        try:
+            # Get the directory name from the path
+            dir_name = parent_path.name
+            
+            # Look for numeric patterns that could be BE numbers
+            # Common pattern: YYYY followed by digits (e.g., 2024333333)
+            number_match = re.search(r'(\d{4,})', dir_name)
+            
+            if number_match:
+                return number_match.group(1)
+            
+            # If no number found in current directory, try parent directories
+            # but only go up one level to avoid false positives
+            if parent_path.parent and parent_path.parent != parent_path:
+                parent_dir_name = parent_path.parent.name
+                parent_number_match = re.search(r'(\d{4,})', parent_dir_name)
+                if parent_number_match:
+                    return parent_number_match.group(1)
+                    
+        except (AttributeError, IndexError, OSError):
+            pass
+            
+        return ""

@@ -19,19 +19,13 @@ class HelpView(BaseView):
         self.view_layout = self.build()
 
     def build(self) -> ft.Control:
-        """Builds the help page content using colors from the page's theme scheme."""
-        # Get the color scheme from the page's theme.
-        # Add a fallback to a default theme to prevent errors if page.theme is not set.
-        # This makes the view more robust and satisfies the linter.
-        colors = self.page.theme.color_scheme if self.page.theme else ft.Theme().color_scheme
-
         return ft.Container(
             content=ft.Column(
                 [
-                    self._build_header(colors),
+                    self._build_header(),
                     ft.Divider(),
                     ft.Container(
-                        content=self._build_scrollable_content(colors),
+                        content=self._build_scrollable_content(),
                         expand=True,
                         padding=ft.padding.only(right=10) # Padding for scrollbar
                     ),
@@ -40,10 +34,10 @@ class HelpView(BaseView):
             ),
             padding=20,
             expand=True,
-            bgcolor=colors.surface,
+            bgcolor=ft.colors.SURFACE,
         )
 
-    def _build_header(self, colors: ft.ColorScheme) -> ft.Control:
+    def _build_header(self) -> ft.Control:
         """Builds the title section of the help page."""
         return ft.Container(
             content=ft.Column([
@@ -51,23 +45,22 @@ class HelpView(BaseView):
                     "Help & Documentation",
                     size=28,
                     weight=ft.FontWeight.BOLD,
-                    color=colors.primary,
+                    color=ft.colors.PRIMARY,
                 ),
                 ft.Text(
                     "Everything you need to know about Source Manager",
                     size=16,
-                    color=colors.on_surface_variant
+                    color=ft.colors.ON_SURFACE_VARIANT,
                 ),
             ]),
             padding=ft.padding.only(bottom=20)
         )
 
-    def _build_scrollable_content(self, colors: ft.ColorScheme) -> ft.Control:
+    def _build_scrollable_content(self) -> ft.Control:
         """Builds the main, scrollable content of the help page."""
         return ft.Column(
             [
                 self._create_help_section(
-                    colors,
                     "Getting Started",
                     [
                         "1. Create a new project from the Home page.",
@@ -77,7 +70,6 @@ class HelpView(BaseView):
                     ]
                 ),
                 self._create_help_section(
-                    colors,
                     "Navigation",
                     [
                         "• Home: Start page with quick actions.",
@@ -87,7 +79,6 @@ class HelpView(BaseView):
                     ]
                 ),
                 self._create_help_section(
-                    colors,
                     "Key Features",
                     [
                         "• Project Management: Organize and track multiple projects.",
@@ -102,8 +93,8 @@ class HelpView(BaseView):
                         icon=ft.icons.HOME,
                         on_click=lambda e: self.controller.navigate_to("home"),
                         style=ft.ButtonStyle(
-                            color=colors.on_primary,
-                            bgcolor=colors.primary,
+                            color=ft.colors.ON_PRIMARY,
+                            bgcolor=ft.colors.PRIMARY,
                         )
                     ),
                     padding=ft.padding.only(top=30),
@@ -114,7 +105,7 @@ class HelpView(BaseView):
             spacing=0,
         )
 
-    def _create_help_section(self, colors: ft.ColorScheme, title: str, items: list) -> ft.Container:
+    def _create_help_section(self, title: str, items: list) -> ft.Container:
         """Creates a single help section with a title and a list of items."""
         return ft.Container(
             content=ft.Column([
@@ -122,7 +113,7 @@ class HelpView(BaseView):
                     title,
                     size=20,
                     weight=ft.FontWeight.BOLD,
-                    color=colors.on_surface
+                    color=ft.colors.ON_SURFACE,
                 ),
                 ft.Container(height=10),
                 *[
@@ -130,7 +121,7 @@ class HelpView(BaseView):
                         content=ft.Text(
                             item,
                             size=14,
-                            color=colors.on_surface_variant
+                            color=ft.colors.ON_SURFACE_VARIANT
                         ),
                         padding=ft.padding.only(left=10, bottom=5)
                     ) for item in items
