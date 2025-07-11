@@ -74,8 +74,21 @@ class Project:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Project:
         """Creates a Project instance from a dictionary."""
-        data['project_type'] = ProjectType(data['project_type'])
-        data['file_path'] = Path(data['file_path'])
+        # Check if this is an old format file (missing required new format fields)
+        if 'project_type' not in data:
+            raise ValueError("This appears to be an old format project file. Please run migration first.")
+        
+        # Handle project_type conversion safely
+        if isinstance(data['project_type'], str):
+            data['project_type'] = ProjectType(data['project_type'])
+        elif not isinstance(data['project_type'], ProjectType):
+            raise ValueError(f"Invalid project_type: {data['project_type']}")
+        
+        # Handle file_path safely
+        if 'file_path' in data:
+            data['file_path'] = Path(data['file_path'])
+        else:
+            raise ValueError("Missing required field: file_path")
         
         if 'sources' in data and data['sources']:
             data['sources'] = [ProjectSourceLink(**s) for s in data['sources']]

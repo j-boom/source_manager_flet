@@ -207,10 +207,21 @@ class AppController:
                 self.logger.warning(
                     f"Could not open project at {project_path}. File might be empty or corrupt."
                 )
+        except ValueError as e:
+            # Check if this is an old format file
+            if "old format" in str(e):
+                self.logger.info(f"Detected old format file: {project_path}")
+                self._handle_old_format_file(project_path)
+            else:
+                self.logger.error(f"ValueError opening project: {e}")
+                self._show_error_dialog("Project Error", f"Error opening project: {e}")
         except Exception as e:
             self.logger.error(
                 f"Failed to open project at {project_path}", exc_info=True
             )
+            self._show_error_dialog("Error", f"Failed to open project: {str(e)}")
+            )
+            self._show_error_dialog("Project Error", f"Failed to open project: {str(e)}")
 
     def handle_display_name_change(self):
         """Handles display name updates from the settings manager."""
@@ -1026,3 +1037,149 @@ class AppController:
         except Exception as e:
             self.logger.error(f"Error generating bibliography preview: {e}")
             return "Error generating bibliography preview."
+    
+    def _show_error_dialog(self, title: str, message: str):
+        """Show an error dialog to the user."""
+        import flet as ft
+        
+        def close_dialog(e):
+            dialog.open = False
+            self.page.update()
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("OK", on_click=close_dialog)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+    
+    def _handle_old_format_file(self, project_path: Path):
+        """Handle opening an old format project file by offering migration."""
+        import flet as ft
+        
+        def close_dialog(e):
+            dialog.open = False
+            self.page.update()
+        
+        def migrate_and_open(e):
+            """Migrate the old file and open the new one."""
+            dialog.open = False
+            self.page.update()
+            
+            # Show progress
+            progress_dialog = self._show_migration_progress_dialog()
+            
+            try:
+                # Import and use the migration service
+                from src.services.migration_service import MigrationService
+                from utils.citation_generator import parse_citation  # Your actual citation parser
+                
+                migration_service = MigrationService()
+                migration_service.set_citation_parser(parse_citation)
+                
+                # Migrate just this one file
+                migrated_project = migration_service.migrate_single_project(project_path)
+                
+                if migrated_project:
+                    # Save the migrated project
+                    migrated_project.save()
+                    
+                    # Archive the old file
+                    migration_service.archive_old_data([project_path])
+                    
+                    # Close progress dialog
+                    progress_dialog.open = False
+                    self.page.update()
+                    
+                    # Open the migrated project
+                    self.open_project(migrated_project.file_path)
+                    
+                    # Show success message
+                    self._show_success_dialog(
+                        "Migration Complete", 
+                        f"Project '{migrated_project.title}' has been successfully migrated to the new format!"
+                    )
+                else:
+                    progress_dialog.open = False
+                    self.page.update()
+                    self._show_error_dialog("Migration Failed", "Could not migrate the project. Please check the logs for details.")
+                    
+            except Exception as ex:
+                progress_dialog.open = False
+                self.page.update()
+                self.logger.error(f"Migration failed: {ex}")
+                self._show_error_dialog("Migration Error", f"Migration failed: {str(ex)}")
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Old Project Format Detected"),
+            content=ft.Column([
+                ft.Text("This project was created with an older version of Source Manager."),
+                ft.Text(""),
+                ft.Text("To open it, we need to update it to the new format."),
+                ft.Text(""),
+                ft.Text("• Your original file will be safely archived"),
+                ft.Text("• A new version will be created in the current format"),
+                ft.Text("• All your data will be preserved"),
+                ft.Text(""),
+                ft.Text("Would you like to proceed with the migration?"),
+            ], tight=True, spacing=5),
+            actions=[
+                ft.TextButton("Cancel", on_click=close_dialog),
+                ft.ElevatedButton("Migrate & Open", on_click=migrate_and_open)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+    
+    def _show_migration_progress_dialog(self):
+        """Show a progress dialog during migration."""
+        import flet as ft
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Migrating Project..."),
+            content=ft.Column([
+                ft.ProgressRing(),
+                ft.Text("Please wait while we update your project to the new format."),
+                ft.Text("This may take a moment...")
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20),
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+        
+        return dialog
+    
+    def _show_success_dialog(self, title: str, message: str):
+        """Show a success dialog to the user."""
+        import flet as ft
+        
+        def close_dialog(e):
+            dialog.open = False
+            self.page.update()
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("OK", on_click=close_dialog)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()

@@ -1,0 +1,51 @@
+{
+	"initialized": true,
+	"data_path": "C://MyDocuments",
+	"key_cites": {
+		"m_cite": "uuid4",
+		"d_cite": "uuid4",
+		"o_cite": "uuid4"
+	},
+	"site_properties": {
+		"benjamin": "str",
+		"oscar": "str",
+		"Facility Name": "str",
+		"m_class": "str",
+		"Date Accessed": "28AUG24",
+		"Facility Surrogate Key": "str"
+	},
+	"slide_refs_citation_ordering": ["uuid4"],
+	"slide_refs": {
+		"slide_id": "uuid4"
+	},
+	"sources": [
+		{
+			"ref": "str",
+			"uuid": "uuid4",
+			"description": "str",
+			"citation": "str",
+			"comment": "str",
+			"declassify": "str"
+		}
+	],
+	"team": {
+		"engineer": "str",
+		"all-source analyst": "str",
+		"imagery analyst": "str",
+		"geologist": "str",
+		"engineer senior reviewer": "str"
+	},
+	"powerpoint_file": "str",
+	"number_header_citations": "int",
+	"characteristics": {
+		"Product Type": "str",
+		"Prod Qtr": "str",
+		"Requestor": "str"
+	},
+	"slide_data": {
+		"slide_id": {
+			"title": "str",
+			"sources": ["uuid4"]
+		}
+	}
+}

@@ -25,6 +25,10 @@ PROJECT_DATA_DIR = BASE_DATA_DIR / "Directory Source Citations"
 MASTER_SOURCES_DIR = BASE_DATA_DIR / "program_files" / "master_sources"
 USER_DATA_DIR = BASE_DATA_DIR / "user_data"
 
+# Migration paths
+OLD_DATA_PATH = "/Users/jim/Documents/Source Manager/Directory Source Citations"
+USER_PROJECTS_DIR = USER_DATA_DIR / "projects"
+
 # =============================================================================
 # Application Settings
 # =============================================================================
