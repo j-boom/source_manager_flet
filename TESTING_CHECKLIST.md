@@ -48,6 +48,13 @@ This checklist ensures that the controller refactoring maintains all existing fu
   - [ ] Empty/corrupt project files show appropriate error messages
   - [ ] Old format projects trigger migration dialog (if applicable)
 - [ ] **Project Migration** (if old format files exist):
+  - [√] Migration service correctly transforms old format to new format
+  - [√] Migration tested on all sample project types (STD, FCR, COM, CRS, GSC, RFS, MIL)
+  - [√] All 10 test files migrate successfully (100% success rate)
+  - [√] Project metadata generation works with UUIDs and proper structure
+  - [√] Facility information correctly derived from filename and site properties
+  - [√] Sources transformed from full objects to simplified format
+  - [√] Deprecated fields properly removed (initialized, data_path, etc.)
   - [ ] Migration dialog appears for old format files
   - [ ] Can accept or cancel migration
   - [ ] Migration progress dialog shows during process
@@ -64,6 +71,12 @@ This checklist ensures that the controller refactoring maintains all existing fu
   - [ ] Sources appear in project sources list
   - [ ] Source is removed from on-deck when promoted
   - [ ] Source ordering is maintained
+  - [ ] Proper user notification - toast - that source was added
+  - [ ] Drag & Drop functioning as expected.
+  - [ ] Can remove forms back to the On Deck list
+  - [ ] Can edit source.
+  - [ ] A button properly allows previewing the source
+  - [ ] Clicking the FAB brings up the add source dialog
 - [ ] **Source Dialog Operations**:
   - [ ] Source creation dialog opens
   - [ ] Source editing dialog opens
@@ -74,6 +87,7 @@ This checklist ensures that the controller refactoring maintains all existing fu
 ### 📊 **PowerPoint Integration (PowerPointController)**
 - [ ] **File Selection**:
   - [ ] PowerPoint file picker opens
+  - [ ] Properly formatted toast for error message
   - [ ] Can select .pptx/.ppt files
   - [ ] File path is stored in project metadata
 - [ ] **Slide Processing**:
