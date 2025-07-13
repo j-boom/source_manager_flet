@@ -42,7 +42,8 @@ class NewProjectView(BaseView):
 
         self._update_file_list()
 
-        return ft.Column(
+        # Store reference to main column for updates
+        self.main_column = ft.Column(
             controls=[
                 self.header_container,
                 self.breadcrumb_bar,
@@ -57,6 +58,8 @@ class NewProjectView(BaseView):
             expand=True,
             spacing=0,
         )
+        
+        return self.main_column
 
     # --- UI Builder Methods ---
 
@@ -95,20 +98,24 @@ class NewProjectView(BaseView):
         return self.header_container
 
     def _build_directory_selection(self) -> ft.Control:
-        """Build directory selection section"""
-        self.primary_dropdown = ft.Dropdown(
-            label="Select Primary Folder",
+        """Build directory selection section with country dropdown and search"""
+        # Get all countries from all primary folders
+        countries = self.browser_manager.get_all_countries()
+        
+        self.country_dropdown = ft.Dropdown(
+            label="Select Country",
             options=[
-                ft.dropdown.Option(name)
-                for name in self.browser_manager.primary_folders
+                ft.dropdown.Option(key=country['path'], text=country['name'])
+                for country in countries
             ],
             width=300,
-            on_change=self._on_primary_folder_changed,
+            on_change=self._on_country_selected,
+            value=None  # No country selected initially
         )
 
         self.search_field = ft.TextField(
-            label="Search Folders",
-            hint_text="Search for 4-digit or 10-digit folders",
+            label="Search Benjamin Numbers",
+            hint_text="Enter 4-digit year or 10-digit Benjamin number",
             width=300,
             height=40,
             prefix_icon=ft.icons.SEARCH,
@@ -117,11 +124,12 @@ class NewProjectView(BaseView):
             content_padding=10,
             on_change=self._on_search_change,
             on_submit=self._on_search_change,
+            disabled=True,  # Disabled until country is selected
         )
 
         self.directory_selection_container = ft.Container(
             content=ft.Row(
-                [self.primary_dropdown, ft.Container(width=20), self.search_field],
+                [self.country_dropdown, ft.Container(width=20), self.search_field],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
             padding=ft.padding.all(20),
@@ -158,22 +166,44 @@ class NewProjectView(BaseView):
         )
 
     # --- Event Handlers ---
-    def _on_primary_folder_changed(self, e):
-        """Notifies the manager that the primary folder has changed."""
-        self.browser_manager.select_primary_folder(e.control.value)
-        self.search_field.value = ""  # Clear search field
+    def _on_search_change(self, e):
+        """Handle search field changes."""
+        search_value = e.control.value if e.control.value else ""
+        self.browser_manager.search(search_value)
         self._update_view()
 
-    def _on_search_change(self, e):
-        """Notifies the manager that the search text has changed."""
-        self.browser_manager.search(e.control.value)
+    def _on_country_selected(self, e):
+        """Handle country selection from dropdown."""
+        if e.control.value:
+            # Country selected - navigate to it and enable search
+            self.browser_manager.select_country(e.control.value)
+            self.search_field.disabled = False
+            self.search_field.value = ""  # Clear any previous search
+        else:
+            # No country selected - disable search
+            self.search_field.disabled = True
+            self.search_field.value = ""
+            self.browser_manager.search("")  # Clear search
+        
         self._update_view()
 
     def _on_breadcrumb_clicked(self, index: int):
+        """Handle breadcrumb navigation."""
         parts = self.browser_manager.breadcrumb_parts
-        new_parts = parts[1 : index + 1]  # exclude root "Projects" part
-        new_path = self.browser_manager.root_path.joinpath(*new_parts)
-        self.browser_manager.navigate_to_path(new_path)
+        
+        if index == 0:  # Clicked on "Projects" - go to root
+            self.browser_manager.current_path = self.browser_manager.root_path
+            # Reset country dropdown and disable search
+            self.country_dropdown.value = None
+            self.search_field.disabled = True
+            self.search_field.value = ""
+            self.browser_manager.search("")
+        else:
+            # Navigate to the clicked breadcrumb level
+            new_parts = parts[1 : index + 1]  # exclude root "Projects" part
+            new_path = self.browser_manager.root_path.joinpath(*new_parts)
+            self.browser_manager.navigate_to_path(new_path)
+        
         self._update_view()
 
     def _on_back_clicked(self, e):
@@ -186,7 +216,6 @@ class NewProjectView(BaseView):
 
     def _on_item_clicked(self, e):
         """Handles a click on a file or folder in the list."""
-        # --- DEBUGGING: Added detailed logging and error handling ---
         try:
             item_data = e.control.data
             self.logger.info(f"--- _on_item_clicked: Item clicked. Raw data: {item_data} ---")
@@ -205,7 +234,17 @@ class NewProjectView(BaseView):
             item_path = Path(item_path_str)
             if is_directory:
                 self.logger.info(f"--- _on_item_clicked: Navigating to directory: {item_path} ---")
+                
+                # Clear search when navigating to avoid confusion
+                self.search_field.value = ""
+                self.browser_manager.search("")
+                
+                # Navigate to the clicked folder
                 self.browser_manager.navigate_to_path(item_path)
+                
+                # Update country dropdown to reflect new location
+                self._update_country_dropdown_from_path(item_path)
+                
                 self._update_view()
             else:
                 self.logger.info(f"--- _on_item_clicked: Calling controller.open_project with path: {item_path} ---")
@@ -213,7 +252,6 @@ class NewProjectView(BaseView):
 
         except Exception as ex:
             self.logger.error(f"--- _on_item_clicked: An unexpected exception occurred: {ex} ---", exc_info=True)
-        # --- END DEBUGGING ---
 
     def _on_add_project_clicked(self, e):
         """Tells the controller to show the project creation dialog."""
@@ -246,13 +284,23 @@ class NewProjectView(BaseView):
 
     def _update_view(self):
         """Refreshes the breadcrumb, header, and file list."""
-        self.breadcrumb.update_crumbs(self.browser_manager.breadcrumb_parts)
+        # Rebuild the breadcrumb bar with updated breadcrumbs
+        self.breadcrumb_bar = self._build_breadcrumb_bar()
+        
+        # Update the main column controls with the new breadcrumb_bar
+        if hasattr(self, 'main_column') and self.main_column:
+            self.main_column.controls[1] = self.breadcrumb_bar  # breadcrumb_bar is at index 1
+        
         self._update_action_button()
         self._update_file_list()
-        self.page.update()
+        if hasattr(self, 'page') and self.page:
+            self.page.update()
 
     def _update_file_list(self):
         """Fetches folder contents and filters them based on the search text."""
+        if not self.file_list_view:
+            return
+            
         items = self.browser_manager.displayed_items
         self.file_list_view.controls.clear()
 
@@ -260,7 +308,7 @@ class NewProjectView(BaseView):
             message = (
                 "No results found."
                 if self.browser_manager.search_term
-                else "Select a Primary folder to begin."
+                else "Select a country to begin."
             )
             icon = (
                 ft.icons.SEARCH_OFF
@@ -286,3 +334,29 @@ class NewProjectView(BaseView):
                         bgcolor=ft.colors.TERTIARY_CONTAINER,
                     )
                 )
+
+    def _update_country_dropdown_from_path(self, current_path: Path):
+        """Updates the country dropdown to reflect the current path location."""
+        try:
+            # Check if we're in a country folder (at least 2 levels deep: primary/country)
+            relative_path = current_path.relative_to(self.browser_manager.root_path)
+            parts = relative_path.parts
+            
+            if len(parts) >= 2:
+                # We're in a country or deeper - set the dropdown to the country
+                primary_folder = parts[0]
+                country_name = parts[1]
+                country_path = self.browser_manager.root_path / primary_folder / country_name
+                
+                # Set the dropdown value to the country path
+                self.country_dropdown.value = str(country_path)
+                self.search_field.disabled = False
+            else:
+                # We're at root or primary level - reset dropdown
+                self.country_dropdown.value = None
+                self.search_field.disabled = True
+                
+        except ValueError:
+            # Path is not within the root directory
+            self.country_dropdown.value = None
+            self.search_field.disabled = True
