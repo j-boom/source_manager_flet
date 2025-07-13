@@ -183,7 +183,7 @@ class SourcesView(BaseView):
         """Updates the view based on the current project state."""
         project = self.controller.project_state_manager.current_project
         if project:
-            self.project_title_header.value = f"| Adding to: {project.title}"
+            self.project_title_header.value = f"| Adding to: {project.project_title}"
             self.project_title_header.visible = True
         else:
             self.project_title_header.visible = False

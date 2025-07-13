@@ -9,6 +9,7 @@ a single, unified interface for the rest of the application.
 import json
 import uuid
 import re
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any
 from datetime import datetime
@@ -27,9 +28,10 @@ from src.models.source_models import SourceRecord, SourceType
 
 class DataService:
     """Manages all data loading, saving, and business logic."""
-
+    
     def __init__(self):
-        """Initializes the service."""
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("DataService initialized")
         self.master_sources_dir = Path(MASTER_SOURCES_DIR)
         self.project_data_dir = Path(PROJECT_DATA_DIR)
         self.master_sources_dir.mkdir(parents=True, exist_ok=True)
@@ -69,26 +71,36 @@ class DataService:
         """
         Creates a new project file from form data, injecting the current year.
         """
+        self.logger.info(f"Creating new project in directory: {parent_dir}")
+        self.logger.debug(f"Form data: {form_data}")
+        
         project_type_code = form_data.get("project_type")
         if not project_type_code:
+            self.logger.error("Project type was not specified in form data")
             return False, "Project type was not specified.", None
 
         project_config = get_project_type_config(project_type_code)
         if not project_config:
+            self.logger.error(f"Invalid project type: {project_type_code}")
             return False, f"Invalid project type: {project_type_code}", None
 
         metadata = form_data.copy()
         metadata["current_year"] = str(datetime.now().year)
         title = metadata.get("project_title") or metadata.get("document_title", "Untitled Project")
+        
+        self.logger.debug(f"Project title: {title}")
 
         try:
             filename_pattern = project_config.filename_pattern
             filename = filename_pattern.format(**metadata) + ".json"
+            self.logger.debug(f"Generated filename: {filename}")
         except KeyError as e:
+            self.logger.error(f"Missing required field for filename: {e}")
             return False, f"Missing required field for filename: {e}", None
 
         file_path = parent_dir / filename
         if file_path.exists():
+            self.logger.warning(f"Project file already exists: {filename}")
             return False, f"A project file named '{filename}' already exists.", None
 
         project = Project(
@@ -100,8 +112,10 @@ class DataService:
         )
         try:
             project.save()
+            self.logger.info(f"Successfully created project: {filename} at {file_path}")
             return True, f"Successfully created project: {filename}", project
         except Exception as e:
+            self.logger.error(f"Error saving project: {e}", exc_info=True)
             return False, "An error occurred while saving the project.", None
 
     # --- Master Source Management ---
@@ -267,19 +281,34 @@ class DataService:
         project.save()
 
     def reorder_sources_in_project(self, project: Project, new_ordered_ids: List[str]):
+        """Reorder sources in project by rearranging the list based on new_ordered_ids."""
         links_map = {link.source_id: link for link in project.sources}
-        new_source_links = [links_map[source_id] for i, source_id in enumerate(new_ordered_ids) if source_id in links_map]
-        for i, link in enumerate(new_source_links):
-            link.order = i + 1
+        new_source_links = [links_map[source_id] for source_id in new_ordered_ids if source_id in links_map]
         project.sources = new_source_links
         project.save()
 
     # --- Project I/O ---
     def load_project(self, file_path: Path) -> Optional[Project]:
-        return Project.load(file_path)
+        self.logger.info(f"Loading project from: {file_path}")
+        try:
+            project = Project.load(file_path)
+            if project:
+                self.logger.info(f"Successfully loaded project: {project.project_title}")
+            else:
+                self.logger.warning(f"Failed to load project from: {file_path}")
+            return project
+        except Exception as e:
+            self.logger.error(f"Error loading project from {file_path}: {e}", exc_info=True)
+            return None
 
     def save_project(self, project: Project):
-        project.save()
+        self.logger.info(f"Saving project: {project.project_title} to {project.file_path}")
+        try:
+            project.save()
+            self.logger.info(f"Successfully saved project: {project.project_title}")
+        except Exception as e:
+            self.logger.error(f"Error saving project {project.project_title}: {e}", exc_info=True)
+            raise
 
     def get_available_countries(self) -> List[str]:
         """Get list of available countries from existing source files."""

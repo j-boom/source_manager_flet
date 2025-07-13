@@ -31,8 +31,8 @@ class ProjectStateManager:
         
     def get_project_title(self) -> str:
         """Get the title of the currently loaded project"""
-        if self.current_project and self.current_project.title:
-            return self.current_project.title
+        if self.current_project and self.current_project.project_title:
+            return self.current_project.project_title
         return "No Project Loaded"
         
     def get_project_info(self) -> Dict[str, Any]:
@@ -42,7 +42,7 @@ class ProjectStateManager:
             
         return {
             "uuid": self.current_project.uuid,
-            "title": self.current_project.title,
+            "title": self.current_project.project_title,
             "project_type": self.current_project.project_type,
             "project_code": self.current_project.project_code,
             "engineer": self.current_project.engineer,

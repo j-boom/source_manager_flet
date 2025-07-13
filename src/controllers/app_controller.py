@@ -211,7 +211,7 @@ class AppController:
             if project_model:
                 self.project_state_manager.load_project(project_model)
                 self.user_config_manager.add_recent_project(
-                    project_model.title, str(project_path)
+                    project_model.project_title, str(project_path)
                 )
                 # Clear project-dependent views to refresh their state
                 self.logger.info("Clearing project-dependent view cache...")
@@ -455,7 +455,7 @@ class AppController:
         """Tells the DataService to reorder the sources for the current project."""
         project = self.project_state_manager.current_project
         if project:
-            self.logger.info(f"Reordering sources for project '{project.title}'.")
+            self.logger.info(f"Reordering sources for project '{project.project_title}'.")
             self.data_service.reorder_sources_in_project(project, new_ordered_ids)
         else:
             self.logger.error("Attempted to reorder sources, but no project is loaded.")
@@ -512,8 +512,7 @@ class AppController:
 
         # 2. Add the source to the main project sources list
         if not any(link.source_id == source_id for link in project.sources):
-            new_order = len(project.sources)
-            new_link = ProjectSourceLink(source_id=source_id, order=new_order)
+            new_link = ProjectSourceLink(source_id=source_id)
             project.sources.append(new_link)
         
         # 3. Save and refresh
@@ -529,7 +528,7 @@ class AppController:
             logging.error("Attempted to remove a source, but no project is loaded.")
             return
 
-        logging.info(f"Removing source '{source_id}' from project '{project.title}'.")
+        logging.info(f"Removing source '{source_id}' from project '{project.project_title}'.")
         
         # --- THIS IS THE FIX FOR THE "DELETE" ISSUE ---
         # 1. Add the source back to the "On Deck" list first.

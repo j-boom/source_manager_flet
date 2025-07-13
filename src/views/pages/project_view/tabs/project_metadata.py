@@ -49,26 +49,31 @@ class ProjectMetadataTab(BaseTab):
                 self.page.update()
             return
 
-        project_type_code = project.metadata.get("project_type")
-        project_data = project.metadata
+        project_type_code = project.project_type.value
+        
+        # Extract data from the project's metadata structure
+        # This creates a flat dictionary for form field access
+        project_data = self._extract_form_data(project)
 
         metadata_fields = get_metadata_fields(project_type_code)
         dialog_fields = get_dialog_fields(project_type_code)
         
+        # Show ALL fields except document_title which should remain hidden
         all_display_fields = {field.name: field for field in metadata_fields}
         for field in dialog_fields:
-            field.column_group = "Facility Information"
-            all_display_fields[field.name] = field
+            if field.name != "document_title":  # Keep document_title hidden
+                all_display_fields[field.name] = field
         
         grouped_fields = defaultdict(list)
         for field in all_display_fields.values():
-            grouped_fields[field.column_group or "Details"].append(field)
+            grouped_fields[field.column_group or "Project Metadata"].append(field)
 
-        column_order = ["Facility Information", "Team", "Project Request", "Details"]
+        column_order = ["Facility Information", "Team", "Project Info"]
         
         form_columns = []
         
-        sorted_group_names = sorted(grouped_fields.keys(), key=lambda g: column_order.index(g) if g in column_order else len(column_order))
+        # Filter out "Details" column and only show the three main columns
+        sorted_group_names = [group for group in column_order if group in grouped_fields]
 
         for group_name in sorted_group_names:
             fields_in_group = grouped_fields[group_name]
@@ -101,14 +106,29 @@ class ProjectMetadataTab(BaseTab):
 
             form_columns.append(ft.Column(controls=column_controls, spacing=10, expand=True))
 
-        self.form_container.content = ft.Row(
-            controls=form_columns,
-            vertical_alignment=ft.CrossAxisAlignment.START,
-            spacing=20,
+        self.form_container.content = ft.Container(
+            content=ft.Row(
+                controls=form_columns,
+                vertical_alignment=ft.CrossAxisAlignment.START,
+                spacing=20,
+            ),
+            padding=ft.padding.all(20),
         )
         if self.page:
             self.page.update()
-
+                
+    def _extract_form_data(self, project) -> Dict[str, Any]:
+        """Extracts data from the project's new structure into a flat dictionary for form fields."""
+        # Start with metadata dictionary which contains most fields
+        form_data = project.metadata.copy() if project.metadata else {}
+        
+        # Add main project fields that are stored at the top level
+        form_data["project_title"] = project.project_title
+        form_data["project_type"] = project.project_type.value
+        form_data["project_id"] = project.project_id
+        
+        return form_data
+        
     def _on_action_button_click(self, e):
         """Handles clicks on the 'Edit' or 'Save' button."""
         if self.is_edit_mode:

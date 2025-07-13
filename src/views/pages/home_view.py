@@ -6,6 +6,7 @@ This view has been refactored to align with the application's MVC-like architect
 """
 
 import flet as ft
+import logging
 from src.views.base_view import BaseView
 
 
@@ -20,10 +21,15 @@ class HomeView(BaseView):
             page: The Flet Page object.
             controller: The main AppController instance.
         """
+        # Initialize logging
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Initializing HomeView")
+        
         super().__init__(page, controller)
 
     def build(self) -> ft.Control:
         """Builds the UI for the home page content."""
+        self.logger.debug("Building home page content")
         # The view now simply uses the 'self.colors' property from BaseView.
         # It's guaranteed to be safe and always return a valid color object.
         colors = self.colors

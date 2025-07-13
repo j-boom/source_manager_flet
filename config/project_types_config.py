@@ -91,15 +91,17 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         field_type=FieldType.TEXT,
         required=True,
         collection_stage=CollectionStage.DIALOG,
-        tab_order=1,
+        tab_order=0,
+        column_group="Project Info",
     ),
     "document_title": FieldConfig(
         name="document_title",
         label="Document Title",
         field_type=FieldType.TEXT,
         required=True,
-        collection_stage=CollectionStage.DIALOG,
+        collection_stage=CollectionStage.IMPLICIT,  # Hide from all forms
         tab_order=1,
+        column_group="Project Info",
     ),
     "be_number": FieldConfig(
         name="be_number",
@@ -110,6 +112,7 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         tab_order=2,
         validation_rules={ValidationRule.PATTERN: r"^\d{4}([A-Z]{2}\d{4}|\d{6})$"},
         width=200,
+        column_group="Facility Information",
     ),
     "facility_name": FieldConfig(
         name="facility_name",
@@ -118,6 +121,7 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         required=True,
         collection_stage=CollectionStage.DIALOG,
         tab_order=4,
+        column_group="Facility Information",
     ),
     "osuffix": FieldConfig(
         name="osuffix",
@@ -128,6 +132,7 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         collection_stage=CollectionStage.DIALOG,
         tab_order=3,
         width=150,
+        column_group="Facility Information",
     ),
     # --- Metadata Fields ---
     "request_year": FieldConfig(
@@ -140,7 +145,7 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         collection_stage=CollectionStage.METADATA,
         tab_order=5,
         width=150,
-        column_group="Project Request",
+        column_group="Project Info",
     ),
     "relook": FieldConfig(
         name="relook",
@@ -148,7 +153,7 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         field_type=FieldType.CHECKBOX,
         collection_stage=CollectionStage.METADATA,
         tab_order=6,
-        column_group="Project Request",
+        column_group="Project Info",
     ),
     "engineer": FieldConfig(
         name="engineer",
@@ -196,7 +201,7 @@ ALL_FIELDS: Dict[str, FieldConfig] = {
         field_type=FieldType.TEXT,
         width=300,
         collection_stage=CollectionStage.METADATA,
-        column_group="Project Request",
+        column_group="Project Info",
     ),
     "facility_number": FieldConfig(
         name="facility_number",
@@ -306,7 +311,7 @@ PROJECT_TYPES_CONFIG: Dict[str, ProjectTypeConfig] = {
         name="COM",
         display_name="Commissioning",
         description="Commissioning projects",
-        filename_pattern="{facility_number} - COM - {current_year}",
+        filename_pattern="{be_number} - COM - {current_year}",
         field_names=[
             "project_type",
             "current_year",

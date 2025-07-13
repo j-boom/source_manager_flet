@@ -22,7 +22,7 @@ class SourceController(BaseController):
             self.logger.warning("Attempted to add source to On Deck, but no project is loaded.")
             return
 
-        self.logger.info(f"Adding source '{source_id}' to On Deck for project '{project.title}'.")
+        self.logger.info(f"Adding source '{source_id}' to On Deck for project '{project.project_title}'.")
 
         # Initialize on_deck_sources if it doesn't exist
         if "on_deck_sources" not in project.metadata:
@@ -45,12 +45,11 @@ class SourceController(BaseController):
 
         # Check if the source is already in the project
         if any(link.source_id == source_id for link in project.sources):
-            self.logger.info(f"Source '{source_id}' is already in project '{project.title}'.")
+            self.logger.info(f"Source '{source_id}' is already in project '{project.project_title}'.")
             return
 
         # Add the source to the project
-        new_order = len(project.sources)
-        new_link = ProjectSourceLink(source_id=source_id, order=new_order)
+        new_link = ProjectSourceLink(source_id=source_id)
         project.sources.append(new_link)
 
         # Remove from on deck sources
@@ -58,4 +57,4 @@ class SourceController(BaseController):
             project.metadata["on_deck_sources"].remove(source_id)
 
         self.data_service.save_project(project)
-        self.logger.info(f"Source '{source_id}' added to project '{project.title}' and removed from On Deck.")
+        self.logger.info(f"Source '{source_id}' added to project '{project.project_title}' and removed from On Deck.")

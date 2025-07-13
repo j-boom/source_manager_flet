@@ -6,6 +6,7 @@ This class does NOT perform any file I/O; that is the responsibility
 of the ProjectService.
 """
 from typing import Optional, Dict, Any, List
+import logging
 from models import Project, SourceRecord
 
 class ProjectStateManager:
@@ -14,6 +15,8 @@ class ProjectStateManager:
     def __init__(self):
         """Initializes the manager with no project loaded."""
         self.current_project: Optional[Project] = None
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("ProjectStateManager initialized")
     
     def load_project(self, project_model: Project):
         """
@@ -22,13 +25,16 @@ class ProjectStateManager:
         Args:
             project_model: A Project model object, typically loaded by the ProjectService.
         """
+        self.logger.info(f"Loading project into state: {project_model.project_title}")
         self.current_project = project_model
-        print(f"Project '{project_model.title}' loaded into state.")
+        self.logger.info(f"Project '{project_model.project_title}' loaded into state.")
 
     def unload_project(self):
         """Clears the currently loaded project from the state."""
         if self.current_project:
-            print(f"Unloading project '{self.current_project.title}' from state.")
+            self.logger.info(f"Unloading project from state: {self.current_project.project_title}")
+        else:
+            self.logger.info("No project to unload from state")
         self.current_project = None
 
     def has_loaded_project(self) -> bool:
@@ -43,7 +49,7 @@ class ProjectStateManager:
         """Gets the title of the loaded project."""
         if not self.has_loaded_project():
             return "No Project Loaded"
-        return self.current_project.title
+        return self.current_project.project_title
     
     def get_project_path(self) -> Optional[str]:
         """Gets the file path of the loaded project."""

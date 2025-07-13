@@ -1,0 +1,54 @@
+{
+    "project_metadata": {
+        "project_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "project_type": "STD",
+        "title": "2023123001 - CA123 - STD - 2023",
+        "file_path": "/Users/jim/Documents/Source Manager/Directory Source Citations/ROW/2023/2023123001/2023123001 - CA123 - STD - 2023.json",
+        "requestor": "",
+        "request_year": "",
+        "relook": false
+    },
+    "team": {
+        "engineer": "John Smith",
+        "all-source analyst": "Jane Doe",
+        "imagery analyst": "Bob Wilson",
+        "geologist": "Sarah Johnson",
+        "engineer senior reviewer": "Mike Davis"
+    },
+	"key_cites": {
+		"m_cite": "abc123-m-cite-uuid",
+		"d_cite": "abc123-d-cite-uuid",
+		"o_cite": "abc123-o-cite-uuid"
+	},
+	"facility_information": {
+		"benjamin": "2023123001",
+		"oscar": "CA123",
+		"Facility Name": "Test Facility Alpha",
+		"Facility Surrogate Key": "1234567890"
+	},
+    "slide_data": {
+        "slide_id_1": {
+            "title": "Executive Summary",
+            "sources": ["source-alpha-1-uuid"]
+        },
+        "slide_id_2": {
+            "title": "Technical Analysis",
+            "sources": ["source-alpha-1-uuid", "source-alpha-2-uuid"]
+        }
+    },
+	"sources": [
+		{
+            "uuid": "source-alpha-1-uuid",
+			"order": 1,
+			"usage_notes": "High confidence assessment"
+		},
+		{
+			"uuid": "source-alpha-2-uuid",
+            "order": 2,
+			"usage_notes": "Clear weather conditions"
+		}
+	],
+	
+	"powerpoint_file": "/path/to/presentation1.pptx",
+	"number_header_citations": 3
+}

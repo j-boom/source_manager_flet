@@ -86,7 +86,7 @@ class ProjectSourcesTab(BaseTab):
                     )
                     self.on_deck_list.controls.append(card)
         
-        for link in sorted(project.sources, key=lambda l: l.order):
+        for link in project.sources:
             source = self.controller.data_service.get_source_by_id(link.source_id)
             if source:
                 card = ProjectSourceCard(source=source, link=link, controller=self.controller)

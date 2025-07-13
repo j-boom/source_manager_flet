@@ -6,6 +6,7 @@ when a project is opened. It initializes and manages the individual tab views.
 """
 
 import flet as ft
+import logging
 from views import BaseView
 
 # Import the refactored tab classes
@@ -18,32 +19,94 @@ class ProjectView(BaseView):
     """Project view with a tabbed interface for different project aspects."""
     
     def __init__(self, page: ft.Page, controller):
+        # Initialize logging
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Initializing ProjectView")
+        
         super().__init__(page, controller)
         self.project_state_manager = self.controller.project_state_manager
         
+        self.logger.debug("Creating tab instances")
+        
         # Initialize all tab view classes, passing the controller to each
-        self.metadata_tab = ProjectMetadataTab(controller=self.controller)
-        self.sources_tab = ProjectSourcesTab(controller=self.controller)
-        self.cite_sources_tab = CiteSourcesTab(controller=self.controller)
+        try:
+            self.metadata_tab = ProjectMetadataTab(controller=self.controller)
+            self.logger.debug("✅ MetadataTab initialized")
+        except Exception as e:
+            self.logger.error(f"❌ MetadataTab initialization failed: {e}")
+            
+        try:
+            self.sources_tab = ProjectSourcesTab(controller=self.controller)
+            self.logger.debug("✅ SourcesTab initialized")
+        except Exception as e:
+            self.logger.error(f"❌ SourcesTab initialization failed: {e}")
+            
+        try:
+            self.cite_sources_tab = CiteSourcesTab(controller=self.controller)
+            self.logger.debug("✅ CiteSourcesTab initialized")
+        except Exception as e:
+            self.logger.error(f"❌ CiteSourcesTab initialization failed: {e}")
+            
+        self.logger.info("ProjectView initialization complete")
 
     def build(self) -> ft.Control:
         """
         Builds the entire project view UI. This method is called by the 
         navigation logic in the AppController.
         """
+        self.logger.info("Building ProjectView content")
+        
         project = self.project_state_manager.current_project
         
         if not project:
+            self.logger.warning("No project loaded - showing error message")
             return self.show_error("No project is currently loaded.")
 
-        # Update the tabs with the latest project data
-        self.update_view()
+        self.logger.info(f"Building view for project: {project.project_title}")
 
-        project_info = f"Project: {project.title}"
+        # Update the tabs with the latest project data
+        try:
+            self.logger.debug("Updating tab views with project data")
+            self.update_view()
+            self.logger.debug("✅ Tab views updated successfully")
+        except Exception as e:
+            self.logger.error(f"❌ Failed to update tab views: {e}")
+            return self.show_error(f"Error loading project data: {e}")
+
+        project_info = f"Project: {project.project_title}"
         project_type_config = get_project_type_config(project.project_type.value)
         project_type_display = f"({project_type_config.display_name})" if project_type_config else ""
 
-        return ft.Column([
+        self.logger.debug("Building tab structure")
+        
+        try:
+            tabs_content = ft.Tabs([
+                ft.Tab(
+                    text="Project Metadata",
+                    icon=ft.icons.INFO_OUTLINE,
+                    content=self.metadata_tab.build() 
+                ),
+                ft.Tab(
+                    text="Manage Sources",
+                    icon=ft.icons.SOURCE,
+                    content=self.sources_tab.build()
+                ),
+                ft.Tab(
+                    text="Cite Slides",
+                    icon=ft.icons.COMPARE_ARROWS,
+                    content=self.cite_sources_tab.build()
+                ),
+            ],
+            expand=True
+            )
+            
+            self.logger.debug("✅ Tabs created successfully")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to create tabs: {e}")
+            return self.show_error(f"Error creating project tabs: {e}")
+
+        result = ft.Column([
             ft.Container(
                 content=ft.Row([
                     ft.Row([
@@ -60,12 +123,11 @@ class ProjectView(BaseView):
                 padding=ft.padding.all(20),
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.OUTLINE))
             ),
-            ft.Container(
-                content=self._build_tabs(),
-                expand=True,
-                padding=ft.padding.symmetric(horizontal=20, vertical=10)
-            )
-        ], expand=True, spacing=0)
+            tabs_content
+        ])
+        
+        self.logger.info("✅ ProjectView build complete")
+        return result
 
     def _build_tabs(self) -> ft.Tabs:
         """Constructs the Flet Tabs control with the built content from each tab class."""

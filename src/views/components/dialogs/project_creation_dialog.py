@@ -6,6 +6,7 @@ view, responsible only for UI and delegating all logic to the AppController.
 """
 
 import flet as ft
+import logging
 from pathlib import Path
 from typing import Callable, Dict, Any, List
 
@@ -28,6 +29,8 @@ class ProjectCreationDialog(BaseDialog):
         self.parent_path = parent_path
         self.form_fields: Dict[str, ft.Control] = {}
         self.initial_be_number = initial_be_number  # Optional initial value for 'be_number'
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"ProjectCreationDialog initialized for path: {parent_path}")
 
         print(f"Initial BE Number: {self.initial_be_number}")
         # --- UI Components ---
@@ -101,14 +104,19 @@ class ProjectCreationDialog(BaseDialog):
             self._update_form_fields(e.control.value)
 
     def _on_create_clicked(self, e: ft.ControlEvent):
+        self.logger.info("Create button clicked - collecting form data")
+        
         # Collect form data
         form_data = {}
         for name, control in self.form_fields.items():
             if hasattr(control, "value"):
                 form_data[name] = control.value
 
+        self.logger.debug(f"Collected form data: {form_data}")
+
         project_type = self.project_type_dropdown.value
         if not project_type:
+            self.logger.warning("Project creation attempted without selecting project type")
             # Show error if no project type selected
             error_dialog = ft.AlertDialog(
                 title=ft.Text("Project Type Required"),
@@ -121,11 +129,14 @@ class ProjectCreationDialog(BaseDialog):
             return
 
         form_data["project_type"] = project_type
+        self.logger.info(f"Project creation requested for type: {project_type}")
 
         # Validate the form data using the config validation rules
         is_valid, error_messages = validate_form_data(project_type, form_data)
+        self.logger.debug(f"Form validation result: valid={is_valid}, errors={error_messages}")
         
         if not is_valid:
+            self.logger.warning(f"Form validation failed: {error_messages}")
             # Show validation errors and keep dialog open for corrections
             error_text = "Please fix the following errors and try again:\n\n" + "\n".join(f"• {msg}" for msg in error_messages)
             
@@ -145,9 +156,14 @@ class ProjectCreationDialog(BaseDialog):
             # Dialog stays open - user can fix errors and try again
             return
 
+        self.logger.info("Form validation passed - proceeding with project creation")
+        
         # If validation passes, submit the project
+        self.logger.debug("Calling controller to submit new project")
         self.controller.submit_new_project(
             parent_path=self.parent_path,
             form_data=form_data,
         )
+        self.logger.info("Project creation initiated - closing dialog")
         self._close_dialog()
+        

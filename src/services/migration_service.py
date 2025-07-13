@@ -41,7 +41,6 @@ class MigrationService:
         new_data = {
             "project_metadata": self._build_project_metadata(old_data, file_info, filename),
             "team": self._migrate_team(old_data),
-            "key_cites": self._migrate_key_cites(old_data),
             "facility_information": self._migrate_facility_information(old_data, file_info),
             "slide_data": self._migrate_slide_data(old_data),
             "sources": self._migrate_sources(old_data),
@@ -95,6 +94,9 @@ class MigrationService:
         # Generate new UUID for project
         project_id = str(uuid.uuid4())
         
+        # Use filename (without extension) as project title
+        project_title = filename.replace('.json', '')
+        
         # Build file path (derived from filename structure)
         benjamin = file_info["benjamin"]
         year = file_info["year"]
@@ -106,7 +108,8 @@ class MigrationService:
         return {
             "project_id": project_id,
             "project_type": file_info["project_type"],
-            "title": title,
+            "title": project_title,
+            "project_title": project_title,  # Add project_title field
             "file_path": file_path,
             "requestor": "",
             "request_year": "",
@@ -116,10 +119,6 @@ class MigrationService:
     def _migrate_team(self, old_data: Dict[str, Any]) -> Dict[str, str]:
         """Migrate team section (preserve as-is)."""
         return old_data.get("team", {})
-    
-    def _migrate_key_cites(self, old_data: Dict[str, Any]) -> Dict[str, str]:
-        """Migrate key_cites section (preserve as-is)."""
-        return old_data.get("key_cites", {})
     
     def _migrate_facility_information(self, old_data: Dict[str, Any], file_info: Dict[str, str]) -> Dict[str, str]:
         """
@@ -145,15 +144,15 @@ class MigrationService:
     def _migrate_sources(self, old_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Migrate sources section with transformation.
-        Convert from full source objects to simplified format with order.
+        Convert from full source objects to simplified format.
+        Order is maintained by list position.
         """
         old_sources = old_data.get("sources", [])
         new_sources = []
         
-        for i, source in enumerate(old_sources):
+        for source in old_sources:
             new_source = {
                 "uuid": source.get("uuid", ""),
-                "order": i + 1,  # 1-based ordering
                 "usage_notes": source.get("comment", "")  # comment -> usage_notes
             }
             new_sources.append(new_source)
