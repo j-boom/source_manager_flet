@@ -17,12 +17,13 @@ class SourceController(BaseController):
     
     def add_source_to_on_deck(self, source_id: str):
         """Adds a source ID to the on_deck_sources list in the current project's metadata."""
+        self.logger.info(f"DIAGNOSTIC: SourceController.add_source_to_on_deck called with source_id={source_id}")
         project = self.project_state_manager.current_project
         if not project:
-            self.logger.warning("Attempted to add source to On Deck, but no project is loaded.")
+            self.logger.warning("DIAGNOSTIC: Attempted to add source to On Deck, but no project is loaded.")
             return
 
-        self.logger.info(f"Adding source '{source_id}' to On Deck for project '{project.project_title}'.")
+        self.logger.info(f"DIAGNOSTIC: Adding source '{source_id}' to On Deck for project '{project.project_title}'.")
 
         # Initialize on_deck_sources if it doesn't exist
         if "on_deck_sources" not in project.metadata:
@@ -32,9 +33,9 @@ class SourceController(BaseController):
         if source_id not in project.metadata["on_deck_sources"]:
             project.metadata["on_deck_sources"].append(source_id)
             self.data_service.save_project(project)
-            self.logger.info(f"Source '{source_id}' added to On Deck.")
+            self.logger.info(f"DIAGNOSTIC: Source '{source_id}' added to On Deck.")
         else:
-            self.logger.info(f"Source '{source_id}' is already in On Deck.")
+            self.logger.info(f"DIAGNOSTIC: Source '{source_id}' is already in On Deck.")
 
     def add_source_to_project(self, source_id: str):
         """Adds a master source to the currently loaded project and removes it from 'On Deck'."""

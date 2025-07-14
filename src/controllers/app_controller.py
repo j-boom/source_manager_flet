@@ -165,42 +165,52 @@ class AppController:
 
     def navigate_to(self, page_name: str):
         """Handles navigation requests from any part of the UI."""
-        self.logger.info(f"Navigation requested for '{page_name}'...")
+        self.logger.info(f"DIAGNOSTIC: Navigation requested for '{page_name}'...")
         sidebar_page_name = page_name
 
         if page_name == "project_view":
             if self.project_state_manager.has_loaded_project():
                 page_name = "project_dashboard"
-                self.logger.info(f"Project is loaded. Redirecting to '{page_name}'.")
+                self.logger.info(f"DIAGNOSTIC: Project is loaded. Redirecting to '{page_name}'.")
             else:
                 page_name = "new_project"
-                self.logger.info(f"No project loaded. Redirecting to '{page_name}'.")
+                self.logger.info(f"DIAGNOSTIC: No project loaded. Redirecting to '{page_name}'.")
 
         if page_name == "recent_projects":
             self._validate_recent_projects()
 
         self.navigation_manager.set_current_page(page_name)
 
-        if page_name in self.views:
-            self.views.pop(page_name)
-            self.logger.info(f"Popped '{page_name}' from view cache to force refresh.")
-
-        self.views[page_name] = self._create_view_for_page(page_name)
+        # Always recreate the sources view to ensure callback registration and fresh state
+        if page_name == "sources":
+            if page_name in self.views:
+                self.views.pop(page_name)
+                self.logger.info(f"DIAGNOSTIC: Popped '{page_name}' from view cache to force refresh.")
+            self.logger.info(f"DIAGNOSTIC: Creating sources view for page '{page_name}'.")
+            self.views[page_name] = self._create_view_for_page(page_name)
+            self.logger.info(f"DIAGNOSTIC: Sources view created: {self.views[page_name]}")
+        else:
+            if page_name in self.views:
+                self.views.pop(page_name)
+                self.logger.info(f"DIAGNOSTIC: Popped '{page_name}' from view cache to force refresh.")
+            self.views[page_name] = self._create_view_for_page(page_name)
 
         view_instance = self.views.get(page_name)
         if view_instance:
+            self.logger.info(f"DIAGNOSTIC: View instance for '{page_name}' is {view_instance} (type: {type(view_instance)})")
             content_to_display = (
                 view_instance.build()
                 if hasattr(view_instance, "build")
                 and callable(getattr(view_instance, "build"))
                 else view_instance
             )
+            self.logger.info(f"DIAGNOSTIC: Content to display for '{page_name}' is {content_to_display}")
             self.main_view.set_content(content_to_display)
             self.main_view.update_navigation(sidebar_page_name)
-            self.logger.info(f"Navigation to '{page_name}' complete.")
+            self.logger.info(f"DIAGNOSTIC: Navigation to '{page_name}' complete.")
         else:
             self.logger.error(
-                f"Could not navigate to '{page_name}' because view instance is null."
+                f"DIAGNOSTIC: Could not navigate to '{page_name}' because view instance is null."
             )
 
     def open_project(self, project_path: Path):
@@ -449,8 +459,14 @@ class AppController:
         dialog.show()
 
     def add_source_to_on_deck(self, source_id: str):
-        """Adds a source ID to the on_deck_sources list in the current project's metadata."""
-        return self.source_controller.add_source_to_on_deck(source_id)
+        """Adds a source ID to the on_deck_sources list in the current project's metadata and shows a success toast."""
+        result = self.source_controller.add_source_to_on_deck(source_id)
+        # Show success toast/snackbar
+        source = self.data_service.get_source_by_id(source_id)
+        title = source.title if source else "Source"
+        self.page.snack_bar = ft.SnackBar(ft.Text(f"Successfully added '{title}' to the Project"), open=True)
+        self.page.update()
+        return result
 
     def add_source_to_project(self, source_id: str):
         """Adds a master source to the currently loaded project and removes it from 'On Deck'."""

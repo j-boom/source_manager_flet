@@ -89,16 +89,31 @@ class ProjectMetadataTab(BaseTab):
                 
                 widget = create_field_widget(field_config, str(current_value))
                 
-                # --- FIX: Handle Checkbox's 'disabled' property separately ---
-                if field_config.collection_stage == CollectionStage.DIALOG:
-                    if hasattr(widget, 'read_only'):
-                        widget.read_only = True
-                    elif isinstance(widget, ft.Checkbox):
+                # --- FIX: Handle different widget properties based on type ---
+                # Special handling for project_title - should be editable in edit mode
+                if field_config.name == "project_title":
+                    if isinstance(widget, ft.Checkbox):
+                        widget.disabled = not self.is_edit_mode
+                    elif isinstance(widget, ft.Dropdown):
+                        widget.disabled = not self.is_edit_mode
+                    elif hasattr(widget, 'read_only'):
+                        widget.read_only = not self.is_edit_mode
+                elif field_config.collection_stage == CollectionStage.DIALOG:
+                    # Other DIALOG fields remain read-only (be_number, facility_name, osuffix)
+                    if isinstance(widget, ft.Checkbox):
                         widget.disabled = True
-                elif isinstance(widget, ft.Checkbox):
-                    widget.disabled = not self.is_edit_mode
-                elif hasattr(widget, 'read_only'):
-                    widget.read_only = not self.is_edit_mode
+                    elif isinstance(widget, ft.Dropdown):
+                        widget.disabled = True
+                    elif hasattr(widget, 'read_only'):
+                        widget.read_only = True
+                else:
+                    # Regular metadata fields follow edit mode
+                    if isinstance(widget, ft.Checkbox):
+                        widget.disabled = not self.is_edit_mode
+                    elif isinstance(widget, ft.Dropdown):
+                        widget.disabled = not self.is_edit_mode
+                    elif hasattr(widget, 'read_only'):
+                        widget.read_only = not self.is_edit_mode
                 # --- END FIX ---
 
                 self.form_fields[field_config.name] = widget

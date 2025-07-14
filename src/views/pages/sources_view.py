@@ -7,13 +7,36 @@ from views.components import OnDeckCard, AppFAB
 from config.source_types_config import get_filterable_fields, ALL_SOURCE_FIELDS
 
 class SourcesView(BaseView):
-    """A dedicated page for Browse, searching, and filtering all master sources."""
-
+    def show_add_source_toast(self, source_id: str):
+        """Show a toast/snackbar when a source is added to On Deck."""
+        import logging
+        logging.info(f"DIAGNOSTIC: show_add_source_toast called with source_id={source_id} (controller id={id(self.controller)})")
+        source = self.controller.data_service.get_source_by_id(source_id)
+        title = source.title if source else "Source"
+        self.page.snack_bar = ft.SnackBar(ft.Text(f"Successfully added '{title}' to the Project"), open=True)
+        self.page.update()
     def __init__(self, page: ft.Page, controller):
+        import logging
         super().__init__(page, controller)
+        logging.info(f"DIAGNOSTIC: SourcesView __init__ called. Registering on_source_added_to_on_deck callback on controller id={id(controller)} (self id={id(self)}).")
+        controller.on_source_added_to_on_deck = self.show_add_source_toast
         self.all_sources: List[SourceRecord] = []
         self.current_sources: List[SourceRecord] = []
         self.selected_country: str = "General"  # Default selection
+        # UI for showing current project title
+        self.project_title_header = ft.Text(visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY)
+        # Country selection dropdown
+        self.country_dropdown = ft.Dropdown(
+            label="Country/Region",
+            width=200,
+            on_change=self._on_country_changed,
+            border_radius=8,
+        )
+        # UI Components
+        self.filter_controls: Dict[str, ft.TextField] = {}
+        self.active_filter_chips = ft.Row(wrap=True)
+        self.filter_controls_column = ft.Column(spacing=10)
+        self.results_list = ft.ListView(expand=True, spacing=10, padding=ft.padding.only(top=10))
         
         # UI for showing current project title
         self.project_title_header = ft.Text(visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY)
@@ -222,21 +245,27 @@ class SourcesView(BaseView):
 
         for field_name, control in self.filter_controls.items():
             search_term = (control.value or "").lower().strip()
-            if not search_term: continue
-                
+            if not search_term:
+                continue
+
+            # Always create a chip for every non-empty filter
             chip = ft.Chip(
-                label=ft.Text(f"{control.label}: '{search_term}'"),
+                label=ft.Text(f"{control.label}: '{control.value.strip()}'"),
                 data=field_name,
                 on_delete=self._remove_filter_chip,
             )
             self.active_filter_chips.controls.append(chip)
 
             if field_name == "authors":
-                 filtered_sources = [s for s in filtered_sources if s.authors and any(search_term in author.lower() for author in s.authors)]
+                # Robust author filtering: ignore case, strip whitespace, match any substring
+                def author_matches(author):
+                    return search_term in author.lower().strip()
+                filtered_sources = [s for s in filtered_sources if s.authors and any(author_matches(a) for a in s.authors)]
             else:
-                filtered_sources = [s for s in filtered_sources if search_term in str(getattr(s, field_name, '')).lower()]
+                # Robust generic filtering: ignore case, strip whitespace
+                filtered_sources = [s for s in filtered_sources if search_term in str(getattr(s, field_name, '')).lower().strip()]
 
-        self.current_sources = filtered_sources # Store the current filtered list
+        self.current_sources = filtered_sources  # Store the current filtered list
         self._update_results_list(self.current_sources)
         self.page.update()
         

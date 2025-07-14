@@ -39,7 +39,7 @@ DEFAULT_THEME = "dark"
 # =============================================================================
 # Window Settings
 # =============================================================================
-DEFAULT_WINDOW_WIDTH = 1400
+DEFAULT_WINDOW_WIDTH = 1900
 DEFAULT_WINDOW_HEIGHT = 900
 MIN_WINDOW_WIDTH = 1000
 MIN_WINDOW_HEIGHT = 700
