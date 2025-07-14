@@ -69,7 +69,7 @@ class ProjectSourcesTab(BaseTab):
         self.on_deck_list.controls.clear()
         self.project_sources_list.controls.clear()
 
-        on_deck_ids = project.metadata.get("on_deck_sources", [])
+        on_deck_ids = project.on_deck_sources if hasattr(project, 'on_deck_sources') else project.metadata.get("on_deck_sources", [])
         project_source_ids = {link.source_id for link in project.sources}
 
         for source_id in on_deck_ids:

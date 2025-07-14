@@ -25,7 +25,6 @@ Classes:
 """
 
 from .navigation_manager import NavigationManager
-from .navigation_manager import NavigationManager
 from .project_state_manager import ProjectStateManager
 from .settings_manager import SettingsManager
 from .theme_manager import ThemeManager

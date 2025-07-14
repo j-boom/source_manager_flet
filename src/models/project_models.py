@@ -98,6 +98,9 @@ class Project:
         
         # Build slide_data section (initialize empty for new projects)
         slide_data = metadata.get("slide_data", {})
+
+        # Get on_deck_sources from metadata if available
+        on_deck_sources = metadata.get("on_deck_sources", [])
         
         # Build sources with new field names
         sources = []
@@ -114,6 +117,7 @@ class Project:
             "facility_information": facility_information,
             "slide_data": slide_data,
             "sources": sources,
+            "on_deck_sources": on_deck_sources,
             "powerpoint_file": metadata.get("powerpoint_file", ""),
             "number_header_citations": metadata.get("number_header_citations", 0)
         }
@@ -129,7 +133,8 @@ class Project:
             team = data.get('team', {})
             facility_info = data.get('facility_information', {})
             slide_data = data.get('slide_data', {})
-            
+            on_deck_sources = data.get('on_deck_sources', [])
+
             # Rebuild metadata from the separate sections
             metadata = {
                 # Team information
@@ -153,7 +158,8 @@ class Project:
                 # Additional data
                 "slide_data": slide_data,
                 "powerpoint_file": data.get("powerpoint_file", ""),
-                "number_header_citations": data.get("number_header_citations", 0)
+                "number_header_citations": data.get("number_header_citations", 0),
+                "on_deck_sources": on_deck_sources
             }
             
             # Convert sources from new format
