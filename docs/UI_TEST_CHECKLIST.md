@@ -88,24 +88,30 @@ This comprehensive checklist ensures all features of the Source Manager applicat
     - [√] Relook checkbox (functional)
 
 ### Project Sources Tab
-- [ ] Project sources tab loads
-- [ ] Sources list displays correctly
-- [ ] **Add Source Functionality**:
   - [ ] "Add Source" button works
   - [ ] Source selection dialog opens
   - [ ] Can search/filter sources
   - [ ] Can select source and add to project
   - [ ] Source appears in project sources list
-- [ ] **Source Management**:
   - [ ] Sources display in correct order (list position)
   - [ ] Can edit source usage notes
   - [ ] Can remove sources from project
   - [ ] Can reorder sources (drag and drop or buttons)
-- [ ] **Source Details**:
   - [ ] Source information displays correctly
   - [ ] Usage notes field works
-  - [ ] Source UUID is preserved
 
+  - [ ] On Deck sources list displays correctly
+  - [ ] Can add source to On Deck list
+  - [ ] Can remove source from On Deck list
+  - [ ] On Deck sources persist in project file
+  - [ ] On Deck sources restore after reopening project
+  - [ ] Toast/snackbar appears after adding source
+  - [ ] Toast/snackbar appears after removing source
+  - [ ] Error message appears if source add fails
+  - [ ] Error message appears if source remove fails
+  - [ ] Handles duplicate source add gracefully
+  - [ ] Handles missing source data gracefully
+  - [ ] Handles corrupted source data gracefully
 ### Data Persistence
 - [ ] Changes save automatically or on save action
 - [ ] Saved data persists after closing/reopening project
