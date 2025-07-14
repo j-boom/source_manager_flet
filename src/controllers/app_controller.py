@@ -337,9 +337,14 @@ class AppController:
         self.logger.info(f"Updating project metadata: {updated_data}")
         project = self.project_state_manager.current_project
         if project:
+            # Persist project_title if present
+            if "project_title" in updated_data:
+                project.project_title = updated_data["project_title"]
             project.metadata.update(updated_data)
             self.data_service.save_project(project)
-            self.logger.info("Project metadata saved successfully.")
+            # Update recent projects entry if project_title changed
+            self.user_config_manager.add_recent_project(project.project_title, str(project.file_path))
+            self.logger.info("Project metadata and recent projects saved successfully.")
         else:
             self.logger.error("Attempted to update metadata, but no project is loaded.")
 
