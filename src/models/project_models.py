@@ -213,12 +213,12 @@ class Project:
                     data['project_id'] = 'LEGACY_PROJECT'
             
             # Handle missing title - generate from filename or use fallback
-            if 'title' not in data:
+            if 'project_title' not in data:
                 if file_path:
                     # Use filename without extension as title
-                    data['title'] = file_path.stem
+                    data['project_title'] = file_path.stem
                 else:
-                    data['title'] = 'Legacy Project'
+                    data['project_title'] = 'Legacy Project'
             
             # Handle missing metadata - ensure it exists
             if 'metadata' not in data:

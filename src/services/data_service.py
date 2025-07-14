@@ -106,7 +106,7 @@ class DataService:
         project = Project(
             project_id=str(uuid.uuid4()),
             project_type=ProjectType(project_type_code),
-            title=title,
+            project_title=title,
             file_path=file_path,
             metadata=metadata,
         )
