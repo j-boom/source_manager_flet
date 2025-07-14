@@ -10,7 +10,7 @@ class ProjectSourcesTab(BaseTab):
     def __init__(self, controller):
         super().__init__(controller)
         self.on_deck_list = ft.ListView(expand=True, spacing=5, padding=ft.padding.only(top=10))
-        self.project_sources_list = ft.ListView(expand=True, spacing=10, padding=ft.padding.only(top=10))
+        self.project_sources_list = ft.Column(expand=True, spacing=5, scroll=ft.ScrollMode.ADAPTIVE)
 
     def build(self) -> ft.Control:
         """Builds the UI for the project sources tab."""
@@ -27,7 +27,7 @@ class ProjectSourcesTab(BaseTab):
 
         project_sources_column = ft.Column(
             [
-                ft.Text("Project Sources", style=ft.TextThemeStyle.TITLE_MEDIUM),
+                ft.Text("Project Sources (Drag to Reorder)", style=ft.TextThemeStyle.TITLE_MEDIUM),
                 ft.Text("Sources currently included in this project.", italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT),
                 ft.Divider(),
                 ft.Container(self.project_sources_list, expand=True),
@@ -45,7 +45,6 @@ class ProjectSourcesTab(BaseTab):
             spacing=20,
         )
 
-        # Add floating action button using the AppFAB component
         fab = AppFAB.create_add_source_fab(self.controller)
 
         return ft.Stack(
@@ -76,13 +75,11 @@ class ProjectSourcesTab(BaseTab):
             if source_id not in project_source_ids:
                 source = self.controller.data_service.get_source_by_id(source_id)
                 if source:
-                    # Create the card, setting the context for this view.
-                    # The card's internal logic will now call 'promote_source_from_on_deck'.
                     card = OnDeckCard(
                         source=source,
                         controller=self.controller,
                         show_add_button=True,
-                        context="project_tab" # Set the context here
+                        context="project_tab"
                     )
                     self.on_deck_list.controls.append(card)
         
@@ -90,7 +87,20 @@ class ProjectSourcesTab(BaseTab):
             source = self.controller.data_service.get_source_by_id(link.source_id)
             if source:
                 card = ProjectSourceCard(source=source, link=link, controller=self.controller)
-                self.project_sources_list.controls.append(card)
+                self.project_sources_list.controls.append(
+                    ft.DragTarget(
+                        group="project_sources",
+                        content=ft.Draggable(
+                            group="project_sources",
+                            content=card,
+                            data=link.source_id
+                        ),
+                        data=link.source_id,
+                        on_will_accept=self._drag_will_accept,
+                        on_accept=self._drag_accept,
+                        on_leave=self._drag_leave,
+                    )
+                )
 
         if not self.project_sources_list.controls:
             self.project_sources_list.controls.append(ft.Text("No sources added yet.", italic=True, text_align=ft.TextAlign.CENTER))
@@ -98,6 +108,64 @@ class ProjectSourcesTab(BaseTab):
             self.on_deck_list.controls.append(ft.Text("Add sources from the main 'Sources' page.", italic=True, text_align=ft.TextAlign.CENTER))
 
         if self.page: self.page.update()
+
+    def _drag_will_accept(self, e: ft.DragTargetAcceptEvent):
+        """
+        Provides visual feedback by modifying the target control's appearance
+        to look like an "opening slot", which is more stable than inserting a widget.
+        """
+        # Make the card under the draggable item semi-transparent to indicate a drop target
+        e.control.content.content.opacity = 0.5
+        e.control.update()
+
+    def _drag_leave(self, e: ft.DragTargetAcceptEvent):
+        """Resets the appearance of the target control when the draggable leaves."""
+        # Restore the card's original appearance
+        e.control.content.content.opacity = 1
+        e.control.update()
+
+    def _drag_accept(self, e: ft.DragTargetAcceptEvent):
+        """
+        Handles the logic for reordering sources when a drop occurs.
+        This method reorders the data in the model and then calls for a single, clean UI refresh.
+        """
+        # First, restore the appearance of the target card
+        e.control.content.content.opacity = 1
+        
+        project = self.controller.project_state_manager.current_project
+        if not project:
+            e.control.update()
+            return
+
+        src_id_being_dragged = self.page.get_control(e.src_id).data
+        target_id = e.control.data
+
+        if src_id_being_dragged == target_id:
+            e.control.update()
+            return
+
+        source_links = project.sources
+        dragged_link = next((link for link in source_links if link.source_id == src_id_being_dragged), None)
+        
+        target_index = -1
+        for i, link in enumerate(source_links):
+            if link.source_id == target_id:
+                target_index = i
+                break
+
+        if dragged_link and target_index != -1:
+            # Reorder the links in the data model
+            source_links.remove(dragged_link)
+            source_links.insert(target_index, dragged_link)
+            
+            # Save the new order to the project file
+            project.save()
+            
+            # Trigger a full, clean refresh of the view from the updated data model
+            self._update_view()
+        else:
+            # If something went wrong, still update the control to remove visual artifacts
+            e.control.update()
 
     def update_project_data(self, project_data: Dict[str, Any], project_path: str):
         """Called by the parent view to refresh the data."""
