@@ -47,7 +47,8 @@ class SourceRecord:
     date_created: str = field(default_factory=lambda: datetime.now().isoformat())
     last_modified: str = field(default_factory=lambda: datetime.now().isoformat())
     report_number: Optional[str] = None  # For reports and standards
-
+    used_in: List[Dict[str, str]] = field(default_factory=list) # project_id: notes
+    
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the dataclass to a dictionary."""
         data = asdict(self)

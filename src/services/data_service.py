@@ -22,8 +22,8 @@ from config import (
     get_country_from_project_path,
     get_source_file_for_country,
 )
-from src.models.project_models import Project, ProjectType
-from src.models.source_models import SourceRecord, SourceType
+from src.models.project_models import Project, ProjectType, ProjectSourceLink
+from src.models.source_models import SourceRecord
 
 
 class DataService:
@@ -272,9 +272,46 @@ class DataService:
         return hydrated_sources
 
     # --- Project Data Modification ---
-    def add_source_to_project(self, project: Project, source_id: str):
-        project.add_source(source_id)
-        project.save()
+    def add_source_to_project(self, project: Project, source_id: str, notes: str, declassify: str):
+        """Adds a source to the project with notes and declassify info."""
+        if source_id not in [s.source_id for s in project.sources]:
+            link = ProjectSourceLink(source_id=source_id, notes=notes, declassify=declassify)
+            project.sources.append(link)
+            
+            # Remove from on deck if present
+            if "on_deck_sources" in project.metadata:
+                if source_id in project.metadata["on_deck_sources"]:
+                    project.metadata["on_deck_sources"].remove(source_id)
+        
+            source_record = self.get_source_by_id(source_id)
+            if source_record:
+                # Avoid duplicate entries
+                if not any(p['project_id'] == project.project_id for p in source_record.used_in):
+                    source_record.used_in.append({
+                        "project_id": project.project_id,
+                        "project_title": project.project_title,
+                        "notes": notes
+                    })
+                    self.update_master_source(source_id, source_record.to_dict())
+
+                project.save()
+            try:
+                # Save the project file with the new source link
+                self.save_project(project)
+
+                source_record = self.get_source_by_id(source_id)
+                if source_record:
+                    # Ensure this project isn't already listed in 'used_in'
+                    if not any(p.get('project_id') == project.project_id for p in source_record.used_in):
+                        source_record.used_in.append({
+                            "project_id": project.project_id,
+                            "project_title": project.project_title,
+                            "notes": notes
+                        })
+                        self.update_master_source(source_id, source_record.to_dict())
+
+            except Exception as e:
+                self.logger.error(f"Failed to add source {source_id} to project {project.project_title}: {e}", exc_info=True)
 
     def remove_source_from_project(self, project: Project, source_id: str):
         project.remove_source(source_id)
@@ -356,3 +393,42 @@ class DataService:
             pass
             
         return ""
+    
+    def update_project_source_link(self, project: Project, source_id: str, link_data: Dict[str, Any]) -> Tuple[bool, str]:
+        """
+        Finds a source link within a project, updates it, saves the project,
+        and also updates the master source record to track project usage.
+        """
+        link_found = False
+        for link in project.sources:
+            if link.source_id == source_id:
+                # Update the notes and declassify fields from the provided data
+                link.notes = link_data.get("notes", link.notes)
+                link.declassify = link_data.get("declassify", link.declassify)
+                link_found = True
+                break
+        
+        if not link_found:
+            return False, f"Could not find source link with ID '{source_id}' in the project."
+            
+        try:
+            # Save the entire project object, which now contains the updated link
+            self.save_project(project)
+            
+            # Now, update the master source record to ensure it tracks this project's usage
+            source_record = self.get_source_by_id(source_id)
+            if source_record:
+                # Check if this project is already in the 'used_in' list to avoid duplicates
+                if not any(p.get('project_id') == project.project_id for p in source_record.used_in):
+                    source_record.used_in.append({
+                        "project_id": project.project_id,
+                        "project_title": project.project_title,
+                        "notes": link.notes # Add the specific notes to the usage tracker
+                    })
+                    # Use the existing update_master_source method to save the change
+                    self.update_master_source(source_id, source_record.to_dict())
+
+            return True, "Project source link and master record updated successfully."
+        except Exception as e:
+            self.logger.error(f"Failed to save project or update master source: {e}", exc_info=True)
+            return False, "Failed to save project or update master source."

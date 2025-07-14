@@ -78,7 +78,6 @@ class AppController:
         self._view_class_map = self._build_view_class_map()
 
         # --- Initialize Subcontrollers ---
-        from .base_controller import BaseController
         from .navigation_controller import NavigationController
         from .project_controller import ProjectController
         from .source_controller import SourceController
@@ -473,9 +472,10 @@ class AppController:
         self.source_controller.remove_source_from_on_deck(source_id)
         self.refresh_current_view()
 
-    def add_source_to_project(self, source_id: str):
-        """Adds a master source to the currently loaded project and removes it from 'On Deck'."""
-        return self.source_controller.add_source_to_project(source_id)
+    def add_source_to_project(self, source_id: str, notes: str, declassify: str):
+        """Adds a master source to the currently loaded project."""
+        self.source_controller.add_source_to_project(source_id, notes, declassify)
+        self.refresh_current_view()
 
     def reorder_project_sources(self, new_ordered_ids: list):
         """Tells the DataService to reorder the sources for the current project."""
@@ -487,12 +487,49 @@ class AppController:
             self.logger.error("Attempted to reorder sources, but no project is loaded.")
 
     def show_source_editor_dialog(self, source_id: str):
-        """Shows a dialog to view and edit a master source's details."""
+        """Shows a dialog to view and edit a master source and its project-specific link data."""
         source = self.data_service.get_source_by_id(source_id)
-        if not source:
-            self.page.snack_bar = ft.SnackBar(ft.Text(f"Error: Could not find source with ID {source_id}."), open=True)
+        project = self.project_state_manager.current_project
+
+        if not source or not project:
+            self.page.snack_bar = ft.SnackBar(ft.Text("Error: Could not find source or project."), open=True)
             self.page.update()
             return
+
+        # Find the specific link object for this source in this project
+        link = next((lnk for lnk in project.sources if lnk.source_id == source_id), None)
+
+        if not link:
+            self.page.snack_bar = ft.SnackBar(ft.Text("Error: Could not find the link for this source in the project."), open=True)
+            self.page.update()
+            return
+
+        def on_dialog_close():
+            # Refresh the current view to show any changes
+            self.refresh_current_view()
+
+        # Pass both the master source and the project-specific link to the dialog
+        dialog = SourceEditorDialog(self.page, self, source, link, on_close=on_dialog_close)
+        dialog.show()
+
+    def submit_project_source_link_update(self, source_id: str, link_data: Dict[str, Any]):
+        """Receives updated project-specific link data and tells the DataService to save it."""
+        self.logger.info(f"Submitting update for project source link for source ID {source_id} with data: {link_data}")
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.error("Attempted to update a source link, but no project is loaded.")
+            return
+
+        success, message = self.data_service.update_project_source_link(project, source_id, link_data)
+
+        if success:
+            self.logger.info(message)
+        else:
+            self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.ERROR_CONTAINER)
+            self.page.snack_bar.open = True
+            self.page.update()
+
+
 
         def on_dialog_close():
             # Refresh the sources tab to show any changes

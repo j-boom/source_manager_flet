@@ -26,6 +26,7 @@ class ProjectSourceCard(BaseCard):
     def _build_content(self) -> ft.Container:
         """Builds the card's content using a robust Row/Column layout."""
 
+        # --- FIX: Display both notes and declassify info ---
         text_content = ft.Column(
             [
                 ft.Text(
@@ -40,21 +41,27 @@ class ProjectSourceCard(BaseCard):
                     size=12,
                     color=ft.colors.ON_SECONDARY_CONTAINER,
                 ),
+                ft.Text(
+                    f"Declassify: {self.link.declassify or 'N/A'}",
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                    italic=True,
+                    size=12,
+                    color=ft.colors.ON_SECONDARY_CONTAINER,
+                ),
             ],
             spacing=2,
             alignment=ft.MainAxisAlignment.CENTER,
-            expand=True,  # This is the crucial property
+            expand=True,
         )
+        # --- END FIX ---
 
         action_buttons = ft.Row(
             [
-                # --- FIX: Updated the edit button ---
                 ft.IconButton(
                     icon=ft.icons.EDIT_DOCUMENT,
                     tooltip="View / Edit Source Details",
                     on_click=self._handle_view_edit_source,
                 ),
-                # --- END FIX ---
                 ft.IconButton(
                     icon=ft.icons.DELETE_OUTLINE,
                     icon_color=ft.colors.ERROR,
@@ -82,7 +89,6 @@ class ProjectSourceCard(BaseCard):
 
     def _handle_view_edit_source(self, e):
         """Handles the view/edit source action."""
-        # This will require a dialog and a new method in the controller.
         if hasattr(self.controller, "show_source_editor_dialog"):
             self.controller.show_source_editor_dialog(self.source.id)
         if e.control.page:

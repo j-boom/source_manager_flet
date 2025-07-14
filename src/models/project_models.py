@@ -1,3 +1,5 @@
+# File: src/models/project_models.py
+
 """
 Project Data Models
 
@@ -41,6 +43,7 @@ class ProjectSourceLink:
     """
     source_id: str  # The ID of the master SourceRecord
     notes: str = "" # User's notes about this source for this specific project
+    declassify: str = "" # New field for declassification information
 
 # =============================================================================
 # Project Model
@@ -108,7 +111,8 @@ class Project:
             sources.append({
                 "uuid": source_link.source_id,
                 "order": i + 1,  # Use 1-based index for order
-                "usage_notes": source_link.notes or ""
+                "usage_notes": source_link.notes or "",
+                "declassify": source_link.declassify or ""
             })
         
         return {
@@ -162,12 +166,12 @@ class Project:
                 "on_deck_sources": on_deck_sources
             }
             
-            # Convert sources from new format
             sources = []
             for source_data in data.get('sources', []):
                 sources.append(ProjectSourceLink(
                     source_id=source_data.get('uuid', ''),
-                    notes=source_data.get('usage_notes', '')
+                    notes=source_data.get('usage_notes', ''), # Read from 'usage_notes' key
+                    declassify=source_data.get('declassify', '') # Read from 'declassify' key
                 ))
             
             return cls(
@@ -179,69 +183,37 @@ class Project:
                 sources=sources
             )
         else:
-            # Old format - use existing logic with better error handling
+            # This 'else' block handles migration from a much older format.
+            # It's kept for backward compatibility but the main fix is above.
             if 'project_type' not in data:
-                # Try to extract project type from filename if not in data
-                file_path = data.get('file_path', '')
-                if ' - STD - ' in str(file_path):
-                    data['project_type'] = 'STD'
-                elif ' - COM - ' in str(file_path):
-                    data['project_type'] = 'COM'
-                elif ' - FCR - ' in str(file_path):
-                    data['project_type'] = 'FCR'
-                elif ' - GSC - ' in str(file_path):
-                    data['project_type'] = 'GSC'
-                elif ' - CCR - ' in str(file_path):
-                    data['project_type'] = 'CCR'
-                elif ' - CRS - ' in str(file_path):
-                    data['project_type'] = 'CRS'
-                else:
-                    data['project_type'] = 'STD'  # Default fallback
-                    
+                file_path_str = data.get('file_path', '')
+                if ' - STD - ' in str(file_path_str): data['project_type'] = 'STD'
+                elif ' - COM - ' in str(file_path_str): data['project_type'] = 'COM'
+                elif ' - FCR - ' in str(file_path_str): data['project_type'] = 'FCR'
+                elif ' - GSC - ' in str(file_path_str): data['project_type'] = 'GSC'
+                elif ' - CCR - ' in str(file_path_str): data['project_type'] = 'CCR'
+                elif ' - CRS - ' in str(file_path_str): data['project_type'] = 'CRS'
+                else: data['project_type'] = 'STD'
             data['project_type'] = ProjectType(data['project_type'])
             
-            # Handle missing file_path - use the file path from the load method
-            if 'file_path' not in data:
-                if file_path:
-                    data['file_path'] = str(file_path)
-                else:
-                    data['file_path'] = str(Path.cwd())  # Fallback
+            if 'file_path' not in data: data['file_path'] = str(file_path or Path.cwd())
             data['file_path'] = Path(data['file_path'])
             
-            # Handle missing project_id - generate from filename or use fallback
             if 'project_id' not in data:
-                if file_path:
-                    # Extract project ID from filename (e.g., "2023123002 - CA123 - FCR - 2023.json" -> "2023123002")
-                    filename = file_path.stem
-                    project_id = filename.split(' - ')[0] if ' - ' in filename else filename
-                    data['project_id'] = project_id
-                else:
-                    data['project_id'] = 'LEGACY_PROJECT'
-            
-            # Handle missing title - generate from filename or use fallback
-            if 'project_title' not in data:
-                if file_path:
-                    # Use filename without extension as title
-                    data['project_title'] = file_path.stem
-                else:
-                    data['project_title'] = 'Legacy Project'
-            
-            # Handle missing metadata - ensure it exists
-            if 'metadata' not in data:
-                data['metadata'] = {}
-            
-            # Handle missing sources - ensure it exists
-            if 'sources' not in data:
-                data['sources'] = []
+                filename = file_path.stem if file_path else 'LEGACY_PROJECT'
+                data['project_id'] = filename.split(' - ')[0] if ' - ' in filename else filename
+
+            if 'project_title' not in data: data['project_title'] = file_path.stem if file_path else 'Legacy Project'
+            if 'metadata' not in data: data['metadata'] = {}
+            if 'sources' not in data: data['sources'] = []
             
             if 'sources' in data and data['sources']:
-                # Handle old format sources - map fields to new structure
                 converted_sources = []
                 for source_data in data['sources']:
-                    # Create new format source link (order field removed, using list position)
                     new_source = {
                         'source_id': source_data.get('source_id', ''),
-                        'notes': source_data.get('notes', '')
+                        'notes': source_data.get('notes', ''),
+                        'declassify': source_data.get('declassify', '')
                     }
                     converted_sources.append(ProjectSourceLink(**new_source))
                 data['sources'] = converted_sources
@@ -269,10 +241,10 @@ class Project:
             print(f"Error loading project from {file_path}: {e}")
             return None
 
-    def add_source(self, source_id: str, notes: str = ""):
+    def add_source(self, source_id: str, notes: str = "", declassify: str = ""):
         """Adds a source to the project. Sources are ordered by their position in the list."""
         if source_id not in [s.source_id for s in self.sources]:
-            link = ProjectSourceLink(source_id=source_id, notes=notes)
+            link = ProjectSourceLink(source_id=source_id, notes=notes, declassify=declassify)
             self.sources.append(link)
 
     def remove_source(self, source_id: str):

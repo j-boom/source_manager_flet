@@ -2,6 +2,7 @@ import flet as ft
 from typing import Dict, Any
 from .base_tab import BaseTab
 from views.components import ProjectSourceCard, OnDeckCard
+from views.components.dialogs import AddSourceToProjectDialog
 
 class ProjectSourcesTab(BaseTab):
     """A tab for managing project sources with a user-curated 'On Deck' list."""
@@ -83,6 +84,9 @@ class ProjectSourcesTab(BaseTab):
                         show_remove_button=True, # This enables the remove button
                         context="project_tab"
                     )
+                    add_button = next((c for c in card.content.trailing.controls if isinstance(c, ft.IconButton) and c.icon == ft.icons.ADD_TASK_ROUNDED), None)
+                    if add_button:
+                        add_button.on_click = lambda e, s_id=source_id: self._show_add_to_project_dialog(s_id)
                     self.on_deck_list.controls.append(card)
         
         for link in project.sources:
@@ -157,3 +161,14 @@ class ProjectSourcesTab(BaseTab):
     def update_project_data(self, project_data: Dict[str, Any], project_path: str):
         """Called by the parent view to refresh the data."""
         self._update_view()
+
+    def _show_add_to_project_dialog(self, source_id: str):
+        def on_save(notes: str, declassify: str):
+            self.controller.add_source_to_project(source_id, notes, declassify)
+            self._update_view()
+
+        dialog = AddSourceToProjectDialog(on_save=on_save)
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+    

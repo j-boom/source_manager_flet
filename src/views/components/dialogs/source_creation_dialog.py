@@ -30,13 +30,14 @@ class _CompatibleFieldConfig:
 class SourceCreationDialog(BaseDialog):
     """A dialog for creating a new master source record."""
     
-    def __init__(self, page: ft.Page, controller, on_close, target_country = None):
+    def __init__(self, page: ft.Page, controller, on_close, target_country=None, from_project_sources_tab: bool = False):
         # Initialize logging
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing SourceCreationDialog")
         
         self.controller = controller
-        self.target_country = target_country  # If specified, create source for this country
+        self.target_country = target_country
+        self.from_project_sources_tab = from_project_sources_tab
         self.logger.debug(f"Target country: {target_country}")
         
         self.form_fields: Dict[str, ft.Control] = {}
@@ -47,6 +48,10 @@ class SourceCreationDialog(BaseDialog):
             on_change=self._on_source_type_change,
             autofocus=True,
         )
+
+        # Conditionally visible fields for when creating a source and adding it directly to a project
+        self.notes_field = ft.TextField(label="Usage Notes", multiline=True, min_lines=3, visible=self.from_project_sources_tab)
+        self.declassify_field = ft.TextField(label="Declassify Information", visible=self.from_project_sources_tab)
         
         self.logger.debug("SourceCreationDialog components initialized")
         
@@ -55,22 +60,27 @@ class SourceCreationDialog(BaseDialog):
             title="Create New Master Source",
             on_close=on_close,
             width=450,
-            height=400
+            height=500  # Increased height to accommodate new fields
         )
 
     def _build_content(self) -> List[ft.Control]:
         """Builds the content for the dialog, returning it as a list of controls."""
         self.logger.debug("Building dialog content")
+        # Populate the default fields for the initial source type
         self._populate_dynamic_fields(SourceType.BOOK.value)
 
-        # --- FIX: Return a list containing the column to satisfy the BaseDialog ---
+        # The content is a list of all controls for the dialog
         return [
             self.source_type_dropdown,
             ft.Divider(),
-            self.dynamic_fields_container
+            self.dynamic_fields_container,
+            # Add the notes and declassify fields which will be visible or not based on the flag
+            self.notes_field,
+            self.declassify_field,
         ]
 
     def _build_actions(self) -> list:
+        """Builds the action buttons for the dialog."""
         return [
             ft.TextButton("Cancel", on_click=self._close_dialog),
             ft.ElevatedButton("Create Source", on_click=self._on_submit),
@@ -101,32 +111,50 @@ class SourceCreationDialog(BaseDialog):
         """Gathers data and passes it to the controller."""
         self.logger.info("Submit button clicked - collecting form data")
         
+        # Collect data from dynamically generated fields
         form_data = {name: getattr(control, 'value', '') for name, control in self.form_fields.items()}
         form_data["source_type"] = self.source_type_dropdown.value
         
+        # If called from the project tab, collect and validate notes/declassify
+        if self.from_project_sources_tab:
+            notes = self.notes_field.value.strip()
+            declassify = self.declassify_field.value.strip()
+            
+            # Reset previous errors
+            self.notes_field.error_text = None
+            self.declassify_field.error_text = None
+
+            # Validate that notes and declassify are filled out
+            if not notes or not declassify:
+                if not notes:
+                    self.notes_field.error_text = "Notes are required when adding directly to a project."
+                if not declassify:
+                    self.declassify_field.error_text = "Declassify info is required."
+                self.page.update()
+                return # Stop submission
+            
+            # Add to form_data to be passed to the controller
+            form_data["notes"] = notes
+            form_data["declassify"] = declassify
+
         self.logger.debug(f"Collected form data: {form_data}")
         
+        # Validate the title field
         title_field = self.form_fields.get("title")
         if not form_data.get("title") and title_field:
             self.logger.warning("Source creation attempted without title")
             if hasattr(title_field, 'error_text'):
                 title_field.error_text = "Title is required"
             self.page.update()
-            self.logger.warning("Title is required but not provided")
             return
         
         self.logger.info("Form validation passed - calling controller")
         
-        # Use target_country if specified, otherwise use project-based submission
+        # The controller will handle the logic based on whether the notes/declassify fields exist
         if self.target_country:
-            self.logger.debug(f"Submitting source for specific country: {self.target_country}")
             self.controller.submit_new_source_for_country(self.target_country, form_data)
-            self.logger.info(f"New source submitted for country {self.target_country}")
         else:
-            self.logger.debug("Submitting source for current project")
             self.controller.submit_new_source(form_data)
-            self.logger.info("New source submitted")
         
         self.logger.info("Source creation initiated - closing dialog")
         self._close_dialog()
-        
