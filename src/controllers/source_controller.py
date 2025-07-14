@@ -37,6 +37,20 @@ class SourceController(BaseController):
         else:
             self.logger.info(f"DIAGNOSTIC: Source '{source_id}' is already in On Deck.")
 
+    def remove_source_from_on_deck(self, source_id: str):
+        """Removes a source ID from the on_deck_sources list in the current project's metadata."""
+        project = self.project_state_manager.current_project
+        if not project:
+            self.logger.warning("Attempted to remove source from On Deck, but no project is loaded.")
+            return
+
+        if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
+            project.metadata["on_deck_sources"].remove(source_id)
+            self.data_service.save_project(project)
+            self.logger.info(f"Source '{source_id}' removed from On Deck for project '{project.project_title}'.")
+        else:
+            self.logger.info(f"Source '{source_id}' not found in On Deck for project '{project.project_title}'.")
+
     def add_source_to_project(self, source_id: str):
         """Adds a master source to the currently loaded project and removes it from 'On Deck'."""
         project = self.project_state_manager.current_project

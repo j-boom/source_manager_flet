@@ -1,13 +1,22 @@
 import flet as ft
+from dataclasses import dataclass
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 from .base_dialog import BaseDialog
 from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
 from config.project_types_config import create_field_widget, FieldType
 from models.source_models import SourceType
 
+@dataclass
 class _CompatibleFieldConfig:
     """A helper class to adapt SourceFieldConfig to what create_field_widget expects."""
+    field_name: str
+    label: str
+    field_type: FieldType
+    required: bool = False
+    options: Optional[List[str]] = None
+    tooltip: Optional[str] = None
+    validation_rules: Optional[Dict[str, Any]] = None
     def __init__(self, source_field: SourceFieldConfig):
         self.name = source_field.name
         self.label = source_field.label
@@ -16,6 +25,7 @@ class _CompatibleFieldConfig:
         self.hint_text = source_field.hint_text
         self.options = None
         self.width = 400
+        self.validation_rules: Optional[Dict[str, Any]] = None
 
 class SourceCreationDialog(BaseDialog):
     """A dialog for creating a new master source record."""

@@ -468,6 +468,11 @@ class AppController:
         self.page.update()
         return result
 
+    def remove_source_from_on_deck(self, source_id: str):
+        """Removes a source from the On Deck list."""
+        self.source_controller.remove_source_from_on_deck(source_id)
+        self.refresh_current_view()
+
     def add_source_to_project(self, source_id: str):
         """Adds a master source to the currently loaded project and removes it from 'On Deck'."""
         return self.source_controller.add_source_to_project(source_id)
