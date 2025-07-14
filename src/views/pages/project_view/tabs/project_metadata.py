@@ -86,9 +86,34 @@ class ProjectMetadataTab(BaseTab):
             
             for field_config in fields_in_group:
                 current_value = project_data.get(field_config.name, "")
-                
                 widget = create_field_widget(field_config, str(current_value))
                 
+                # --- START OF CHANGES ---
+                # Determine if the field should be editable based on your existing logic
+                is_editable_field = (
+                    field_config.name == "project_title" or 
+                    field_config.collection_stage != CollectionStage.DIALOG
+                )
+
+                # Apply visual styles based on edit mode
+                is_currently_editable = self.is_edit_mode and is_editable_field
+
+                # Set disabled/read_only state
+                if isinstance(widget, (ft.Checkbox, ft.Dropdown)):
+                    widget.disabled = not is_currently_editable
+                elif hasattr(widget, 'read_only'):
+                    widget.read_only = not is_currently_editable
+
+                # Set background color for editable fields
+                if hasattr(widget, 'bgcolor'):
+                    # Ensure the widget is styled to show the background color correctly
+                    if isinstance(widget, (ft.TextField, ft.Dropdown)):
+                        widget.filled = True
+                        widget.border_color = "transparent"
+                    
+                    widget.bgcolor = ft.colors.TERTIARY_CONTAINER if is_currently_editable else None
+                # --- END OF CHANGES ---
+
                 # --- FIX: Handle different widget properties based on type ---
                 # Special handling for project_title - should be editable in edit mode
                 if field_config.name == "project_title":
