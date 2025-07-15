@@ -7,6 +7,7 @@ from src.services.data_service import DataService
 from src.managers.user_config_manager import UserConfigManager
 from src.managers.navigation_manager import NavigationManager
 from src.managers.project_state_manager import ProjectStateManager
+from src.managers.project_browser_manager import ProjectBrowserManager
 from src.managers.theme_manager import ThemeManager
 from src.views.main_view import MainView
 
@@ -15,6 +16,7 @@ from .project_controller import ProjectController
 from .source_controller import SourceController
 from .dialog_controller import DialogController
 from .powerpoint_controller import PowerPointController
+from .navigation_controller import NavigationController
 
 class AppController:
     """
@@ -40,12 +42,14 @@ class AppController:
         self.navigation_manager = NavigationManager()
         self.project_state_manager = ProjectStateManager()
         self.theme_manager = ThemeManager()
+        self.project_browser_manager = ProjectBrowserManager(data_service=self.data_service)
 
         # CORRECTED: Reverted controller instance names to match what views expect.
         self.project_controller = ProjectController(self)
         self.source_controller = SourceController(self)
         self.dialog_controller = DialogController(self)
         self.powerpoint_controller = PowerPointController(self)
+        self.navigation_controller = NavigationController(self)
 
         # Initialize views
         self.main_view = MainView(controller=self, page=page)
@@ -58,7 +62,7 @@ class AppController:
         """
         Starts the application.
         """
-        self.page.add(self.main_view)
+        self.page.add(self.main_view.build())
         self.refresh_theme()
         self.navigate_to("home")
 
@@ -84,8 +88,11 @@ class AppController:
 
         self.navigation_manager.set_current_page(page_name)
         content = self.get_page_content(page_name)
+
         self.main_view.set_content(content)
+        self.page.update()
         logging.info(f"DIAGNOSTIC: Navigation to '{page_name}' complete.")
+
 
     def get_page_content(self, page_name: str) -> ft.Control:
         """
@@ -100,12 +107,12 @@ class AppController:
         if page_name not in self.view_instances:
             view_class = self.main_view.get_view_class(page_name)
             if view_class:
-                instance = view_class(self)
+                instance = view_class(controller=self, page=self.page)
                 self.view_instances[page_name] = instance
             else:
                 return ft.Text(f"Unknown page: {page_name}")
         
-        return self.view_instances[page_name].get_content()
+        return self.view_instances[page_name].build()
 
     def update_view(self, page_name: str = None):
         """

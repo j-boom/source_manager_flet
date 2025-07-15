@@ -14,8 +14,24 @@ class NavigationController(BaseController):
 
     def __init__(self, app_controller):
         super().__init__(app_controller)
-        # Navigation-specific initialization could go here
-        pass
+
+    def navigate_to_page(self, page_name: str):
+        """
+        Navigates to a specified page.
+
+        Args:
+            page_name (str): The name of the page to navigate to.
+        """
+        self.logger.info(f"Navigating to page: {page_name}")
+        final_page_name = page_name
+
+        if page_name == "project_view":
+            if self.controller.project_state_manager.has_loaded_project():
+                final_page_name = "project_dashboard"
+            else:
+                final_page_name = "new_project"
+
+        self.controller.navigate_to(final_page_name)
 
     def validate_recent_projects(self):
         """

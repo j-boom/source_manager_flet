@@ -5,10 +5,7 @@ A simple base class for all page views in the application. It provides
 common helper methods and a safe 'colors' property for consistent theming.
 """
 import flet as ft
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from src.controllers.app_controller import AppController
 class BaseView:
     """Base class for all views in the application."""
     
@@ -44,11 +41,11 @@ class BaseView:
         content = [
             ft.Icon(ft.icons.ERROR, color=colors.error, size=48),
             ft.Text("Error", size=20, weight=ft.FontWeight.BOLD, color=colors.error),
-            ft.Text(message, size=16, color=colors.on_surface_variant),
+            ft.Text(message, size=16, color=ft.colors.ON_SURFACE_VARIANT),
         ]
         
         if details:
-            content.append(ft.Text(details, size=12, color=colors.on_surface_variant))
+            content.append(ft.Text(details, size=12, color=ft.colors.ON_SURFACE_VARIANT))
         
         return ft.Container(
             content=ft.Column(content, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
@@ -64,8 +61,8 @@ class BaseView:
         colors = self.colors # This is now guaranteed to be a valid ColorScheme
 
         content = [
-            ft.Icon(icon, color=colors.on_surface_variant, size=64),
-            ft.Text(message, size=18, color=colors.on_surface_variant),
+            ft.Icon(icon, color=ft.colors.ON_SURFACE_VARIANT, size=64),
+            ft.Text(message, size=18, color=ft.colors.ON_SURFACE_VARIANT),
         ]
         
         if action_text and on_action:

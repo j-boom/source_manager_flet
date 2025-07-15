@@ -30,11 +30,7 @@ class HomeView(BaseView):
     def build(self) -> ft.Control:
         """Builds the UI for the home page content."""
         self.logger.debug("Building home page content")
-        # The view now simply uses the 'self.colors' property from BaseView.
-        # It's guaranteed to be safe and always return a valid color object.
-        colors = self.colors
 
-        # The root control is a Container to handle padding and alignment.
         return ft.Container(
             content=ft.Column(
                 [
@@ -60,6 +56,7 @@ class HomeView(BaseView):
                         ),
                         padding=ft.padding.only(bottom=40, top=20),
                     ),
+                    
                     # Quick Actions Cards
                     ft.Text(
                         "Quick Actions", theme_style=ft.TextThemeStyle.HEADLINE_SMALL

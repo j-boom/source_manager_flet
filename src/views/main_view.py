@@ -13,13 +13,14 @@ from .pages import (
     SettingsView,
     HelpView,
 )
+from .base_view import BaseView
 
 from config.app_config import PAGES
 if TYPE_CHECKING:
     from src.controllers.app_controller import AppController
 
 
-class MainView(ft.Container):
+class MainView(BaseView):
     """
     The main view of the application, containing the app bar, sidebar, and content area.
     This version is a Flet control and is compatible with the refactored AppController.
@@ -33,12 +34,12 @@ class MainView(ft.Container):
             controller: The main application controller.
             page (ft.Page): The Flet page object.
         """
-        super().__init__(expand=True)
+        super().__init__(page=page, controller=controller)
         # This is the crucial part: ensuring the controller and page are assigned correctly.
         self.controller = controller
         self.page = page
          # --- Initialize UI Components ---
-        self.app_bar = self._build_app_bar()
+        self.page.appbar = self._build_app_bar()
         self.sidebar = self._build_sidebar()
         self.content_area = self._build_content_area()
 
@@ -53,6 +54,20 @@ class MainView(ft.Container):
             expand=True,
         )
 
+    def build(self) -> ft.Control:
+        """
+        Builds the entire main view as a single Flet control.
+        This method overrides the one in BaseView and returns the
+        actual UI to be added to the page.
+        """
+        return ft.Column(
+            [
+                self.main_layout
+            ],
+            spacing=0,
+            expand=True
+        )
+
     def _build_app_bar(self) -> SourceManagerAppBar:
         """Builds the AppBar component."""
         return SourceManagerAppBar(
@@ -63,7 +78,7 @@ class MainView(ft.Container):
 
     def _build_sidebar(self) -> Sidebar:
         """Builds the Sidebar component dynamically from config."""
-        return Sidebar(pages_config=PAGES, on_change=self.controller.navigate_to)
+        return Sidebar(pages_config=PAGES, on_change=self.controller.navigation_controller.navigate_to_page)
 
     def _build_content_area(self) -> ft.Container:
         """Creates the container that will hold the current page's content."""
@@ -81,7 +96,6 @@ class MainView(ft.Container):
             content (ft.Control): The control to display in the content area.
         """
         self.content_area.content = content
-        self.update()
 
     def get_view_class(self, page_name: str):
         """
