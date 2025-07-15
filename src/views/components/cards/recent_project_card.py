@@ -75,7 +75,7 @@ class RecentProjectCard(BaseCard):
 
     def _handle_open_project(self, e):
         """Callback to open the project via the controller."""
-        self.controller.open_project(Path(self.project.path))
+        self.controller.project_controller.open_project(Path(self.project.path))
 
     def _handle_remove_project(self, e):
         """
@@ -88,4 +88,4 @@ class RecentProjectCard(BaseCard):
         if e.control.page:
             e.control.page.update()
         
-        self.controller.remove_recent_project(self.project.path)
+        self.controller.navigation_controller.remove_recent_project(self.project.path)

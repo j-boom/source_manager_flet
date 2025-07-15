@@ -32,7 +32,7 @@ class SourceRecord:
     Represents a single, master source record stored in a regional file.
     This is the "master copy" of a source, identified by a unique ID.
     """
-    id: str  # Unique ID for this source (e.g., "src_a1b2c3d4")
+    id: str  # Unique ID for this source
     source_type: SourceType
     title: str
     region: str  # The region this master source belongs to (e.g., "ROW", "General")
@@ -63,3 +63,23 @@ class SourceRecord:
         field_names = {f.name for f in fields(cls)}
         filtered_data = {k: v for k, v in data.items() if k in field_names}
         return cls(**filtered_data)
+@dataclass
+class ProjectSourceLink:
+    """
+    Represents the link between a master SourceRecord and a specific project.
+    This object is stored within the project's .json file and holds all
+    project-specific context about the source.
+    """
+    source_id: str  # The ID of the master SourceRecord
+    notes: Optional[str] = None
+    declassify: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the dataclass to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> ProjectSourceLink:
+        """Deserializes a dictionary into a dataclass instance."""
+        return cls(**data)
+    

@@ -90,13 +90,13 @@ class ProjectSourceCard(BaseCard):
     def _handle_view_edit_source(self, e):
         """Handles the view/edit source action."""
         if hasattr(self.controller, "show_source_editor_dialog"):
-            self.controller.show_source_editor_dialog(self.source.id)
+            self.controller.dialog_controller.show_source_editor_dialog(self.source.id)
         if e.control.page:
             e.control.page.update()
 
     def _handle_remove_from_project(self, e):
         """Handles removing the source from the project via the controller."""
         if hasattr(self.controller, "remove_source_from_project"):
-            self.controller.remove_source_from_project(self.source.id)
+            self.controller.project_controller.remove_source_from_project(self.source.id)
         if e.control.page:
             e.control.page.update()

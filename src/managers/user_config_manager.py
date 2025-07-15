@@ -6,6 +6,7 @@ This class is the single point of interaction for user settings.
 """
 import getpass
 import logging
+from pathlib import Path
 from typing import Optional, List
 
 # Configuration imports
@@ -136,3 +137,10 @@ class UserConfigManager:
         ]
         self.save_config()
 
+    def validate_recent_projects(self):
+        """Validates the list of recent projects, removing any that no longer exist."""
+        self.logger.info("Validating recent projects list...")
+        self.config.recent_projects = [
+            p for p in self.config.recent_projects if Path(p).exists()
+        ]
+        self.save_config()

@@ -23,7 +23,7 @@ class AppBar(ft.AppBar):
             on_help_click: Callback function for when the help icon is clicked.
         """
         # This text control will hold the greeting message.
-        self.title = ft.Text("Source Manager", size=20, weight=ft.FontWeight.BOLD)
+        self.title = ft.Text("Source Manager 2.0", size=20, weight=ft.FontWeight.BOLD)
         self.greeting_text = ft.Text(greeting, size=16)
 
         # Call the parent constructor with all the AppBar properties.

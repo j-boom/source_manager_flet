@@ -160,9 +160,10 @@ class ProjectCreationDialog(BaseDialog):
         
         # If validation passes, submit the project
         self.logger.debug("Calling controller to submit new project")
-        self.controller.submit_new_project(
+        self.controller.project_controller.create_project(
             parent_path=self.parent_path,
-            form_data=form_data,
+            project_type=project_type,
+            form_data=form_data
         )
         self.logger.info("Project creation initiated - closing dialog")
         self._close_dialog()

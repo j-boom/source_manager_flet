@@ -108,53 +108,35 @@ class SourceCreationDialog(BaseDialog):
             self.logger.debug(f"Added field widget to form: {field_config.name}")
 
     def _on_submit(self, e):
-        """Gathers data and passes it to the controller."""
-        self.logger.info("Submit button clicked - collecting form data")
+        """
+        Gathers data from the dynamically generated form fields, passes it to the
+        SourceController as a raw dictionary, and closes the dialog.
+        """
+        # --- 1. Gather Master SourceRecord Data from Dynamic Fields ---
+        # We iterate through the controls dictionary created by the DynamicFormGenerator
+        # to handle the dynamic nature of the form.
         
-        # Collect data from dynamically generated fields
-        form_data = {name: getattr(control, 'value', '') for name, control in self.form_fields.items()}
-        form_data["source_type"] = self.source_type_dropdown.value
-        
-        # If called from the project tab, collect and validate notes/declassify
+        source_data = {}
+        for field_name, control in self.form_fields.items():
+            # The key is the field name (e.g., 'title'), and the value is the Flet control
+            source_data[field_name] = control.value
+
+        # --- 2. Gather ProjectSourceLink Data (if applicable) ---
+        # These fields are part of the dialog's static layout.
+        link_data = None
         if self.from_project_sources_tab:
-            notes = self.notes_field.value.strip()
-            declassify = self.declassify_field.value.strip()
-            
-            # Reset previous errors
-            self.notes_field.error_text = None
-            self.declassify_field.error_text = None
+            # If adding to a project, the link data is required.
+            if not self.notes_field.value or not self.declassify_field.value:
+                self.controller.show_error_message("Usage Notes and Declassify Info are required when adding a source to a project.")
+                return # Stop the submission if required fields are missing
 
-            # Validate that notes and declassify are filled out
-            if not notes or not declassify:
-                if not notes:
-                    self.notes_field.error_text = "Notes are required when adding directly to a project."
-                if not declassify:
-                    self.declassify_field.error_text = "Declassify info is required."
-                self.page.update()
-                return # Stop submission
-            
-            # Add to form_data to be passed to the controller
-            form_data["notes"] = notes
-            form_data["declassify"] = declassify
+            link_data = {
+                "notes": self.notes_field.value,
+                "declassify_info": self.declassify_field.value,
+            }
 
-        self.logger.debug(f"Collected form data: {form_data}")
-        
-        # Validate the title field
-        title_field = self.form_fields.get("title")
-        if not form_data.get("title") and title_field:
-            self.logger.warning("Source creation attempted without title")
-            if hasattr(title_field, 'error_text'):
-                title_field.error_text = "Title is required"
-            self.page.update()
-            return
-        
-        self.logger.info("Form validation passed - calling controller")
-        
-        # The controller will handle the logic based on whether the notes/declassify fields exist
-        if self.target_country:
-            self.controller.submit_new_source_for_country(self.target_country, form_data)
-        else:
-            self.controller.submit_new_source(form_data)
-        
-        self.logger.info("Source creation initiated - closing dialog")
-        self._close_dialog()
+        # --- 3. Call the Controller Method with the Raw Dictionaries ---
+        self.controller.source.create_new_source(source_data, link_data)
+
+        # --- 4. Close the Dialog ---
+        self.close_dialog(e)

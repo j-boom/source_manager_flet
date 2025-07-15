@@ -33,7 +33,7 @@ def main(page: ft.Page):
     # --- Initialize and Run Application ---
     try:
         controller = AppController(page)
-        controller.run()
+        controller.start()
 
     except Exception as e:
         logger.critical(f"A critical error occurred during application startup: {e}", exc_info=True)

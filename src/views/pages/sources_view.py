@@ -1,71 +1,56 @@
 import flet as ft
-from typing import Dict, Any, List
-from functools import partial
-from views import BaseView
-from models import SourceRecord
-from views.components import OnDeckCard, AppFAB
-from config.source_types_config import get_filterable_fields, ALL_SOURCE_FIELDS
+from typing import Dict, List
+from ..base_view import BaseView
+from models.source_models import SourceRecord
+from ..components.cards.on_deck_card import OnDeckCard
+from config.source_types_config import get_filterable_fields
 
 class SourcesView(BaseView):
-    def show_add_source_toast(self, source_id: str):
-        """Show a toast/snackbar when a source is added to On Deck."""
-        import logging
-        logging.info(f"DIAGNOSTIC: show_add_source_toast called with source_id={source_id} (controller id={id(self.controller)})")
-        source = self.controller.data_service.get_source_by_id(source_id)
-        title = source.title if source else "Source"
-        self.page.snack_bar = ft.SnackBar(ft.Text(f"Successfully added '{title}' to the Project"), open=True)
-        self.page.update()
-    def __init__(self, page: ft.Page, controller):
-        import logging
-        super().__init__(page, controller)
-        logging.info(f"DIAGNOSTIC: SourcesView __init__ called. Registering on_source_added_to_on_deck callback on controller id={id(controller)} (self id={id(self)}).")
-        controller.on_source_added_to_on_deck = self.show_add_source_toast
+    """
+    A view for browsing, searching, and filtering the master source library.
+    Allows users to add sources to the "On Deck" list of an active project.
+    """
+
+    def __init__(self, controller):
+        super().__init__(controller)
         self.all_sources: List[SourceRecord] = []
         self.current_sources: List[SourceRecord] = []
-        self.selected_country: str = "General"  # Default selection
-        # UI for showing current project title
+        self.selected_country: str = "All"
+
+        # UI Components
         self.project_title_header = ft.Text(visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY)
-        # Country selection dropdown
         self.country_dropdown = ft.Dropdown(
             label="Country/Region",
             width=200,
             on_change=self._on_country_changed,
             border_radius=8,
         )
-        # UI Components
         self.filter_controls: Dict[str, ft.TextField] = {}
         self.active_filter_chips = ft.Row(wrap=True)
-        self.filter_controls_column = ft.Column(spacing=10)
-        self.results_list = ft.ListView(expand=True, spacing=10, padding=ft.padding.only(top=10))
-        
-        # UI for showing current project title
-        self.project_title_header = ft.Text(visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY)
-
-        # Country selection dropdown
-        self.country_dropdown = ft.Dropdown(
-            label="Country/Region",
-            width=200,
-            on_change=self._on_country_changed,
-            border_radius=8,
-        )
-
-        # UI Components
-        self.filter_controls: Dict[str, ft.TextField] = {}
-        self.active_filter_chips = ft.Row(wrap=True)
-        self.filter_controls_column = ft.Column(spacing=10)
+        self.filter_controls_column = ft.Column(spacing=10, scroll=ft.ScrollMode.ADAPTIVE)
         self.results_list = ft.ListView(expand=True, spacing=10, padding=ft.padding.only(top=10))
 
-    def build(self) -> ft.Control:
+    def get_content(self) -> ft.Control:
         """Builds the UI for the sources browser page."""
-        self._initialize_view()
+        self._initialize_view_data()
 
-        filters_panel = ft.Container(
+        filters_panel = self._build_filters_panel()
+        results_panel = self._build_results_panel()
+
+        return ft.Container(
+            content=ft.Row([filters_panel, results_panel], expand=True, spacing=20),
+            padding=20,
+            expand=True,
+        )
+
+    def _build_filters_panel(self) -> ft.Container:
+        """Builds the left-hand panel containing filter controls."""
+        return ft.Container(
             content=ft.Column(
                 [
                     ft.Text("Filters", style=ft.TextThemeStyle.TITLE_MEDIUM),
                     ft.Divider(),
-                    self.filter_controls_column,
-                    ft.Container(height=10),
+                    ft.Container(self.filter_controls_column, expand=True),
                     ft.Row(
                         [
                             ft.ElevatedButton("Clear", on_click=self._clear_all_filters, expand=True),
@@ -82,24 +67,20 @@ class SourcesView(BaseView):
             border_radius=8,
         )
 
-        # Create an inline button for adding sources instead of FAB
+    def _build_results_panel(self) -> ft.Column:
+        """Builds the main content panel for displaying source results."""
         add_source_button = ft.ElevatedButton(
-            text="Add Source",
+            text="Add New Source",
             icon=ft.icons.ADD,
             on_click=self._on_add_source_clicked,
-            style=ft.ButtonStyle(
-                bgcolor=ft.colors.PRIMARY,
-                color=ft.colors.ON_PRIMARY,
-            )
         )
 
-        results_panel = ft.Column(
+        return ft.Column(
             [
                 ft.Row([
                     ft.Text("Master Source Library", style=ft.TextThemeStyle.HEADLINE_MEDIUM),
                     self.project_title_header,
-                    # Add country dropdown to header
-                    ft.Container(expand=True),  # Spacer
+                    ft.Container(expand=True),
                     self.country_dropdown,
                     add_source_button,
                 ], spacing=10, alignment=ft.MainAxisAlignment.START),
@@ -112,127 +93,71 @@ class SourcesView(BaseView):
             spacing=10,
         )
 
-        main_content = ft.Container(
-            content=ft.Row([filters_panel, results_panel], expand=True, spacing=20),
-            padding=20,
-            expand=True,
-        )
-
-        return main_content
-
-    def _initialize_view(self):
-        """Fetches data and builds the dynamic filter controls. Called once."""
-        # Populate country dropdown from available source files
+    def _initialize_view_data(self):
+        """Fetches initial data and builds dynamic controls. Called once per view load."""
         self._populate_country_dropdown()
-        
-        # Load sources for the default country
         self._load_sources_for_country(self.selected_country)
         self._build_filter_controls()
-        
-        # Initial UI update based on project state
-        self.update_view_for_project_state()
+        self.update_view()
 
-    def _populate_country_dropdown(self):
-        """Populate the country dropdown with available countries from source files."""
-        available_countries = self.controller.data_service.get_available_countries()
-        
-        # Add "All Countries" option
-        self.country_dropdown.options = [ft.dropdown.Option("All", "All Countries")]
-        
-        # Add each available country
-        for country in sorted(available_countries):
-            self.country_dropdown.options.append(ft.dropdown.Option(country, country))
-        
-        # Set default selection
-        self.country_dropdown.value = "All"
-        self.selected_country = "All"
-
-    def _on_country_changed(self, e):
-        """Handle country dropdown selection change."""
-        self.selected_country = e.control.value
-        self._load_sources_for_country(self.selected_country)
-        self._clear_all_filters(e)  # Reset filters when country changes
-
-    def _load_sources_for_country(self, country: str):
-        """Load sources for the selected country."""
-        if country == "All":
-            self.all_sources = self.controller.data_service.get_all_master_sources()
-        else:
-            self.all_sources = self.controller.data_service.get_master_sources_for_country(country)
-        self.current_sources = self.all_sources
-
-    def _on_add_source_clicked(self, e):
-        """Handle add source button click."""
-        if self.selected_country == "All":
-            # Show dialog to select country first
-            self._show_country_selection_dialog()
-        else:
-            # Use selected country
-            self.controller.show_create_source_dialog_for_country(self.selected_country)
-
-    def _show_country_selection_dialog(self):
-        """Show dialog to select country when 'All Countries' is selected."""
-        available_countries = self.controller.data_service.get_available_countries()
-        
-        country_dropdown = ft.Dropdown(
-            label="Select Country/Region",
-            options=[ft.dropdown.Option(country, country) for country in sorted(available_countries)],
-            width=300,
-        )
-        
-        def on_country_select(e):
-            if country_dropdown.value:
-                self.controller.show_create_source_dialog_for_country(country_dropdown.value)
-                dialog.open = False
-                self.page.update()
-        
-        dialog = ft.AlertDialog(
-            title=ft.Text("Select Country/Region"),
-            content=ft.Column([
-                ft.Text("Please select a country/region for the new source:"),
-                country_dropdown,
-            ], tight=True),
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda e: setattr(dialog, 'open', False) or self.page.update()),
-                ft.ElevatedButton("Create Source", on_click=on_country_select),
-            ],
-        )
-        
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
-
-    def update_view_for_project_state(self):
+    def update_view(self):
         """Updates the view based on the current project state."""
-        project = self.controller.project_state_manager.current_project
+        project = self.controller.project_controller.get_current_project()
         if project:
-            self.project_title_header.value = f"| Adding to: {project.project_title}"
+            self.project_title_header.value = f"| Adding to: {project.name}"
             self.project_title_header.visible = True
         else:
             self.project_title_header.visible = False
         
-        # Re-render the list of sources to show/hide add buttons
-        self._update_results_list(self.current_sources)
+        self._update_results_list()
         if self.page:
             self.page.update()
 
+    def _populate_country_dropdown(self):
+        """Populates the country dropdown using data from the SourceController."""
+        available_countries = self.controller.source_controller.get_available_countries()
+        self.country_dropdown.options = [ft.dropdown.Option("All", "All Countries")]
+        for country in sorted(available_countries):
+            self.country_dropdown.options.append(ft.dropdown.Option(country, country))
+        self.country_dropdown.value = self.selected_country
+
+    def _on_country_changed(self, e):
+        """Handles country dropdown selection change."""
+        self.selected_country = e.control.value
+        self._load_sources_for_country(self.selected_country)
+        self._clear_all_filters(e)
+
+    def _load_sources_for_country(self, country: str):
+        """Loads sources for the selected country via the SourceController."""
+        if country == "All":
+            self.all_sources = self.controller.source_controller.get_all_source_records()
+        else:
+            self.all_sources = self.controller.source_controller.get_sources_by_country(country)
+        self.current_sources = self.all_sources
+
+    def _on_add_source_clicked(self, e):
+        """Handles the 'Add New Source' button click, delegating to the DialogController."""
+        initial_data = {}
+        if self.selected_country != "All":
+            initial_data['region'] = self.selected_country
+
+        self.controller.dialog_controller.open_new_source_dialog(e, initial_data=initial_data)
+
     def _build_filter_controls(self):
-        """Dynamically creates filter TextFields based on config and source data."""
+        """Dynamically creates filter TextFields based on config."""
         self.filter_controls_column.controls.clear()
         self.filter_controls = {}
         
-        # Create a TextField for each filterable field
         # Add a text field for the title first
         title_field = ft.TextField(label="Title", border_radius=8, dense=True)
         self.filter_controls["title"] = title_field
         self.filter_controls_column.controls.append(title_field)
         
         # Add one for authors
-        authors_field = ft.TextField(label="Authors", border_radius=8, dense=True)
+        authors_field = ft.TextField(label="Authors (comma-separated)", border_radius=8, dense=True)
         self.filter_controls["authors"] = authors_field
         self.filter_controls_column.controls.append(authors_field)
         
-        # Add fields from the config
         for field_config in get_filterable_fields():
             field = ft.TextField(label=field_config.label, border_radius=8, dense=True)
             self.filter_controls[field_config.name] = field
@@ -248,60 +173,54 @@ class SourcesView(BaseView):
             if not search_term:
                 continue
 
-            # Always create a chip for every non-empty filter
-            chip = ft.Chip(
-                label=ft.Text(f"{control.label}: '{control.value.strip()}'"),
-                data=field_name,
-                on_delete=self._remove_filter_chip,
+            self.active_filter_chips.controls.append(
+                ft.Chip(
+                    label=ft.Text(f"{control.label}: '{control.value.strip()}'"),
+                    data=field_name,
+                    on_delete=self._remove_filter_chip,
+                )
             )
-            self.active_filter_chips.controls.append(chip)
 
             if field_name == "authors":
-                # Robust author filtering: ignore case, strip whitespace, match any substring
-                def author_matches(author):
-                    return search_term in author.lower().strip()
-                filtered_sources = [s for s in filtered_sources if s.authors and any(author_matches(a) for a in s.authors)]
+                search_terms = [term.strip() for term in search_term.split(',')]
+                filtered_sources = [
+                    s for s in filtered_sources if s.authors and 
+                    any(any(st in author.lower() for st in search_terms) for author in s.authors)
+                ]
             else:
-                # Robust generic filtering: ignore case, strip whitespace
-                filtered_sources = [s for s in filtered_sources if search_term in str(getattr(s, field_name, '')).lower().strip()]
+                filtered_sources = [s for s in filtered_sources if search_term in str(getattr(s, field_name, '') or '').lower()]
 
-        self.current_sources = filtered_sources  # Store the current filtered list
-        self._update_results_list(self.current_sources)
-        self.page.update()
+        self.current_sources = filtered_sources
+        self._update_results_list()
+        self.update()
         
     def _remove_filter_chip(self, e):
         """Removes a filter when a chip's delete icon is clicked."""
-        field_to_remove = e.control.data
-        # Clear the corresponding text field
-        if field_to_remove in self.filter_controls:
-            self.filter_controls[field_to_remove].value = ""
-        # Re-apply all filters
+        if e.control.data in self.filter_controls:
+            self.filter_controls[e.control.data].value = ""
         self._apply_all_filters(e)
             
     def _clear_all_filters(self, e):
         """Resets all filter text fields and clears results."""
         for control in self.filter_controls.values():
             control.value = ""
-        
         self.active_filter_chips.controls.clear()
         self.current_sources = self.all_sources
-        self._update_results_list(self.current_sources)
-        self.page.update()
+        self._update_results_list()
+        self.update()
 
-    def _update_results_list(self, sources: List[SourceRecord]):
-        """Clears and repopulates the results list."""
-        project = self.controller.project_state_manager.current_project
+    def _update_results_list(self):
+        """Clears and repopulates the results list with the current sources."""
+        project = self.controller.project_controller.get_current_project()
         self.results_list.controls.clear()
-        if sources:
-            for source in sorted(sources, key=lambda s: s.title):
-                # We just create the card. Its default context is "library",
-                # which correctly calls 'add_source_to_on_deck'.
+        
+        if self.current_sources:
+            for source in sorted(self.current_sources, key=lambda s: s.title):
                 self.results_list.controls.append(
                     OnDeckCard(
                         source=source,
                         controller=self.controller,
                         show_add_button=bool(project)
-                        # No context needed, it defaults to "library"
                     )
                 )
         else:

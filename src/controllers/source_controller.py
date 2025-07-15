@@ -1,71 +1,153 @@
-"""
-Source Controller - Handles source-related operations.
-
-This controller manages adding sources to projects, on-deck lists, etc.
-"""
-
-from typing import TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Optional, List
 from .base_controller import BaseController
-from models import ProjectSourceLink
 
 if TYPE_CHECKING:
-    from .app_controller import AppController
+    from src.models.source_models import SourceRecord, ProjectSourceLink
 
 
 class SourceController(BaseController):
-    """Handles all source-related operations."""
-    
-    def add_source_to_on_deck(self, source_id: str):
-        """Adds a source ID to the on_deck_sources list in the current project's metadata."""
-        self.logger.info(f"DIAGNOSTIC: SourceController.add_source_to_on_deck called with source_id={source_id}")
-        project = self.project_state_manager.current_project
-        if not project:
-            self.logger.warning("DIAGNOSTIC: Attempted to add source to On Deck, but no project is loaded.")
-            return
+    """
+    Controller for all source-related actions, implementing the logic
+    for creating master records and project-specific links.
+    """
 
-        self.logger.info(f"DIAGNOSTIC: Adding source '{source_id}' to On Deck for project '{project.project_title}'.")
-
-        # Initialize on_deck_sources if it doesn't exist
-        if "on_deck_sources" not in project.metadata:
-            project.metadata["on_deck_sources"] = []
-
-        # Add to on deck if not already there
-        if source_id not in project.metadata["on_deck_sources"]:
-            project.metadata["on_deck_sources"].append(source_id)
-            self.data_service.save_project(project)
-            self.logger.info(f"DIAGNOSTIC: Source '{source_id}' added to On Deck.")
-        else:
-            self.logger.info(f"DIAGNOSTIC: Source '{source_id}' is already in On Deck.")
-
-    def remove_source_from_on_deck(self, source_id: str):
-        """Removes a source ID from the on_deck_sources list in the current project's metadata."""
-        project = self.project_state_manager.current_project
-        if not project:
-            self.logger.warning("Attempted to remove source from On Deck, but no project is loaded.")
-            return
-
-        if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
-            project.metadata["on_deck_sources"].remove(source_id)
-            self.data_service.save_project(project)
-            self.logger.info(f"Source '{source_id}' removed from On Deck for project '{project.project_title}'.")
-        else:
-            self.logger.info(f"Source '{source_id}' not found in On Deck for project '{project.project_title}'.")
-
-    def add_source_to_project(self, source_id: str, notes: str, declassify: str):
+    def create_new_source(
+        self, source_data: Dict[str, Any], link_data: Optional[Dict[str, Any]] = None
+    ):
         """
-        Adds a master source to the currently loaded project, including project-specific
-        notes and declassify info, and removes it from 'On Deck'.
+        Creates a new master source record. If the current view is a project,
+        it also creates the project-specific link.
         """
-        project = self.project_state_manager.current_project
+        try:
+            # Step 1: Create the master SourceRecord
+            source_record = self.controller.data_service.create_source_record(
+                source_data
+            )
+            self.logger.info(f"Master source record '{source_record.id}' created.")
+
+            # Step 2: If we are in a project, create the link
+            project = self.controller.project.get_current_project()
+            if project and link_data is not None:
+                self.add_source_to_project(source_record.id, link_data)
+                # The success message is handled within add_source_to_project
+            else:
+                self.controller.show_success_message("Source created successfully.")
+
+            # Refresh the view to show the new source
+            self.controller.update_view()
+
+        except Exception as e:
+            self.controller.show_error_message(f"Failed to create source: {e}")
+
+    def add_source_to_project(self, source_id: str, link_data: Dict[str, Any]):
+        """
+        Creates the link between a source and a project, storing notes
+        and declassify info in the project file and updating the master record.
+        """
+        project = self.controller.project_state_manager.current_project
         if not project:
-            self.logger.warning("Attempted to add source to project, but no project is loaded.")
+            self.controller.show_error_message("No active project to add a source to.")
             return
 
-        if any(link.source_id == source_id for link in project.sources):
-            self.logger.info(f"Source '{source_id}' is already in project '{project.project_title}'.")
+        try:
+            # Data service handles creating the link and updating the master record
+            self.controller.data_service.link_source_to_project(
+                project.id, source_id, link_data
+            )
+
+            # If the source was on deck, remove it
+            if source_id in project.on_deck_sources:
+                project.on_deck_sources.remove(source_id)
+
+            self.logger.info(
+                f"Source '{source_id}' successfully linked to project '{project.id}'."
+            )
+            self.controller.show_success_message("Source added to project.")
+            self.controller.update_view()  # Refresh to show the new source in the project list
+        except Exception as e:
+            self.controller.show_error_message(f"Failed to add source to project: {e}")
+
+    def remove_source_from_project(self, source_id: str):
+        """
+        Removes the link between a source and a project.
+        """
+        project = self.controller.project.get_current_project()
+        if not project:
             return
 
-        # Delegate the full operation to the data service, which handles all saving.
-        self.data_service.add_source_to_project(project, source_id, notes, declassify)
+        try:
+            # Data service handles removing the link and updating the master record
+            self.controller.data_service.unlink_source_from_project(
+                project.id, source_id
+            )
+            self.logger.info(
+                f"Source '{source_id}' unlinked from project '{project.id}'."
+            )
+            self.controller.show_success_message("Source removed from project.")
+            self.controller.update_view()
+        except Exception as e:
+            self.controller.show_error_message(f"Failed to remove source: {e}")
 
-        self.logger.info(f"Source '{source_id}' added to project '{project.project_title}' and removed from On Deck.")
+    def submit_master_source_update(self, source_id: str, master_data: Dict[str, Any]):
+        """
+        Submits an update for a source's master record.
+        """
+        self.logger.info(f"Updating master record for source ID {source_id}.")
+        try:
+            self.controller.data_service.update_source_record(source_id, master_data)
+        except Exception as e:
+            self.controller.show_error_message(
+                f"Failed to update source master record: {e}"
+            )
+            raise  # Re-raise to let the dialog know the update failed
+
+    def submit_project_link_update(self, source_id: str, link_data: Dict[str, Any]):
+        """
+        Submits an update for a project-specific source link.
+        """
+        project = self.controller.project.get_current_project()
+        if not project:
+            return
+
+        self.logger.info(f"Updating project link for source ID {source_id}.")
+        try:
+            self.controller.data_service.update_project_source_link(
+                project.id, source_id, link_data
+            )
+            self.controller.show_success_message("Source usage details updated.")
+            self.controller.update_view()
+        except Exception as e:
+            self.controller.show_error_message(
+                f"Failed to update source usage details: {e}"
+            )
+
+    def get_all_source_records(self):
+        """
+        Retrieves all master source records from the data service.
+        """
+        return self.controller.data_service.get_all_source_records()
+
+    def get_source_record_by_id(self, source_id: str) -> Optional["SourceRecord"]:
+        """
+        Retrieves a master source record by its ID.
+        """
+        return self.controller.data_service.get_source_record_by_id(source_id)
+
+    def get_project_source_link(self, source_id: str) -> Optional["ProjectSourceLink"]:
+        """
+        Retrieves a project-specific source link by source ID from the current project.
+        """
+        project = self.controller.project.get_current_project()
+        if project:
+            for link in project.source_links:
+                if link.source_id == source_id:
+                    return link
+        return None
+
+    def get_available_countries(self) -> List[str]:
+        """Gets a list of all countries/regions with source files."""
+        return self.controller.data_service.get_available_countries()
+
+    def get_sources_by_country(self, country: str) -> List["SourceRecord"]:
+        """Gets all master source records for a specific country/region."""
+        return self.controller.data_service.get_master_sources_for_country(country)

@@ -58,7 +58,7 @@ class NewProjectView(BaseView):
             expand=True,
             spacing=0,
         )
-        
+
         return self.main_column
 
     # --- UI Builder Methods ---
@@ -101,16 +101,16 @@ class NewProjectView(BaseView):
         """Build directory selection section with country dropdown and search"""
         # Get all countries from all primary folders
         countries = self.browser_manager.get_all_countries()
-        
+
         self.country_dropdown = ft.Dropdown(
             label="Select Country",
             options=[
-                ft.dropdown.Option(key=country['path'], text=country['name'])
+                ft.dropdown.Option(key=country["path"], text=country["name"])
                 for country in countries
             ],
             width=300,
             on_change=self._on_country_selected,
-            value=None  # No country selected initially
+            value=None,  # No country selected initially
         )
 
         self.search_field = ft.TextField(
@@ -184,13 +184,13 @@ class NewProjectView(BaseView):
             self.search_field.disabled = True
             self.search_field.value = ""
             self.browser_manager.search("")  # Clear search
-        
+
         self._update_view()
 
     def _on_breadcrumb_clicked(self, index: int):
         """Handle breadcrumb navigation."""
         parts = self.browser_manager.breadcrumb_parts
-        
+
         if index == 0:  # Clicked on "Projects" - go to root
             self.browser_manager.current_path = self.browser_manager.root_path
             # Reset country dropdown and disable search
@@ -203,7 +203,7 @@ class NewProjectView(BaseView):
             new_parts = parts[1 : index + 1]  # exclude root "Projects" part
             new_path = self.browser_manager.root_path.joinpath(*new_parts)
             self.browser_manager.navigate_to_path(new_path)
-        
+
         self._update_view()
 
     def _on_back_clicked(self, e):
@@ -218,49 +218,66 @@ class NewProjectView(BaseView):
         """Handles a click on a file or folder in the list."""
         try:
             item_data = e.control.data
-            self.logger.info(f"--- _on_item_clicked: Item clicked. Raw data: {item_data} ---")
+            self.logger.info(
+                f"--- _on_item_clicked: Item clicked. Raw data: {item_data} ---"
+            )
 
             if not isinstance(item_data, dict):
-                self.logger.error(f"--- _on_item_clicked: ERROR! Item data is not a dictionary. Type is {type(item_data)} ---")
+                self.logger.error(
+                    f"--- _on_item_clicked: ERROR! Item data is not a dictionary. Type is {type(item_data)} ---"
+                )
                 return
 
             item_path_str = item_data.get("path")
             is_directory = item_data.get("is_directory")
 
             if item_path_str is None or is_directory is None:
-                self.logger.error(f"--- _on_item_clicked: ERROR! Item data is missing 'path' or 'is_directory'. ---")
+                self.logger.error(
+                    f"--- _on_item_clicked: ERROR! Item data is missing 'path' or 'is_directory'. ---"
+                )
                 return
 
             item_path = Path(item_path_str)
             if is_directory:
-                self.logger.info(f"--- _on_item_clicked: Navigating to directory: {item_path} ---")
-                
+                self.logger.info(
+                    f"--- _on_item_clicked: Navigating to directory: {item_path} ---"
+                )
+
                 # Clear search when navigating to avoid confusion
                 self.search_field.value = ""
                 self.browser_manager.search("")
-                
+
                 # Navigate to the clicked folder
                 self.browser_manager.navigate_to_path(item_path)
-                
+
                 # Update country dropdown to reflect new location
                 self._update_country_dropdown_from_path(item_path)
-                
+
                 self._update_view()
             else:
-                self.logger.info(f"--- _on_item_clicked: Calling controller.open_project with path: {item_path} ---")
-                self.controller.open_project(item_path)
+                self.logger.info(
+                    f"--- _on_item_clicked: Calling controller.open_project with path: {item_path} ---"
+                )
+                self.controller.project_controller.open_project(item_path)
 
         except Exception as ex:
-            self.logger.error(f"--- _on_item_clicked: An unexpected exception occurred: {ex} ---", exc_info=True)
+            self.logger.error(
+                f"--- _on_item_clicked: An unexpected exception occurred: {ex} ---",
+                exc_info=True,
+            )
 
     def _on_add_project_clicked(self, e):
         """Tells the controller to show the project creation dialog."""
-        self.controller.show_create_project_dialog(parent_path=self.browser_manager.current_path)
+        self.controller.dialog_controller.open_new_project_dialog(
+            parent_path=self.browser_manager.current_path
+        )
 
     def _on_add_folder_clicked(self, e):
         """Tells the controller to show the folder creation dialog."""
         print(f"The current path is: {self.browser_manager.current_path}")
-        self.controller.show_create_folder_dialog(parent_path=self.browser_manager.current_path)
+        self.controller.dialog_controller.open_folder_creation_dialog(
+            parent_path=self.browser_manager.current_path
+        )
 
     # --- View Update Logic ---
     def _update_action_button(self):
@@ -286,21 +303,23 @@ class NewProjectView(BaseView):
         """Refreshes the breadcrumb, header, and file list."""
         # Rebuild the breadcrumb bar with updated breadcrumbs
         self.breadcrumb_bar = self._build_breadcrumb_bar()
-        
+
         # Update the main column controls with the new breadcrumb_bar
-        if hasattr(self, 'main_column') and self.main_column:
-            self.main_column.controls[1] = self.breadcrumb_bar  # breadcrumb_bar is at index 1
-        
+        if hasattr(self, "main_column") and self.main_column:
+            self.main_column.controls[1] = (
+                self.breadcrumb_bar
+            )  # breadcrumb_bar is at index 1
+
         self._update_action_button()
         self._update_file_list()
-        if hasattr(self, 'page') and self.page:
+        if hasattr(self, "page") and self.page:
             self.page.update()
 
     def _update_file_list(self):
         """Fetches folder contents and filters them based on the search text."""
         if not self.file_list_view:
             return
-            
+
         items = self.browser_manager.displayed_items
         self.file_list_view.controls.clear()
 
@@ -341,13 +360,15 @@ class NewProjectView(BaseView):
             # Check if we're in a country folder (at least 2 levels deep: primary/country)
             relative_path = current_path.relative_to(self.browser_manager.root_path)
             parts = relative_path.parts
-            
+
             if len(parts) >= 2:
                 # We're in a country or deeper - set the dropdown to the country
                 primary_folder = parts[0]
                 country_name = parts[1]
-                country_path = self.browser_manager.root_path / primary_folder / country_name
-                
+                country_path = (
+                    self.browser_manager.root_path / primary_folder / country_name
+                )
+
                 # Set the dropdown value to the country path
                 self.country_dropdown.value = str(country_path)
                 self.search_field.disabled = False
@@ -355,7 +376,7 @@ class NewProjectView(BaseView):
                 # We're at root or primary level - reset dropdown
                 self.country_dropdown.value = None
                 self.search_field.disabled = True
-                
+
         except ValueError:
             # Path is not within the root directory
             self.country_dropdown.value = None

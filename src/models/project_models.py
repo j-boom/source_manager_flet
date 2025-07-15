@@ -15,7 +15,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 # Import the master SourceRecord for type hinting
-from .source_models import SourceRecord
+from .source_models import ProjectSourceLink
 
 # =============================================================================
 # Core Enumerations
@@ -31,19 +31,6 @@ class ProjectType(Enum):
     CRS = "CRS"
     OTH = "OTH"
 
-# =============================================================================
-# Linking Model
-# =============================================================================
-
-@dataclass
-class ProjectSourceLink:
-    """
-    This is the key to the solution. It links a Project to a master SourceRecord.
-    Display order is determined by position in the sources list.
-    """
-    source_id: str  # The ID of the master SourceRecord
-    notes: str = "" # User's notes about this source for this specific project
-    declassify: str = "" # New field for declassification information
 
 # =============================================================================
 # Project Model
@@ -110,7 +97,6 @@ class Project:
         for i, source_link in enumerate(self.sources):
             sources.append({
                 "uuid": source_link.source_id,
-                "order": i + 1,  # Use 1-based index for order
                 "usage_notes": source_link.notes or "",
                 "declassify": source_link.declassify or ""
             })

@@ -1,27 +1,43 @@
 import flet as ft
-import logging
-from typing import Callable
+from typing import TYPE_CHECKING
 
-# --- Component Imports ---
-from .components import AppBar, Sidebar
-# --- Configuration ---
+from .components.app_bar import AppBar as SourceManagerAppBar
+from .components.sidebar import Sidebar
+from .pages import (
+    HomeView,
+    RecentProjectsView,
+    NewProjectView,
+    ProjectView,
+    SourcesView,
+    ReportsView,
+    SettingsView,
+    HelpView,
+)
+
 from config.app_config import PAGES
+if TYPE_CHECKING:
+    from src.controllers.app_controller import AppController
 
 
-class MainView:
-    """The main application shell."""
+class MainView(ft.Container):
+    """
+    The main view of the application, containing the app bar, sidebar, and content area.
+    This version is a Flet control and is compatible with the refactored AppController.
+    """
 
-    def __init__(self, page: ft.Page, controller):
-        # Initialize logging
-        self.logger = logging.getLogger(__name__)
-        self.logger.info("Initializing MainView")
-        
-        self.page = page
+    def __init__(self, controller: "AppController", page: ft.Page):
+        """
+        Initializes the MainView.
+
+        Args:
+            controller: The main application controller.
+            page (ft.Page): The Flet page object.
+        """
+        super().__init__(expand=True)
+        # This is the crucial part: ensuring the controller and page are assigned correctly.
         self.controller = controller
-
-        self.logger.debug("Building main UI components")
-        
-        # --- Initialize UI Components ---
+        self.page = page
+         # --- Initialize UI Components ---
         self.app_bar = self._build_app_bar()
         self.sidebar = self._build_sidebar()
         self.content_area = self._build_content_area()
@@ -36,13 +52,10 @@ class MainView:
             spacing=0,
             expand=True,
         )
-        
-        self.logger.info("MainView initialization complete")
 
-    def _build_app_bar(self) -> AppBar:
+    def _build_app_bar(self) -> SourceManagerAppBar:
         """Builds the AppBar component."""
-        self.logger.debug("Building AppBar component")
-        return AppBar(
+        return SourceManagerAppBar(
             greeting=self.controller.user_config_manager.get_greeting(),
             on_settings_click=lambda e: self.controller.navigate_to("settings"),
             on_help_click=lambda e: self.controller.navigate_to("help"),
@@ -50,69 +63,56 @@ class MainView:
 
     def _build_sidebar(self) -> Sidebar:
         """Builds the Sidebar component dynamically from config."""
-        self.logger.debug("Building Sidebar component")
         return Sidebar(pages_config=PAGES, on_change=self.controller.navigate_to)
 
     def _build_content_area(self) -> ft.Container:
         """Creates the container that will hold the current page's content."""
-        self.logger.debug("Building content area container")
         return ft.Container(
             content=ft.ProgressRing(),  # Show a loading ring initially
             alignment=ft.alignment.center,
             expand=True,
         )
-    
-    def show(self):
-        """Clears the page and displays the main application layout."""
-        self.logger.info("Showing main layout")
-        self.page.appbar = self.app_bar
-        if self.page.controls:
-            self.page.controls.clear()
-        self.page.add(self.main_layout)
-        self.page.update()
 
     def set_content(self, content: ft.Control):
-        """Updates the content area with a new view/page."""
-        self.logger.debug(f"Setting new content: {type(content).__name__}")
+        """
+        Sets the content of the main content area.
+
+        Args:
+            content (ft.Control): The control to display in the content area.
+        """
         self.content_area.content = content
+        self.update()
+
+    def get_view_class(self, page_name: str):
+        """
+        Maps a page name to its corresponding view class.
+
+        Args:
+            page_name (str): The name of the page.
+
+        Returns:
+            The view class corresponding to the page name.
+        """
+        view_map = {
+            "home": HomeView,
+            "recent_projects": RecentProjectsView,
+            "new_project": NewProjectView,
+            "project_dashboard": ProjectView,
+            "sources": SourcesView,
+            "reports": ReportsView,
+            "settings": SettingsView,
+            "help": HelpView,
+        }
+        return view_map.get(page_name)
+
+    def refresh_theme(self):
+        """Refreshes the theme of the application."""
+        theme = self.controller.theme_manager.get_theme_data()
+        self.page.theme_mode = theme
         self.page.update()
 
-    def update_navigation(self, page_name: str):
-        """Updates the sidebar's selected item."""
-        self.logger.debug(f"Updating navigation to: {page_name}")
-        self.sidebar.update_selection(page_name)
-
-    def update_greeting(self):
-        """Refreshes the greeting message in the app bar."""
-        new_greeting = self.controller.user_config_manager.get_greeting()
-        self.logger.debug(f"Updating greeting to: {new_greeting}")
-        self.app_bar.update_greeting(new_greeting)
-        
-    def refresh_theme(self):
-        """
-        Updates the colors of all components when the theme changes.
-        The AppBar is now styled automatically by the page.theme.
-        """
-        self.logger.debug("Refreshing theme colors")
-        if not self.page.theme or not self.page.theme.color_scheme:
-            self.logger.warning("No theme or color scheme available for refresh")
-            return
-
-        colors = self.page.theme.color_scheme
-        self.logger.debug(f"Using color scheme: {type(colors).__name__}")
-        self.logger.debug("Refreshing theme colors")
-
-        # --- SIMPLIFIED: No manual AppBar styling needed ---
-        # The AppBar's theme is now defined in the ThemeManager.
-        # We only need to style the components MainView directly owns.
-
-        # We do, however, need to update the greeting text color manually
-        # as it's a child control inside the custom AppBar.
-        self.app_bar.greeting_text.color = colors.on_primary
-
-        self.sidebar.bgcolor = colors.surface
-        self.content_area.bgcolor = colors.background
-
-        # Refresh the components themselves to apply internal color changes
-        self.sidebar.refresh_theme()
+    def on_keyboard(self, e: ft.KeyboardEvent):
+        """Handles global keyboard events."""
+        if e.key == "N" and e.ctrl:
+            self.controller.dialog_controller.open_new_project_dialog(e)
         self.page.update()

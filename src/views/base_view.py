@@ -5,7 +5,10 @@ A simple base class for all page views in the application. It provides
 common helper methods and a safe 'colors' property for consistent theming.
 """
 import flet as ft
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from src.controllers.app_controller import AppController
 class BaseView:
     """Base class for all views in the application."""
     

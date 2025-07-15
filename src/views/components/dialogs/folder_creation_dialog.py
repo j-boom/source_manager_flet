@@ -67,7 +67,7 @@ class FolderCreationDialog(BaseDialog):
         description = self.description_field.value
 
         if folder_name:
-            self.controller.submit_new_folder(
+            self.controller.navigation_controller.submit_new_folder(
                 parent_path=self.parent_path,
                 folder_name=folder_name,
                 description=description,

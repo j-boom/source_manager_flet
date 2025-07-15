@@ -7,7 +7,7 @@ when a project is opened. It initializes and manages the individual tab views.
 
 import flet as ft
 import logging
-from views import BaseView
+from ...base_view import BaseView
 
 # Import the refactored tab classes
 from .tabs.project_metadata import ProjectMetadataTab

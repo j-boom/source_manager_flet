@@ -1,5 +1,5 @@
 import flet as ft
-from views import BaseView
+from ..base_view import BaseView
 from models.user_config_models import RecentProject
 from typing import List
 import logging
@@ -108,4 +108,4 @@ class RecentProjectsView(BaseView):
 
     def _on_clear_all_clicked(self, e):
         """Handles the clear all button click by delegating to the controller."""
-        self.controller.clear_recent_projects()
+        self.controller.navigation_controller.clear_recent_projects()
