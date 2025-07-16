@@ -8,25 +8,22 @@ import re
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
-# Assuming DataService is in a sibling package
-from services import DataService
-
 
 class ProjectBrowserManager:
     """Manages the state for browsing the project directory structure."""
 
-    def __init__(self, data_service: DataService):
+    def __init__(self, controller):
         """
         Initializes the manager.
 
         Args:
-            data_service: An instance of the application's DataService.
+            controller: An instance of the application's Controller.
         """
-        self.data_service = data_service
-        self.root_path = Path(self.data_service.project_data_dir)
+        self.controller = controller
+        self.root_path = Path(self.controller.directory_service.project_data_dir)
 
         # --- State Attributes ---
-        self.primary_folders: List[str] = self.data_service.get_primary_folders()
+        self.primary_folders: List[str] = self.controller.directory_service.get_primary_folders()
         self.selected_primary_folder: Optional[str] = None
         self.current_path: Path = self.root_path
         self.search_term: str = ""
@@ -125,7 +122,7 @@ class ProjectBrowserManager:
             self.displayed_items = self._progressive_search(self.search_term)
         else:
             # Normal directory browsing - show both folders and files
-            all_items = self.data_service.get_folder_contents(str(self.current_path))
+            all_items = self.controller.directory_service.get_folder_contents(str(self.current_path))
             # Filter out hidden files (starting with .), but show both directories and files
             self.displayed_items = [item for item in all_items if not item['name'].startswith('.')]
 
@@ -151,7 +148,7 @@ class ProjectBrowserManager:
             primary_path = self.root_path / primary_folder
             if primary_path.exists() and primary_path.is_dir():
                 # Get all subdirectories (countries) in this primary folder
-                country_items = self.data_service.get_folder_contents(str(primary_path))
+                country_items = self.controller.directory_service.get_folder_contents(str(primary_path))
                 for item in country_items:
                     if (item.get('is_directory', False) and 
                         not item['name'].startswith('.') and

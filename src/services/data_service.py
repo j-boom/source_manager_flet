@@ -38,18 +38,6 @@ class DataService:
         self.project_data_dir.mkdir(parents=True, exist_ok=True)
         self._master_source_cache: Dict[str, Dict[str, SourceRecord]] = {}
 
-    # --- Directory and File System Logic ---
-    def get_primary_folders(self) -> List[str]:
-        if not self.project_data_dir.exists():
-            return []
-        return sorted([p.name for p in self.project_data_dir.iterdir() if p.is_dir()])
-
-    def get_folder_contents(self, folder_path: str) -> List[Dict[str, Any]]:
-        path = Path(folder_path)
-        if not path.is_dir():
-            return []
-        contents = [{"name": p.name, "path": str(p), "is_directory": p.is_dir()} for p in path.iterdir()]
-        return sorted(contents, key=lambda x: (not x["is_directory"], x["name"].lower()))
 
     # --- Artifact Creation Logic ---
     def create_new_folder(self, parent_path: Path, folder_name: str, description: Optional[str] = None) -> Tuple[bool, str]:
@@ -66,58 +54,6 @@ class DataService:
             return True, f"Successfully created folder '{sanitized_filename}'."
         except OSError as e:
             return False, f"Failed to create directory: {e}"
-
-    def create_new_project(self, parent_dir: Path, form_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Project]]:
-        """
-        Creates a new project file from form data, injecting the current year.
-        """
-        self.logger.info(f"Creating new project in directory: {parent_dir}")
-        self.logger.debug(f"Form data: {form_data}")
-        
-        project_type_code = form_data.get("project_type")
-        if not project_type_code:
-            self.logger.error("Project type was not specified in form data")
-            return False, "Project type was not specified.", None
-
-        project_config = get_project_type_config(project_type_code)
-        if not project_config:
-            self.logger.error(f"Invalid project type: {project_type_code}")
-            return False, f"Invalid project type: {project_type_code}", None
-
-        metadata = form_data.copy()
-        metadata["current_year"] = str(datetime.now().year)
-        title = metadata.get("project_title") or metadata.get("document_title", "Untitled Project")
-        
-        self.logger.debug(f"Project title: {title}")
-
-        try:
-            filename_pattern = project_config.filename_pattern
-            filename = filename_pattern.format(**metadata) + ".json"
-            self.logger.debug(f"Generated filename: {filename}")
-        except KeyError as e:
-            self.logger.error(f"Missing required field for filename: {e}")
-            return False, f"Missing required field for filename: {e}", None
-
-        file_path = parent_dir / filename
-        if file_path.exists():
-            self.logger.warning(f"Project file already exists: {filename}")
-            return False, f"A project file named '{filename}' already exists.", None
-
-        project = Project(
-            project_id=str(uuid.uuid4()),
-            project_type=ProjectType(project_type_code),
-            project_title=title,
-            file_path=file_path,
-            metadata=metadata,
-        )
-        try:
-            project.save()
-            self.logger.info(f"Successfully created project: {filename} at {file_path}")
-            return True, f"Successfully created project: {filename}", project
-        except Exception as e:
-            self.logger.error(f"Error saving project: {e}", exc_info=True)
-            return False, "An error occurred while saving the project.", None
-
     # --- Master Source Management ---
     def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
         """Load master sources for a specific country."""
@@ -163,46 +99,6 @@ class DataService:
             if source.id == source_id:
                 return source
         return None
-
-    def create_new_source(self, country: str, form_data: Dict[str, Any]) -> Tuple[bool, str, Optional[SourceRecord]]:
-        """Create a new master source for a specific country."""
-        source_type_str = form_data.get("source_type")
-        if not source_type_str:
-            return False, "Source type not specified.", None
-
-        source_data = form_data.copy()
-        source_data['id'] = str(uuid.uuid4())
-        source_data['region'] = country  # Keep 'region' field for backward compatibility, but store country
-        
-        if 'authors' in source_data and isinstance(source_data['authors'], str):
-            source_data['authors'] = [author.strip() for author in source_data['authors'].split(',') if author.strip()]
-
-        try:
-            new_source = SourceRecord.from_dict(source_data)
-        except Exception as e:
-            return False, f"Failed to create source model: {e}", None
-
-        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
-        if source_file_path.exists():
-            with open(source_file_path, "r", encoding="utf-8") as f:
-                master_data = json.load(f)
-            sources_list = master_data.get("sources", [])
-        else:
-            sources_list = []
-            master_data = {"sources": sources_list}
-
-        sources_list.append(new_source.to_dict())
-        
-        try:
-            with open(source_file_path, "w", encoding="utf-8") as f:
-                json.dump(master_data, f, indent=4)
-            
-            if country in self._master_source_cache:
-                del self._master_source_cache[country]
-                
-            return True, "Source created successfully.", new_source
-        except Exception as e:
-            return False, f"Failed to save master source file: {e}", None
 
     # --- FIX: Add method to update an existing source ---
     def update_master_source(self, source_id: str, updated_data: Dict[str, Any]) -> Tuple[bool, str]:
@@ -324,21 +220,6 @@ class DataService:
         project.sources = new_source_links
         project.save()
 
-    # --- Project I/O ---
-    def load_project(self, file_path: Path) -> Optional[Project]:
-        self.logger.info(f"Loading project from: {file_path}")
-        try:
-            project = Project.load(file_path)
-            if project:
-                self.logger.info(f"Successfully loaded project: {project.project_title}")
-            else:
-                self.logger.warning(f"Failed to load project from: {file_path}")
-            return project
-        except Exception as e:
-            self.logger.error(f"Error loading project from {file_path}: {e}", exc_info=True)
-            return None
-
-    def save_project(self, project: Project):
         self.logger.info(f"Saving project: {project.project_title} to {project.file_path}")
         try:
             project.save()
@@ -347,90 +228,9 @@ class DataService:
             self.logger.error(f"Error saving project {project.project_title}: {e}", exc_info=True)
             raise
 
-    def get_available_countries(self) -> List[str]:
-        """Get list of available countries from existing source files."""
-        countries = []
-        source_files = list(self.master_sources_dir.glob("*_sources.json"))
-        for f in source_files:
-            country_name = f.name.replace("_sources.json", "")
-            countries.append(country_name)
-        return countries
+   
 
     # --- Project Number Extraction Logic ---
-    def derive_project_number_from_path(self, parent_path: Path) -> str:
-        """
-        Extracts the project/BE number from a directory path.
-        
-        The method looks for numeric patterns in the directory name itself, 
-        typically in the format of year + sequential numbers (e.g., 2024333333).
-        
-        Args:
-            parent_path: Path to the directory that might contain a project number
-            
-        Returns:
-            The extracted project number as a string, empty string if not found
-        """
-        try:
-            # Get the directory name from the path
-            dir_name = parent_path.name
-            
-            # Look for numeric patterns that could be BE numbers
-            # Common pattern: YYYY followed by digits (e.g., 2024333333)
-            # TODO update this in production
-            number_match = re.search(r'(\d{4,})', dir_name)
-            
-            if number_match:
-                return number_match.group(1)
-            
-            # TODO is the following logic still needed?
-            # If no number found in current directory, try parent directories
-            # but only go up one level to avoid false positives
-            if parent_path.parent and parent_path.parent != parent_path:
-                parent_dir_name = parent_path.parent.name
-                parent_number_match = re.search(r'(\d{4,})', parent_dir_name)
-                if parent_number_match:
-                    return parent_number_match.group(1)
-                    
-        except (AttributeError, IndexError, OSError):
-            pass
-            
-        return ""
     
-    def update_project_source_link(self, project: Project, source_id: str, link_data: Dict[str, Any]) -> Tuple[bool, str]:
-        """
-        Finds a source link within a project, updates it, saves the project,
-        and also updates the master source record to track project usage.
-        """
-        link_found = False
-        for link in project.sources:
-            if link.source_id == source_id:
-                # Update the notes and declassify fields from the provided data
-                link.notes = link_data.get("notes", link.notes)
-                link.declassify = link_data.get("declassify", link.declassify)
-                link_found = True
-                break
-        
-        if not link_found:
-            return False, f"Could not find source link with ID '{source_id}' in the project."
-            
-        try:
-            # Save the entire project object, which now contains the updated link
-            self.save_project(project)
-            
-            # Now, update the master source record to ensure it tracks this project's usage
-            source_record = self.get_source_by_id(source_id)
-            if source_record:
-                # Check if this project is already in the 'used_in' list to avoid duplicates
-                if not any(p.get('project_id') == project.project_id for p in source_record.used_in):
-                    source_record.used_in.append({
-                        "project_id": project.project_id,
-                        "project_title": project.project_title,
-                        "notes": link.notes # Add the specific notes to the usage tracker
-                    })
-                    # Use the existing update_master_source method to save the change
-                    self.update_master_source(source_id, source_record.to_dict())
-
-            return True, "Project source link and master record updated successfully."
-        except Exception as e:
-            self.logger.error(f"Failed to save project or update master source: {e}", exc_info=True)
-            return False, "Failed to save project or update master source."
+    
+   

@@ -191,7 +191,7 @@ class ReportsView(BaseView):
         # This part should ideally be in a dedicated citation service/manager
         preview_lines = []
         for i, link in enumerate(project.sources):
-            source = self.controller.data_service.get_source_by_id(link.source_id)
+            source = self.controller.source_service.get_source_by_id(link.source_id)
             if source:
                 preview_lines.append(f"[{i+1}] {source.title} ({source.publication_year or 'n.d.'}).")
         return "\n".join(preview_lines)

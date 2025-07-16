@@ -74,7 +74,7 @@ class ProjectSourcesTab(BaseTab):
 
         for source_id in on_deck_ids:
             if source_id not in project_source_ids:
-                source = self.controller.data_service.get_source_by_id(source_id)
+                source = self.controller.source_service.get_source_by_id(source_id)
                 if source:
                     # The OnDeckCard now gets a `show_remove_button` argument
                     card = OnDeckCard(
@@ -90,7 +90,7 @@ class ProjectSourcesTab(BaseTab):
                     self.on_deck_list.controls.append(card)
         
         for link in project.sources:
-            source = self.controller.data_service.get_source_by_id(link.source_id)
+            source = self.controller.source_service.get_source_by_id(link.source_id)
             if source:
                 card = ProjectSourceCard(source=source, link=link, controller=self.controller)
                 self.project_sources_list.controls.append(
@@ -153,7 +153,7 @@ class ProjectSourcesTab(BaseTab):
         if dragged_link and target_index != -1:
             source_links.remove(dragged_link)
             source_links.insert(target_index, dragged_link)
-            self.controller.data_service.save_project(project)
+            self.controller.project_service.save_project(project)
             self._update_view()
         else:
             e.control.update()

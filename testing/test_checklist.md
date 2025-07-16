@@ -173,7 +173,6 @@ This section ensures that the codebase is well commented and documented for futu
 - [ ] src/models/source_models.py
 - [ ] src/models/user_config_models.py
 - [ ] src/services/admin_auth_service.py
-- [ ] src/services/data_service.py
 - [ ] src/services/migration_service.py
 - [ ] src/services/powerpoint_service.py
 - [ ] src/views/base_view.py

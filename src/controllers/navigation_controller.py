@@ -141,7 +141,7 @@ class NavigationController(BaseController):
             description (str, optional): Optional description for the folder.
         """
         self.logger.info(f"Submitting new folder: {folder_name} at {parent_path}")
-        self.controller.data_service.create_new_folder(
+        self.controller.directory_service.create_new_folder(
             parent_path, folder_name, description
         )
         self.controller.page.update()

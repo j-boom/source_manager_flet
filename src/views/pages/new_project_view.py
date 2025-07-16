@@ -22,7 +22,7 @@ class NewProjectView(BaseView):
         self.browser_manager = self.controller.project_browser_manager
         self.logger = logging.getLogger(__name__)
         # --- UI State ---
-        self.current_path: Path = Path(self.controller.data_service.project_data_dir)
+        self.current_path: Path = Path(self.controller.directory_service.project_data_dir)
         self.search_text: str = ""
 
         # --- UI Component Placeholders ---

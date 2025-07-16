@@ -325,7 +325,7 @@ class CiteSourcesTab(BaseTab):
                 # File doesn't exist anymore - clear the path and show prompt
                 project.metadata.pop("powerpoint_path", None)
                 project.metadata.pop("slides", None)
-                self.controller.data_service.save_project(project)
+                self.controller.project_service.save_project(project)
                 has_slides = False
         
         # If we have a PowerPoint path and the file exists, but slides are empty, reload
@@ -371,7 +371,7 @@ class CiteSourcesTab(BaseTab):
 
         # Sort sources for consistent ordering.
         for source_id in sorted(list(all_project_source_ids)):
-            source_record = self.controller.data_service.get_source_by_id(source_id)
+            source_record = self.controller.source_service.get_source_by_id(source_id)
             if source_record:
                 # Create a checkbox for each source.
                 checkbox = ft.Checkbox(

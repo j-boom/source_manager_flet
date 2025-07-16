@@ -51,7 +51,7 @@ class DialogController(BaseController):
             """This function is passed to the dialog to be called on success."""
             self.logger.info(f"Folder creation dialog confirmed for '{folder_name}'")
             # Delegate the actual folder creation to the appropriate service/controller
-            success, message = self.controller.data_service.create_new_folder(
+            success, message = self.controller.directory_service.create_new_folder(
                 parent_path=parent_path,
                 folder_name=folder_name,
                 description=description
@@ -83,7 +83,7 @@ class DialogController(BaseController):
             parent_path: The directory where the project will be created.
         """
         # The BE number can be derived from the parent path's name
-        initial_be = self.controller.data_service.derive_project_number_from_path(parent_path)
+        initial_be = self.controller.directory_service.derive_project_number_from_path(parent_path)
 
         def on_create_callback(form_data: Dict[str, Any]):
             """This function contains the logic to execute on successful creation."""
@@ -135,7 +135,7 @@ class DialogController(BaseController):
         target_country = None
         project = self.controller.project_controller.get_current_project()
         if project:
-            target_country = self.controller.data_service.get_country_for_project(project.file_path)
+            target_country = self.controller.directory_service.get_country_for_project(project.file_path)
 
         # --- Instantiate and show the dialog ---
         dialog = SourceCreationDialog(

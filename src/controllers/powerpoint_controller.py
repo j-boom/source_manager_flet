@@ -71,7 +71,7 @@ class PowerPointController(BaseController):
                 project.metadata["powerpoint_file_path"] = file_path
                 
                 # Save the project
-                self.data_service.save_project(project)
+                self.controller.project_service.save_project(project)
                 
                 self.logger.info(f"Successfully processed PowerPoint file with {len(slides_data)} slides")
                 

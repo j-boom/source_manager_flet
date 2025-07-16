@@ -2,7 +2,12 @@ import logging
 import flet as ft
 from typing import Dict, Optional
 
-from src.services.data_service import DataService
+# Import the services that handle all data operations
+from src.services.project_service import ProjectService
+from src.services.directory_service import DirectoryService
+from src.services.source_service import SourceService
+
+# Import the main managers
 from src.managers.user_config_manager import UserConfigManager
 from src.managers.navigation_manager import NavigationManager
 from src.managers.project_state_manager import ProjectStateManager
@@ -40,16 +45,19 @@ class AppController:
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing AppController")
 
-        # Initialize services and managers
-        self.data_service = DataService()
+        # Initialize services
+        self.directory_service = DirectoryService()
+        self.source_service = SourceService()
+        self.project_service = ProjectService(source_service=self.source_service)
+
+        # Initialize managers
         self.user_config_manager = UserConfigManager()
         self.navigation_manager = NavigationManager()
         self.project_state_manager = ProjectStateManager()
-        self.project_browser_manager = ProjectBrowserManager(
-            data_service=self.data_service
-        )
+        self.project_browser_manager = ProjectBrowserManager(controller=self)
         self.theme_manager = ThemeManager()
         self.settings_manager = SettingsManager()
+
         # Setup sub controllers
         self.project_controller = ProjectController(self)
         self.source_controller = SourceController(self)

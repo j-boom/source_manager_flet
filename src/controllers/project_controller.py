@@ -25,7 +25,7 @@ class ProjectController(BaseController):
         self.logger.info(f"Opening project at path: {project_path}")
         try:
             # Step 1: Use the DataService to load the project from the file.
-            project_object = self.controller.data_service.load_project(project_path)
+            project_object = self.controller.project_service.load_project(project_path)
 
             # Step 2: Check if the load was successful before proceeding.
             if project_object:
@@ -73,7 +73,7 @@ class ProjectController(BaseController):
         try:
             # The DataService now handles creating the project object and file
             success, message, new_project = (
-                self.controller.data_service.create_new_project(
+                self.controller.project_service.create_new_project(
                     parent_dir=parent_path, form_data=form_data
                 )
             )
@@ -121,7 +121,7 @@ class ProjectController(BaseController):
 
         # Save the updated project object back to its file
         try:
-            self.controller.data_service.save_project(project)
+            self.controller.project_service.save_project(project)
             self.controller.show_success_message("Project metadata saved.")
         except Exception as e:
             self.logger.error(
@@ -143,7 +143,7 @@ class ProjectController(BaseController):
         if source_id not in on_deck_sources:
             on_deck_sources.append(source_id)
             project.metadata["on_deck_sources"] = on_deck_sources
-            self.controller.data_service.save_project(project)
+            self.controller.project_service.save_project(project)
             self.logger.info(
                 f"Source '{source_id}' added to on deck for project '{project.project_title}'."
             )
@@ -164,7 +164,7 @@ class ProjectController(BaseController):
         if source_id in on_deck_sources:
             on_deck_sources.remove(source_id)
             project.metadata["on_deck_sources"] = on_deck_sources
-            self.controller.data_service.save_project(project)
+            self.controller.project_service.save_project(project)
             self.logger.info(
                 f"Source '{source_id}' removed from on deck for project '{project.project_title}'."
             )
@@ -182,7 +182,7 @@ class ProjectController(BaseController):
             return
         
         try:
-            self.controller.data_service.remove_source_from_project(project, source_id)
+            self.controller.project_service.remove_source_from_project(project, source_id)
             self.controller.show_success_message("Source removed from project.")
             # Refresh the current view to reflect the change
             self.controller.update_view()

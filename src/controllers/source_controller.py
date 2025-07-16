@@ -21,7 +21,7 @@ class SourceController(BaseController):
         """
         try:
             # Step 1: Create the master SourceRecord
-            source_record = self.controller.data_service.create_new_source(
+            source_record = self.controller.source_service.create_new_source(
                 source_data
             )
             self.logger.info(f"Master source record '{source_record.id}' created.")
@@ -54,7 +54,7 @@ class SourceController(BaseController):
             usage_notes = link_data.get("usage_notes", "")
             declassify_info = link_data.get("declassify_info", "")
             # Data service handles creating the link and updating the master record
-            self.controller.data_service.add_source_to_project(
+            self.controller.source_service.add_source_to_project(
                 project.id, source_id, usage_notes, declassify_info
             )
 
@@ -80,7 +80,7 @@ class SourceController(BaseController):
 
         try:
             # Data service handles removing the link and updating the master record
-            self.controller.data_service.remove_source_from_project(
+            self.controller.project_service.remove_source_from_project(
                 project.id, source_id
             )
             self.logger.info(
@@ -97,7 +97,7 @@ class SourceController(BaseController):
         """
         self.logger.info(f"Updating master record for source ID {source_id}.")
         try:
-            self.controller.data_service.update_master_source(source_id, master_data)
+            self.controller.source_service.update_master_source(source_id, master_data)
         except Exception as e:
             self.controller.show_error_message(
                 f"Failed to update source master record: {e}"
@@ -114,7 +114,7 @@ class SourceController(BaseController):
 
         self.logger.info(f"Updating project link for source ID {source_id}.")
         try:
-            self.controller.data_service.update_project_source_link(
+            self.controller.project_service.update_project_source_link(
                 project.id, source_id, link_data
             )
             self.controller.show_success_message("Source usage details updated.")
@@ -128,13 +128,13 @@ class SourceController(BaseController):
         """
         Retrieves all master source records from the data service.
         """
-        return self.controller.data_service.get_all_master_sources()
+        return self.controller.source_service.get_all_master_sources()
 
     def get_source_record_by_id(self, source_id: str) -> Optional["SourceRecord"]:
         """
         Retrieves a master source record by its ID.
         """
-        return self.controller.data_service.get_source_by_id(source_id)
+        return self.controller.source_service.get_source_by_id(source_id)
 
     def get_project_source_link(self, source_id: str) -> Optional["ProjectSourceLink"]:
         """
@@ -149,8 +149,8 @@ class SourceController(BaseController):
 
     def get_available_countries(self) -> List[str]:
         """Gets a list of all countries/regions with source files."""
-        return self.controller.data_service.get_available_countries()
+        return self.controller.directory_service.get_available_countries()
 
     def get_sources_by_country(self, country: str) -> List["SourceRecord"]:
         """Gets all master source records for a specific country/region."""
-        return self.controller.data_service.get_master_sources_for_country(country)
+        return self.controller.source_service.get_master_sources_for_country(country)
