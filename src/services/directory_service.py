@@ -58,3 +58,15 @@ class DirectoryService:
             self.logger.error(f"Failed to create directory {new_folder_path}: {e}")
             return False, f"Failed to create directory: {e}"
         
+    def get_country_folders(self) -> List[str]:
+        """Gets all country-level folders from within the primary region folders."""
+        countries = []
+        primary_folders = self.get_primary_folders()
+        for region in primary_folders:
+            region_path = self.project_data_dir / region
+            if region_path.is_dir():
+                for country_path in region_path.iterdir():
+                    if country_path.is_dir() and not country_path.name.startswith('.') and not country_path.name == 'Non CR Products':
+                        countries.append(country_path.name)
+        # Use set to ensure uniqueness and then sort alphabetically
+        return sorted(list(set(countries)))

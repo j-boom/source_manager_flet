@@ -29,15 +29,16 @@ class SourceType(Enum):
 @dataclass
 class SourceRecord:
     """
-    Represents a single, master source record stored in a regional file.
+    Represents a single, master source record stored in a country file.
     This is the "master copy" of a source, identified by a unique ID.
     """
     id: str  # Unique ID for this source
     source_type: SourceType
-    title: str
-    region: str  # The region this master source belongs to (e.g., "ROW", "General")
-    
+    title: str # Generated title display
+    country: str  # The country this master source belongs to (e.g., "USA", "Canada")
+
     # Core metadata for the master record
+    source_title: str
     authors: List[str] = field(default_factory=list)
     publication_year: Optional[int] = None
     publisher: Optional[str] = None

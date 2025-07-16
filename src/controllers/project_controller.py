@@ -147,9 +147,11 @@ class ProjectController(BaseController):
             self.logger.info(
                 f"Source '{source_id}' added to on deck for project '{project.project_title}'."
             )
+            self.controller.show_success_message("Source added to 'On Deck'.")
             self.controller.update_view()
         else:
             self.logger.warning(f"Source '{source_id}' is already on deck.")
+            self.controller.show_error_message("This source is already on deck.")
 
     def remove_source_from_on_deck(self, source_id: str):
         """

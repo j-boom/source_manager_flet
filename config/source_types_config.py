@@ -4,7 +4,7 @@ Source Types Configuration
 Defines the fields required for each type of master source.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 
@@ -12,6 +12,13 @@ from enum import Enum
 class FieldType(Enum):
     TEXT = "text"
     TEXTAREA = "textarea"
+    NUMBER = "number"
+
+class ValidationRule(Enum):
+    """Defines validation rules for source fields."""
+    REQUIRED = "required"
+    EMAIL = "email"
+    URL = "url"
     NUMBER = "number"
 
 @dataclass
@@ -24,26 +31,28 @@ class SourceFieldConfig:
     hint_text: str = ""
     width: int = 400
     is_filterable: bool = False
+    is_title_part: bool = False
+    validation_rules: Optional[Dict[ValidationRule, Any]] = None
 
 # A master registry of all possible fields for any source type.
 ALL_SOURCE_FIELDS: Dict[str, SourceFieldConfig] = {
-    "title": SourceFieldConfig(name="title", label="Title", field_type=FieldType.TEXT, required=True),
+    "source_title": SourceFieldConfig(name="source_title", label="Source Title", field_type=FieldType.TEXT, required=True, is_filterable=True, is_title_part=True),
     "authors": SourceFieldConfig(name="authors", label="Authors (comma-separated)", field_type=FieldType.TEXT, hint_text="e.g., Smith, J., Doe, A.,", is_filterable=True),
-    "publication_year": SourceFieldConfig(name="publication_year", label="Year", field_type=FieldType.NUMBER, hint_text="e.g., 2023", is_filterable=True),
+    "publication_year": SourceFieldConfig(name="publication_year", label="Year", field_type=FieldType.NUMBER, hint_text="e.g., 2023", is_filterable=True, is_title_part=True),
     "publisher": SourceFieldConfig(name="publisher", label="Publisher / Journal", field_type=FieldType.TEXT),
     "url": SourceFieldConfig(name="url", label="URL", field_type=FieldType.TEXT, hint_text="https://..."),
-    "report_number": SourceFieldConfig(name="report_number", label="Report / Document No.", field_type=FieldType.TEXT),
+    "report_number": SourceFieldConfig(name="report_number", label="Report / Document No.", field_type=FieldType.TEXT, is_title_part=True),
     "manual_version": SourceFieldConfig(name="manual_version", label="Version", field_type=FieldType.TEXT),
 }
 
 # Maps a SourceType enum value to a list of field names from the registry above.
 SOURCE_TYPE_FIELDS: Dict[str, List[str]] = {
-    "book": ["title", "authors", "publication_year", "publisher"],
-    "article": ["title", "authors", "publication_year", "publisher"],
-    "standard": ["title", "publication_year", "publisher", "report_number"],
-    "website": ["title", "url", "authors"],
-    "report": ["title", "authors", "publication_year", "report_number"],
-    "manual": ["title", "manual_version", "publisher", "publication_year"],
+    "book": ["source_title", "authors", "publication_year", "publisher"],
+    "article": ["source_title", "authors", "publication_year", "publisher"],
+    "standard": ["source_title", "publication_year", "publisher", "report_number"],
+    "website": ["source_title", "url", "authors"],
+    "report": ["source_title", "authors", "publication_year", "report_number"],
+    "manual": ["source_title", "manual_version", "publisher", "publication_year"],
 }
 
 def get_fields_for_source_type(source_type_value: str) -> List[SourceFieldConfig]:

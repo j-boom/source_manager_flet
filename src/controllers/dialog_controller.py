@@ -114,7 +114,7 @@ class DialogController(BaseController):
         )
         self.open_dialog(dialog)
 
-    def open_new_source_dialog(self, from_project_sources_tab: bool = False):
+    def open_new_source_dialog(self, from_project_sources_tab: bool = False, target_country_from_view: Optional[str] = None):
         """
         Opens the refactored source creation dialog.
         """
@@ -132,10 +132,11 @@ class DialogController(BaseController):
         # --- Get data needed by the dialog ---
         available_countries = self.controller.source_controller.get_available_countries()
         
-        target_country = None
-        project = self.controller.project_controller.get_current_project()
-        if project:
-            target_country = self.controller.directory_service.get_country_for_project(project.file_path)
+        target_country = target_country_from_view
+        if not target_country:
+            project = self.controller.project_controller.get_current_project()
+            if project:
+                target_country = self.controller.directory_service.get_country_for_project(project.file_path)
 
         # --- Instantiate and show the dialog ---
         dialog = SourceCreationDialog(

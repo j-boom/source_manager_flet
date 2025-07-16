@@ -14,16 +14,17 @@ from datetime import datetime
 
 from config import MASTER_SOURCES_DIR, get_source_file_for_country
 from src.models import SourceRecord
-
+from .directory_service import DirectoryService
 
 class SourceService:
     """Manages loading, saving, and querying master source records."""
 
-    def __init__(self):
+    def __init__(self, directory_service: DirectoryService):
         self.logger = logging.getLogger(__name__)
         self.master_sources_dir = Path(MASTER_SOURCES_DIR)
         self.master_sources_dir.mkdir(parents=True, exist_ok=True)
         self._master_source_cache: Dict[str, Dict[str, SourceRecord]] = {}
+        self.directory_service = directory_service
         self.logger.info("SourceService initialized")
 
     def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
@@ -73,11 +74,7 @@ class SourceService:
         return next((s for s in all_sources if s.id == source_id), None)
 
     def get_available_countries(self) -> List[str]:
-        """Gets a list of countries for which a source file exists."""
-        return [
-            f.name.replace("_sources.json", "")
-            for f in self.master_sources_dir.glob("*_sources.json")
-        ]
+        return self.directory_service.get_country_folders()
 
     def create_new_source(
         self, country: str, form_data: Dict[str, Any]
@@ -89,9 +86,7 @@ class SourceService:
 
         source_data = form_data.copy()
         source_data["id"] = str(uuid.uuid4())
-        source_data["region"] = (
-            country  # Keep 'region' field for backward compatibility, but store country
-        )
+        source_data["country"] = country
 
         if "authors" in source_data and isinstance(source_data["authors"], str):
             source_data["authors"] = [
@@ -148,15 +143,12 @@ class SourceService:
 
         source.last_modified = datetime.utcnow().isoformat()
 
-        country = (
-            source.region
-        )  # For backward compatibility, the 'region' field stores the country
         source_file_path = self.master_sources_dir / get_source_file_for_country(
-            country
+            source.country
         )
 
         if not source_file_path.exists():
-            return False, f"Master source file for country '{country}' does not exist."
+            return False, f"Master source file for country '{source.country}' does not exist."
 
         try:
             with open(source_file_path, "r", encoding="utf-8") as f:
@@ -186,3 +178,32 @@ class SourceService:
             return True, "Source updated successfully."
         except Exception as e:
             return False, f"Failed to save updated source: {e}"
+
+    def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
+        """Load master sources for a specific country."""
+        if country in self._master_source_cache:
+            return self._master_source_cache[country]
+        source_file_path = self.master_sources_dir / get_source_file_for_country(
+            country
+        )
+        if not source_file_path.exists():
+            self._master_source_cache[country] = {}
+            return {}
+        try:
+            with open(source_file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            sources_list = data.get("sources", [])
+            source_map = {
+                record_data["id"]: SourceRecord.from_dict(record_data)
+                for record_data in sources_list
+            }
+            self._master_source_cache[country] = source_map
+            return source_map
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"Error loading master sources for country '{country}': {e}")
+            return {}
+
+    def get_master_sources_for_country(self, country: str) -> List[SourceRecord]:
+        """Get all master sources for a specific country."""
+        source_map = self._load_master_sources_for_country(country)
+        return list(source_map.values())

@@ -14,7 +14,10 @@ from src.managers.project_state_manager import ProjectStateManager
 from src.managers.project_browser_manager import ProjectBrowserManager
 from src.managers.theme_manager import ThemeManager
 from src.managers.settings_manager import SettingsManager
+
+# Import necessary views
 from src.views.main_view import MainView
+from src.views.base_view import BaseView
 
 # Import the specialized controllers
 from .project_controller import ProjectController
@@ -47,7 +50,7 @@ class AppController:
 
         # Initialize services
         self.directory_service = DirectoryService()
-        self.source_service = SourceService()
+        self.source_service = SourceService(directory_service=self.directory_service)
         self.project_service = ProjectService(source_service=self.source_service)
 
         # Initialize managers
@@ -68,7 +71,7 @@ class AppController:
 
         # Initialize views
         self.main_view = MainView(controller=self, page=page)
-        self.views: Dict[str, ft.Control] = {}
+        self.views: Dict[str, BaseView] = {}
         self._view_class_map = self.navigation_controller.build_view_class_map()
         logging.info("AppController initialized successfully")
 

@@ -83,3 +83,8 @@ class BaseView:
             expand=True,
             padding=40
         )
+
+    def update_view(self):
+        """Refreshes the view by calling page.update(). Subclasses can override for specific logic."""
+        if self.page:
+            self.page.update()

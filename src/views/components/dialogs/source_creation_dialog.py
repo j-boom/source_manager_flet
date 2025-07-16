@@ -8,9 +8,12 @@ import flet as ft
 import logging
 from typing import Dict, List, Optional, Any, Callable
 
-from config.source_types_config import get_fields_for_source_type
+from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
+from config.project_types_config import FieldConfig, ValidationRule
+
 from models.source_models import SourceType
-from utils.validators import create_validated_field
+
+from utils import create_validated_field, generate_source_title
 
 class SourceCreationDialog:
     """A dialog for creating a new master source record."""
@@ -29,8 +32,8 @@ class SourceCreationDialog:
         Args:
             page: The Flet Page object.
             on_create: A callback to execute with the validated source data.
-            available_countries: A list of countries to populate the region dropdown.
-            target_country: The country to pre-select in the region dropdown.
+            available_countries: A list of countries to populate the country dropdown.
+            target_country: The country to pre-select in the country dropdown.
             from_project_sources_tab: Flag to show project-specific fields.
         """
         self.page = page
@@ -102,7 +105,7 @@ class SourceCreationDialog:
     def _build_country_dropdown(self) -> ft.Dropdown:
         options = [ft.dropdown.Option(c, c) for c in sorted(self.available_countries)]
         return ft.Dropdown(
-            label="Region/Country *",
+            label="Country *",
             options=options,
             value=self.target_country if self.target_country else None,
             expand=True
@@ -112,12 +115,21 @@ class SourceCreationDialog:
         """Clears and rebuilds the form fields based on the selected source type."""
         self.form_fields.clear()
         self.dynamic_fields_container.controls.clear()
-        fields_to_create = get_fields_for_source_type(source_type_value)
+        fields_to_create: List[SourceFieldConfig] = get_fields_for_source_type(source_type_value)
 
-        for field_config in fields_to_create:
-            # Use the centralized field creator for consistency and built-in validation
-            widget = create_validated_field(field_config)
-            self.form_fields[field_config.name] = widget
+        for s_config in fields_to_create:
+            compatible_config = FieldConfig(
+                name=s_config.name,
+                label=s_config.label,
+                field_type=s_config.field_type,
+                required=s_config.required,
+                hint_text= s_config.hint_text,
+                validation_rules=s_config.validation_rules,
+                width=s_config.width,
+            )
+
+            widget = create_validated_field(compatible_config)
+            self.form_fields[s_config.name] = widget
             self.dynamic_fields_container.controls.append(widget)
 
         if self.dialog and self.dialog.open:
@@ -151,7 +163,7 @@ class SourceCreationDialog:
             return
 
         # --- Data Collection ---
-        form_data = {"source_type": self.source_type_dropdown.value, "region": self.country_dropdown.value}
+        form_data = {"source_type": self.source_type_dropdown.value, "country": self.country_dropdown.value}
         for name, control in self.form_fields.items():
             if hasattr(control, "value"):
                 form_data[name] = control.value
@@ -159,6 +171,12 @@ class SourceCreationDialog:
         if self.from_project_sources_tab:
             form_data["usage_notes"] = self.notes_field.value
             form_data["declassify_info"] = self.declassify_field.value
+
+        # Generate the standardized title from the collected form data
+        generated_title = generate_source_title(form_data["source_type"], form_data)
+        
+        # Add the generated title to the data payload
+        form_data["title"] = generated_title
 
         # --- Execute Callback ---
         self.logger.info("Validation passed. Executing on_create callback.")

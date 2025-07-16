@@ -63,6 +63,13 @@ class ProjectView(BaseView):
             return self.show_error("No project is currently loaded.")
 
         self.logger.info(f"Building view for project: {project.project_title}")
+        
+        # Go to the right page
+        nav_manager = self.controller.navigation_manager
+        start_tab_index = 0
+
+        if nav_manager.get_previous_page() == "sources":
+            start_tab_index = 1
 
         # Update the tabs with the latest project data
         try:

@@ -54,31 +54,7 @@ class DataService:
             return True, f"Successfully created folder '{sanitized_filename}'."
         except OSError as e:
             return False, f"Failed to create directory: {e}"
-    # --- Master Source Management ---
-    def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
-        """Load master sources for a specific country."""
-        if country in self._master_source_cache:
-            return self._master_source_cache[country]
-        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
-        if not source_file_path.exists():
-            self._master_source_cache[country] = {}
-            return {}
-        try:
-            with open(source_file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            sources_list = data.get("sources", [])
-            source_map = {record_data["id"]: SourceRecord.from_dict(record_data) for record_data in sources_list}
-            self._master_source_cache[country] = source_map
-            return source_map
-        except (json.JSONDecodeError, TypeError) as e:
-            print(f"Error loading master sources for country '{country}': {e}")
-            return {}
-
-    def get_master_sources_for_country(self, country: str) -> List[SourceRecord]:
-        """Get all master sources for a specific country."""
-        source_map = self._load_master_sources_for_country(country)
-        return list(source_map.values())
-
+ 
     def get_all_master_sources(self) -> List[SourceRecord]:
         """Get all master sources from all countries."""
         all_sources = []

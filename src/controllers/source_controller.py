@@ -13,27 +13,50 @@ class SourceController(BaseController):
     """
 
     def create_new_source(
-        self, source_data: Dict[str, Any], link_data: Optional[Dict[str, Any]] = None
+        self, source_data: Dict[str, Any], add_to_project: bool = False
     ):
         """
-        Creates a new master source record. If the current view is a project,
+        Creates a new master source record. If add_to_project is True,
         it also creates the project-specific link.
         """
         try:
-            # Step 1: Create the master SourceRecord
-            source_record = self.controller.source_service.create_new_source(
-                source_data
+            # Step 1: Extract country from the form data and create the master record
+            country = source_data.pop("country", None)  # Get country from dropdown
+            if not country:
+                self.controller.show_error_message(
+                    "Country/Region is required to create a source."
+                )
+                return
+
+            success, message, source_record = (
+                self.controller.source_service.create_new_source(country, source_data)
             )
+
+            if not success or not source_record:
+                self.controller.show_error_message(
+                    f"Failed to create master source: {message}"
+                )
+                return
+
             self.logger.info(f"Master source record '{source_record.id}' created.")
 
-            # Step 2: If we are in a project, create the link
-            project: Project | None = self.controller.project_controller.get_current_project()
-            if project and link_data is not None:
-                self.add_source_to_project(source_record.id, link_data)
-                # The success message is handled within add_source_to_project
-            else:
-                self.controller.show_success_message("Source created successfully.")
+            # Step 2: If the flag is set, add the new source to the current project
+            if add_to_project:
+                project = self.controller.project_controller.get_current_project()
+                if project:
+                    # You might want to get these from the dialog in the future,
+                    # but for now, we can use defaults.
+                    link_data = {
+                        "usage_notes": source_data.get("usage_notes", ""),
+                        "declassify_info": source_data.get("declassify_info", ""),
+                    }
+                    self.add_source_to_project(source_record.id, link_data)
+                else:
+                    self.logger.warning(
+                        "add_to_project was True, but no project is loaded."
+                    )
 
+            self.controller.show_success_message("Source created successfully.")
             # Refresh the view to show the new source
             self.controller.update_view()
 
@@ -148,9 +171,9 @@ class SourceController(BaseController):
         return None
 
     def get_available_countries(self) -> List[str]:
-        """Gets a list of all countries/regions with source files."""
-        return self.controller.directory_service.get_available_countries()
+        """Gets a list of all countries with source files."""
+        return self.controller.source_service.get_available_countries()
 
     def get_sources_by_country(self, country: str) -> List["SourceRecord"]:
-        """Gets all master source records for a specific country/region."""
+        """Gets all master source records for a specific country."""
         return self.controller.source_service.get_master_sources_for_country(country)
