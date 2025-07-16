@@ -101,7 +101,6 @@ class HomeView(BaseView):
         self, title: str, description: str, icon: str, on_click
     ) -> ft.Container:
         """Helper method to create a consistent action card."""
-        colors = self.colors
 
         return ft.Container(
             content=ft.Column(

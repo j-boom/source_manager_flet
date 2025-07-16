@@ -176,7 +176,7 @@ class ProjectController(BaseController):
         """
         Removes a source link from the project.
         """
-        project = self.controller.project_state_manager.current_project
+        project = self.get_current_project()
         if not project:
             self.controller.show_error_message("No project loaded.")
             return
@@ -189,3 +189,9 @@ class ProjectController(BaseController):
         except Exception as e:
             self.logger.error(f"Failed to remove source {source_id} from project: {e}", exc_info=True)
             self.controller.show_error_message("Failed to remove source.")
+
+    def get_current_project(self):
+        """
+        Returns the currently loaded project object.
+        """
+        return self.controller.project_state_manager.current_project

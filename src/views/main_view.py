@@ -16,6 +16,7 @@ from .pages import (
 from .base_view import BaseView
 
 from config.app_config import PAGES
+
 if TYPE_CHECKING:
     from src.controllers.app_controller import AppController
 
@@ -38,8 +39,8 @@ class MainView(BaseView):
         # This is the crucial part: ensuring the controller and page are assigned correctly.
         self.controller = controller
         self.page = page
-         # --- Initialize UI Components ---
-        self.page.appbar = self._build_app_bar()
+        # --- Initialize UI Components ---
+        self.app_bar = self._build_app_bar()
         self.sidebar = self._build_sidebar()
         self.content_area = self._build_content_area()
 
@@ -60,25 +61,27 @@ class MainView(BaseView):
         This method overrides the one in BaseView and returns the
         actual UI to be added to the page.
         """
-        return ft.Column(
-            [
-                self.main_layout
-            ],
-            spacing=0,
-            expand=True
-        )
+        return ft.Column([self.main_layout], spacing=0, expand=True)
 
     def _build_app_bar(self) -> SourceManagerAppBar:
         """Builds the AppBar component."""
+        try:
+            app_greeting = self.controller.user_config_manager.get_greeting()
+        except AttributeError:
+            app_greeting = "Welcome"
+
         return SourceManagerAppBar(
-            greeting=self.controller.user_config_manager.get_greeting(),
+            greeting=(app_greeting),
             on_settings_click=lambda e: self.controller.navigate_to("settings"),
             on_help_click=lambda e: self.controller.navigate_to("help"),
         )
 
     def _build_sidebar(self) -> Sidebar:
         """Builds the Sidebar component dynamically from config."""
-        return Sidebar(pages_config=PAGES, on_change=self.controller.navigation_controller.navigate_to_page)
+        return Sidebar(
+            pages_config=PAGES,
+            on_change=self.controller.navigation_controller.navigate_to_page,
+        )
 
     def _build_content_area(self) -> ft.Container:
         """Creates the container that will hold the current page's content."""
@@ -125,8 +128,18 @@ class MainView(BaseView):
         self.page.theme_mode = theme
         self.page.update()
 
-    def on_keyboard(self, e: ft.KeyboardEvent):
-        """Handles global keyboard events."""
-        if e.key == "N" and e.ctrl:
-            self.controller.dialog_controller.open_new_project_dialog(e)
+    def update_greeting(self):
+        """Refreshes the greeting message in the app bar."""
+        new_greeting = self.controller.user_config_manager.get_greeting()
+        self.app_bar.update_greeting(new_greeting)
+
+    def show(self):
+        """Clears the page and displays the main application layout."""
+        self.page.appbar = self.app_bar
+        self.page.controls.clear()
+        self.page.add(self.main_layout)
         self.page.update()
+
+    def update_navigation(self, page_name: str):
+        """Updates the sidebar's selected item."""
+        self.sidebar.update_selection(page_name)

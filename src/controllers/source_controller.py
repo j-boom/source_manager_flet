@@ -3,6 +3,7 @@ from .base_controller import BaseController
 
 if TYPE_CHECKING:
     from src.models.source_models import SourceRecord, ProjectSourceLink
+    from src.models.project_models import Project
 
 
 class SourceController(BaseController):
@@ -20,13 +21,13 @@ class SourceController(BaseController):
         """
         try:
             # Step 1: Create the master SourceRecord
-            source_record = self.controller.data_service.create_source_record(
+            source_record = self.controller.data_service.create_new_source(
                 source_data
             )
             self.logger.info(f"Master source record '{source_record.id}' created.")
 
             # Step 2: If we are in a project, create the link
-            project = self.controller.project.get_current_project()
+            project: Project | None = self.controller.project_controller.get_current_project()
             if project and link_data is not None:
                 self.add_source_to_project(source_record.id, link_data)
                 # The success message is handled within add_source_to_project
@@ -44,15 +45,17 @@ class SourceController(BaseController):
         Creates the link between a source and a project, storing notes
         and declassify info in the project file and updating the master record.
         """
-        project = self.controller.project_state_manager.current_project
+        project: Project | None = self.controller.project_state_manager.current_project
         if not project:
             self.controller.show_error_message("No active project to add a source to.")
             return
 
         try:
+            usage_notes = link_data.get("usage_notes", "")
+            declassify_info = link_data.get("declassify_info", "")
             # Data service handles creating the link and updating the master record
-            self.controller.data_service.link_source_to_project(
-                project.id, source_id, link_data
+            self.controller.data_service.add_source_to_project(
+                project.id, source_id, usage_notes, declassify_info
             )
 
             # If the source was on deck, remove it
@@ -71,13 +74,13 @@ class SourceController(BaseController):
         """
         Removes the link between a source and a project.
         """
-        project = self.controller.project.get_current_project()
+        project = self.controller.project_controller.get_current_project()
         if not project:
             return
 
         try:
             # Data service handles removing the link and updating the master record
-            self.controller.data_service.unlink_source_from_project(
+            self.controller.data_service.remove_source_from_project(
                 project.id, source_id
             )
             self.logger.info(
@@ -94,7 +97,7 @@ class SourceController(BaseController):
         """
         self.logger.info(f"Updating master record for source ID {source_id}.")
         try:
-            self.controller.data_service.update_source_record(source_id, master_data)
+            self.controller.data_service.update_master_source(source_id, master_data)
         except Exception as e:
             self.controller.show_error_message(
                 f"Failed to update source master record: {e}"
@@ -105,7 +108,7 @@ class SourceController(BaseController):
         """
         Submits an update for a project-specific source link.
         """
-        project = self.controller.project.get_current_project()
+        project = self.controller.project_controller.get_current_project()
         if not project:
             return
 
@@ -125,19 +128,19 @@ class SourceController(BaseController):
         """
         Retrieves all master source records from the data service.
         """
-        return self.controller.data_service.get_all_source_records()
+        return self.controller.data_service.get_all_master_sources()
 
     def get_source_record_by_id(self, source_id: str) -> Optional["SourceRecord"]:
         """
         Retrieves a master source record by its ID.
         """
-        return self.controller.data_service.get_source_record_by_id(source_id)
+        return self.controller.data_service.get_source_by_id(source_id)
 
     def get_project_source_link(self, source_id: str) -> Optional["ProjectSourceLink"]:
         """
         Retrieves a project-specific source link by source ID from the current project.
         """
-        project = self.controller.project.get_current_project()
+        project = self.controller.project_controller.get_current_project()
         if project:
             for link in project.source_links:
                 if link.source_id == source_id:

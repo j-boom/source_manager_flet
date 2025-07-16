@@ -11,8 +11,8 @@ class SourcesView(BaseView):
     Allows users to add sources to the "On Deck" list of an active project.
     """
 
-    def __init__(self, controller):
-        super().__init__(controller)
+    def __init__(self, page, controller):
+        super().__init__(page=page, controller=controller)
         self.all_sources: List[SourceRecord] = []
         self.current_sources: List[SourceRecord] = []
         self.selected_country: str = "All"
@@ -30,7 +30,7 @@ class SourcesView(BaseView):
         self.filter_controls_column = ft.Column(spacing=10, scroll=ft.ScrollMode.ADAPTIVE)
         self.results_list = ft.ListView(expand=True, spacing=10, padding=ft.padding.only(top=10))
 
-    def get_content(self) -> ft.Control:
+    def build(self) -> ft.Control:
         """Builds the UI for the sources browser page."""
         self._initialize_view_data()
 
@@ -48,7 +48,7 @@ class SourcesView(BaseView):
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Text("Filters", style=ft.TextThemeStyle.TITLE_MEDIUM),
+                    ft.Text("Filters", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
                     ft.Divider(),
                     ft.Container(self.filter_controls_column, expand=True),
                     ft.Row(

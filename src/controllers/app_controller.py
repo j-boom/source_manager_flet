@@ -1,7 +1,7 @@
 import getpass
 import logging
 import flet as ft
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from src.services.data_service import DataService
 from src.managers.user_config_manager import UserConfigManager
@@ -9,6 +9,7 @@ from src.managers.navigation_manager import NavigationManager
 from src.managers.project_state_manager import ProjectStateManager
 from src.managers.project_browser_manager import ProjectBrowserManager
 from src.managers.theme_manager import ThemeManager
+from src.managers.settings_manager import SettingsManager
 from src.views.main_view import MainView
 
 # Import the specialized controllers
@@ -17,6 +18,7 @@ from .source_controller import SourceController
 from .dialog_controller import DialogController
 from .powerpoint_controller import PowerPointController
 from .navigation_controller import NavigationController
+
 
 class AppController:
     """
@@ -35,6 +37,8 @@ class AppController:
         logging.info("Initializing AppController")
         self.page = page
         self.page.title = "Source Manager"
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Initializing AppController")
 
         # Initialize services and managers
         self.data_service = DataService()
@@ -42,9 +46,13 @@ class AppController:
         self.navigation_manager = NavigationManager()
         self.project_state_manager = ProjectStateManager()
         self.theme_manager = ThemeManager()
-        self.project_browser_manager = ProjectBrowserManager(data_service=self.data_service)
-
-        # CORRECTED: Reverted controller instance names to match what views expect.
+        self.project_browser_manager = ProjectBrowserManager(
+            data_service=self.data_service
+        )
+        self.settings_manager = SettingsManager(
+            user_config=self.user_config_manager, theme_manager=self.theme_manager
+        )
+        # Setup sub controllers
         self.project_controller = ProjectController(self)
         self.source_controller = SourceController(self)
         self.dialog_controller = DialogController(self)
@@ -53,93 +61,23 @@ class AppController:
 
         # Initialize views
         self.main_view = MainView(controller=self, page=page)
-        self.view_instances: Dict[str, Any] = {}
-        self.project_dependent_views = ['project_dashboard', 'project_sources', 'cite_sources', 'project_metadata']
-
+        self.views: Dict[str, ft.Control] = {}
+        self._view_class_map = self.navigation_controller.build_view_class_map()
         logging.info("AppController initialized successfully")
 
-    def start(self):
-        """
-        Starts the application.
-        """
-        self.page.add(self.main_view.build())
-        self.refresh_theme()
-        self.navigate_to("home")
-
-    def refresh_theme(self):
-        """
-        Refreshes the application theme based on user settings.
-        """
-        self.main_view.refresh_theme()
-
-    def navigate_to(self, page_name: str, force_refresh: bool = False):
-        """
-        Navigates to a specified page.
-
-        Args:
-            page_name (str): The name of the page to navigate to.
-            force_refresh (bool): Whether to force a refresh of the view.
-        """
-        logging.info(f"DIAGNOSTIC: Navigation requested for '{page_name}'...")
-        
-        if force_refresh and page_name in self.view_instances:
-            logging.info(f"DIAGNOSTIC: Popped '{page_name}' from view cache to force refresh.")
-            self.view_instances.pop(page_name, None)
-
-        self.navigation_manager.set_current_page(page_name)
-        content = self.get_page_content(page_name)
-
-        self.main_view.set_content(content)
-        self.page.update()
-        logging.info(f"DIAGNOSTIC: Navigation to '{page_name}' complete.")
-
-
-    def get_page_content(self, page_name: str) -> ft.Control:
-        """
-        Gets the content for a specified page.
-
-        Args:
-            page_name (str): The name of the page.
-
-        Returns:
-            ft.Control: The content of the page.
-        """
-        if page_name not in self.view_instances:
-            view_class = self.main_view.get_view_class(page_name)
-            if view_class:
-                instance = view_class(controller=self, page=self.page)
-                self.view_instances[page_name] = instance
-            else:
-                return ft.Text(f"Unknown page: {page_name}")
-        
-        return self.view_instances[page_name].build()
-
-    def update_view(self, page_name: str = None):
-        """
-        Updates the current view or a specified view.
-
-        Args:
-            page_name (str, optional): The name of the page to update. Defaults to the current page.
-        """
-        if page_name is None:
-            page_name = self.navigation_manager.get_current_page()
-        
-        logging.info(f"Calling update_view() on instance for page '{page_name}'.")
-        if page_name in self.view_instances:
-            self.view_instances[page_name].update_view()
+    def run(self):
+        """Starts the application's main loop."""
+        self.navigation_controller.apply_theme_and_update_views()
+        self.main_view.show()
+        if self.user_config_manager.needs_setup():
+            self.dialog_controller.show_first_time_setup()
         else:
-            logging.warning(f"No view instance found for page '{page_name}' to update.")
+            self.navigate_to("home")
 
-        self.main_view.update()
-
-    def clear_project_dependent_view_cache(self):
-        """
-        Clears the cache for views that depend on project data.
-        """
-        logging.info("Clearing project-dependent view cache...")
-        for view_name in self.project_dependent_views:
-            if view_name in self.view_instances:
-                del self.view_instances[view_name]
+    def navigate_to(self, page_name: str):
+        """Handles navigation requests from any part of the UI."""
+        self.logger.info(f"Navigation requested for '{page_name}'...")
+        self.navigation_controller.navigate_to_page(page_name)
 
     def show_success_message(self, message):
         """Displays a success message to the user using a SnackBar."""
@@ -156,3 +94,35 @@ class AppController:
         self.page.overlay.append(snack_bar)
         snack_bar.open = True
         self.page.update()
+
+    def update_view(self, page_name: Optional[str] = None):
+        """
+        Updates the current view by calling its specific update_view method.
+
+        This method acts as a central dispatcher for UI updates. It finds the
+        currently active view and tells it to refresh its own state. This is more
+        efficient than a full page redraw.
+
+        Args:
+            page_name (str, optional): The name of the page to update. 
+                                     If None, defaults to the current page.
+        """
+        if page_name is None:
+            page_name = self.navigation_manager.get_current_page()
+        
+        self.logger.info(f"Update requested for view: '{page_name}'")
+        
+        # Check if the view instance exists in our cache
+        if page_name in self.views:
+            view_instance = self.views[page_name]
+
+            # Safely check if the view instance has an `update_view` method
+            if hasattr(view_instance, 'update_view') and callable(view_instance.update_view):
+                self.logger.debug(f"Calling update_view() on instance of {type(view_instance).__name__}.")
+                view_instance.update_view()
+            else:
+                # If the view has no specific update logic, just do a generic page update.
+                self.logger.debug(f"View '{page_name}' has no update_view() method. Performing generic page update.")
+                self.page.update()
+        else:
+            self.logger.warning(f"No view instance found for page '{page_name}' to update. A full navigation might be needed.")
