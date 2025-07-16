@@ -78,7 +78,7 @@ class SourcesView(BaseView):
         return ft.Column(
             [
                 ft.Row([
-                    ft.Text("Master Source Library", style=ft.TextThemeStyle.HEADLINE_MEDIUM),
+                    ft.Text("Master Source Library", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM),
                     self.project_title_header,
                     ft.Container(expand=True),
                     self.country_dropdown,

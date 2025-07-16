@@ -16,7 +16,7 @@ class ProjectSourcesTab(BaseTab):
         """Builds the UI for the project sources tab."""
         on_deck_column = ft.Column(
             [
-                ft.Text("On Deck", style=ft.TextThemeStyle.TITLE_MEDIUM),
+                ft.Text("On Deck", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
                 ft.Text("Sources selected for this project.", italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT),
                 ft.Divider(),
                 ft.Container(self.on_deck_list, expand=True, border_radius=ft.border_radius.all(8)),
@@ -27,7 +27,7 @@ class ProjectSourcesTab(BaseTab):
 
         project_sources_header = ft.Row(
             controls=[
-                ft.Text("Project Sources", style=ft.TextThemeStyle.TITLE_MEDIUM, expand=True),
+                ft.Text("Project Sources", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, expand=True),
                 ft.ElevatedButton(
                     text="Add Source",
                     icon=ft.icons.ADD_ROUNDED,

@@ -74,17 +74,21 @@ class NavigationController(BaseController):
             self._validate_recent_projects()
 
         self.controller.navigation_manager.set_current_page(final_page_name)
-        if page_name in self.controller.views:
-            self.controller.views.pop(page_name)
 
-        self.controller.views[final_page_name] = self.create_view_for_page(final_page_name)
-        view_instance = self.controller.views.get(page_name)
-        if view_instance:
-            content_to_display = (
-                view_instance.build() if hasattr(view_instance, "build") and callable(getattr(view_instance, "build")) else view_instance
-            )
+        # Use the factory to get the correct view class
+        view_class = self.controller.navigation_controller.build_view_class_map().get(final_page_name)
+        
+        if view_class:
+            view_instance = view_class(self.controller.page, self.controller)
+            self.controller.views[final_page_name] = view_instance
+            
+            # Build the view content
+            content_to_display = view_instance.build()
+
+            # Set the content in the main view and update navigation
             self.controller.main_view.set_content(content_to_display)
             self.controller.main_view.update_navigation(final_page_name)
+            self.controller.page.update()
 
         else:
             self.logger.error(

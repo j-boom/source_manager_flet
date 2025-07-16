@@ -48,7 +48,7 @@ class RecentProjectsView(BaseView):
                         [
                             ft.Text(
                                 "Recent Projects",
-                                style=ft.TextThemeStyle.HEADLINE_MEDIUM,
+                                theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM,
                             ),
                             ft.Text(
                                 f"Your {count} most recently accessed projects",

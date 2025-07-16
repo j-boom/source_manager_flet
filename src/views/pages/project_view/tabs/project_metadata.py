@@ -80,7 +80,7 @@ class ProjectMetadataTab(BaseTab):
             fields_in_group.sort(key=lambda f: (f.collection_stage.value, f.tab_order))
 
             column_controls = [
-                ft.Text(group_name, weight=ft.FontWeight.BOLD, style=ft.TextThemeStyle.TITLE_MEDIUM),
+                ft.Text(group_name, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
                 ft.Divider(height=5),
             ]
             

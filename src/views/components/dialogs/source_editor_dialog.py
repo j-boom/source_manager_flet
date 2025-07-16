@@ -92,10 +92,10 @@ class SourceEditorDialog(BaseDialog):
 
         # --- Combine all controls ---
         content_controls = [
-            ft.Text("Master Source Details", style=ft.TextThemeStyle.TITLE_MEDIUM),
+            ft.Text("Master Source Details", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
             *master_source_controls,
             ft.Divider(height=20),
-            ft.Text("Project-Specific Details", style=ft.TextThemeStyle.TITLE_MEDIUM),
+            ft.Text("Project-Specific Details", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
             self.notes_field,
             self.declassify_field,
         ]

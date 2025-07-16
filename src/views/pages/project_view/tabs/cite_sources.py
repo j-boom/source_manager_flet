@@ -28,7 +28,7 @@ class CiteSourcesTab(BaseTab):
         self.slide_carousel = SlideCarousel(on_slide_selected=self._on_slide_selected)
         self.current_slide_title = ft.Text(
             "",
-            style=ft.TextThemeStyle.HEADLINE_MEDIUM,
+            theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM,
             no_wrap=True,
             overflow=ft.TextOverflow.ELLIPSIS,
         )
@@ -84,7 +84,7 @@ class CiteSourcesTab(BaseTab):
             [
                 ft.Icon(name=ft.icons.SLIDESHOW_ROUNDED, size=50),
                 ft.Text(
-                    "PowerPoint File Required", style=ft.TextThemeStyle.HEADLINE_SMALL
+                    "PowerPoint File Required", theme_style=ft.TextThemeStyle.HEADLINE_SMALL
                 ),
                 ft.Text(
                     "To cite sources, you must first associate a .pptx file with this project."
@@ -151,7 +151,7 @@ class CiteSourcesTab(BaseTab):
                 ft.Row([
                     ft.Text("Source Groups:", weight=ft.FontWeight.BOLD),
                     ft.Text("(Quick add groups of sources to slides)", 
-                           style=ft.TextThemeStyle.BODY_SMALL, 
+                           theme_style=ft.TextThemeStyle.BODY_SMALL, 
                            color=ft.colors.ON_SURFACE_VARIANT)
                 ], spacing=10),
                 self.source_groups_row,
@@ -405,7 +405,7 @@ class CiteSourcesTab(BaseTab):
             self.source_groups_row.controls.append(
                 ft.Text(
                     "No source groups created yet. Use 'Create Group' to make your first group.",
-                    style=ft.TextThemeStyle.BODY_SMALL,
+                    theme_style=ft.TextThemeStyle.BODY_SMALL,
                     color=ft.colors.ON_SURFACE_VARIANT,
                     italic=True
                 )
