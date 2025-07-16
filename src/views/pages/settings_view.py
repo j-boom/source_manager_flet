@@ -10,7 +10,6 @@ import flet as ft
 from src.views.base_view import BaseView
 
 
-
 class SettingsView(BaseView):
     """
     The UI for the settings page.
@@ -20,32 +19,16 @@ class SettingsView(BaseView):
     and its managers, keeping the view focused on UI construction.
     """
 
-
-    def __init__(self, page: ft.Page, controller):
-        """
-        Initializes the SettingsView.
-
-        Args:
-            page (ft.Page): The Flet page instance.
-            controller: The main application controller.
-        """
-        # Call the parent constructor first to ensure self.page and self.controller are set.
-        super().__init__(page, controller)
-
-        # The SettingsManager is accessed via the controller for all settings logic.
-        self.settings_manager = self.controller.settings_manager
-
-
     def build(self) -> ft.Control:
         """
         Builds the settings UI using the safe 'colors' property from BaseView.
-
         Returns:
             ft.Control: The root container for the settings page.
         """
         # Use the safe 'self.colors' property, which is guaranteed to exist.
         colors = self.colors
 
+        # Build the main settings page layout
         return ft.Container(
             content=ft.Column(
                 [
@@ -57,7 +40,7 @@ class SettingsView(BaseView):
                     ft.Divider(height=20),
                     self._build_display_name_section(),
                     self._build_appearance_section(colors),
-                    # You can add other settings sections here following the same pattern.
+                    # Future settings sections...
                 ],
                 spacing=15,
                 scroll=ft.ScrollMode.ADAPTIVE,
@@ -66,28 +49,44 @@ class SettingsView(BaseView):
             expand=True,
         )
 
-
     def _build_appearance_section(self, colors) -> ft.Column:
         """
         Builds the UI controls for the 'Appearance' settings, including theme mode and color.
-
         Args:
             colors: The color palette from BaseView for consistent theming.
-
         Returns:
             ft.Column: The column containing appearance controls.
         """
+        # Determine the current mode and icon for the theme toggle
+        theme_mode = self.controller.theme_manager.mode
+        mode_icon = self._get_mode_icon()
+        mode_label = "Dark Mode" if theme_mode == "dark" else "Light Mode"
+
+        def on_icon_click(e):
+            # Toggle the theme mode via the controller
+            self.controller.settings_controller.toggle_theme_mode(e)
+
+        # Make the icon button large to match the color buttons (40x40)
+        large_icon_button = ft.Container(
+            content=ft.IconButton(
+                icon=mode_icon,
+                icon_color=colors.primary,
+                tooltip=f"Switch to {'Light' if theme_mode == 'dark' else 'Dark'} Mode",
+                on_click=on_icon_click,
+                icon_size=32,  # Make the icon itself larger
+            ),
+            width=40,
+            height=40,
+            alignment=ft.alignment.center,
+        )
+
+        # Build the appearance section column
         return ft.Column(
             [
                 ft.Text("Appearance", theme_style=ft.TextThemeStyle.TITLE_LARGE),
                 ft.ListTile(
-                    leading=ft.Icon(ft.icons.BRIGHTNESS_6, color=colors.primary),
-                    title=ft.Text("Dark Mode"),
-                    trailing=ft.Switch(
-                        value=self.page.theme_mode == ft.ThemeMode.DARK,
-                        # The on_change event calls the appropriate manager method.
-                        on_change=lambda e: self.settings_manager.toggle_theme_mode(),
-                    ),
+                    leading=large_icon_button,
+                    title=ft.Text(mode_label),
                 ),
                 ft.Container(height=20),
                 ft.Text("Theme Color", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
@@ -96,15 +95,13 @@ class SettingsView(BaseView):
             spacing=10,
         )
 
-
     def _build_display_name_section(self) -> ft.Control:
         """
         Builds the UI controls for changing the user's display name.
-
         Returns:
             ft.Control: A column containing the display name field, save button, and feedback.
         """
-        current_name = self.settings_manager.user_config.get_display_name() or ""
+        current_name = self.controller.settings_controller.get_display_name()
         # TextField for entering the display name
         display_name_field = ft.TextField(
             label="Display Name",
@@ -135,8 +132,7 @@ class SettingsView(BaseView):
                 feedback_text.visible = True
             else:
                 new_name = new_name.strip()
-                self.settings_manager.save_display_name(new_name)
-                self.controller.main_view.update_greeting()
+                self.controller.settings_controller.save_display_name(new_name)
                 feedback_text.value = "Display name updated successfully."
                 feedback_text.color = ft.colors.GREEN
                 feedback_text.visible = True
@@ -146,10 +142,9 @@ class SettingsView(BaseView):
         save_button = ft.ElevatedButton(
             text="Save",
             on_click=lambda e: save_display_name(),
-            style=ft.ButtonStyle(
-                bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY
-            ),
+            style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY),
         )
+        # Build the display name section column
         return ft.Column(
             [
                 ft.Text(
@@ -165,20 +160,17 @@ class SettingsView(BaseView):
             ]
         )
 
-
     def _build_color_buttons(self, colors) -> list[ft.Control]:
         """
         Creates the color selection buttons for theme color selection.
-
         Args:
             colors: The color palette from BaseView for consistent theming.
-
         Returns:
             list[ft.Control]: A list of color button controls.
         """
         buttons = []
-        current_color_name = self.settings_manager.theme_manager.color_name
-        theme_manager = self.settings_manager.theme_manager
+        current_color_name = self.controller.theme_manager.color_name
+        theme_manager = self.controller.theme_manager
 
         for color_name, seed_color in theme_manager.COLOR_SEEDS.items():
             is_selected = color_name == current_color_name
@@ -220,9 +212,11 @@ class SettingsView(BaseView):
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         spacing=8,
                     ),
-                    # The on_click event calls the appropriate manager method.
-                    on_click=lambda e, c=color_name: self.settings_manager.change_theme_color(
-                        c
+                    # The on_click event calls the controller to change the theme color.
+                    on_click=(
+                        lambda e, c=color_name: self.controller.settings_controller.change_theme_color(
+                            c
+                        )
                     ),
                     border_radius=8,
                     ink=True,
@@ -230,3 +224,12 @@ class SettingsView(BaseView):
                 )
             )
         return buttons
+
+    def _get_mode_icon(self):
+        """
+        Returns the appropriate icon for the current theme mode.
+        Returns:
+            str: The icon name for the current theme mode.
+        """
+        theme_mode = self.controller.theme_manager.mode
+        return ft.icons.DARK_MODE if theme_mode == "dark" else ft.icons.LIGHT_MODE

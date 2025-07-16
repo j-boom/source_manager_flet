@@ -1,7 +1,6 @@
-import getpass
 import logging
 import flet as ft
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 
 from src.services.data_service import DataService
 from src.managers.user_config_manager import UserConfigManager
@@ -18,6 +17,7 @@ from .source_controller import SourceController
 from .dialog_controller import DialogController
 from .powerpoint_controller import PowerPointController
 from .navigation_controller import NavigationController
+from .settings_controller import SettingsController
 
 
 class AppController:
@@ -45,19 +45,18 @@ class AppController:
         self.user_config_manager = UserConfigManager()
         self.navigation_manager = NavigationManager()
         self.project_state_manager = ProjectStateManager()
-        self.theme_manager = ThemeManager()
         self.project_browser_manager = ProjectBrowserManager(
             data_service=self.data_service
         )
-        self.settings_manager = SettingsManager(
-            user_config=self.user_config_manager, theme_manager=self.theme_manager
-        )
+        self.theme_manager = ThemeManager()
+        self.settings_manager = SettingsManager()
         # Setup sub controllers
         self.project_controller = ProjectController(self)
         self.source_controller = SourceController(self)
         self.dialog_controller = DialogController(self)
         self.powerpoint_controller = PowerPointController(self)
         self.navigation_controller = NavigationController(self)
+        self.settings_controller = SettingsController(self)
 
         # Initialize views
         self.main_view = MainView(controller=self, page=page)
@@ -67,9 +66,15 @@ class AppController:
 
     def run(self):
         """Starts the application's main loop."""
-        self.navigation_controller.apply_theme_and_update_views()
+        # Apply theme
+        theme_mode = self.settings_manager.get_theme_mode()
+        theme_color = self.settings_manager.get_theme_color()
+        self.theme_manager.set_theme_mode(theme_mode)
+        self.theme_manager.set_theme_color(theme_color)
+    
+        self.settings_controller.apply_theme()
         self.main_view.show()
-        if self.user_config_manager.needs_setup():
+        if self.settings_manager.needs_setup():
             self.dialog_controller.show_first_time_setup()
         else:
             self.navigate_to("home")
@@ -104,25 +109,33 @@ class AppController:
         efficient than a full page redraw.
 
         Args:
-            page_name (str, optional): The name of the page to update. 
+            page_name (str, optional): The name of the page to update.
                                      If None, defaults to the current page.
         """
         if page_name is None:
             page_name = self.navigation_manager.get_current_page()
-        
+
         self.logger.info(f"Update requested for view: '{page_name}'")
-        
+
         # Check if the view instance exists in our cache
         if page_name in self.views:
             view_instance = self.views[page_name]
 
             # Safely check if the view instance has an `update_view` method
-            if hasattr(view_instance, 'update_view') and callable(view_instance.update_view):
-                self.logger.debug(f"Calling update_view() on instance of {type(view_instance).__name__}.")
+            if hasattr(view_instance, "update_view") and callable(
+                view_instance.update_view
+            ):
+                self.logger.debug(
+                    f"Calling update_view() on instance of {type(view_instance).__name__}."
+                )
                 view_instance.update_view()
             else:
                 # If the view has no specific update logic, just do a generic page update.
-                self.logger.debug(f"View '{page_name}' has no update_view() method. Performing generic page update.")
+                self.logger.debug(
+                    f"View '{page_name}' has no update_view() method. Performing generic page update."
+                )
                 self.page.update()
         else:
-            self.logger.warning(f"No view instance found for page '{page_name}' to update. A full navigation might be needed.")
+            self.logger.warning(
+                f"No view instance found for page '{page_name}' to update. A full navigation might be needed."
+            )

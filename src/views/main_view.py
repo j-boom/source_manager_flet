@@ -29,8 +29,7 @@ class MainView(BaseView):
 
     def __init__(self, controller: "AppController", page: ft.Page):
         """
-        Initializes the MainView.
-
+        Initializes the MainView, which contains the app bar, sidebar, and content area.
         Args:
             controller: The main application controller.
             page (ft.Page): The Flet page object.
@@ -58,13 +57,17 @@ class MainView(BaseView):
     def build(self) -> ft.Control:
         """
         Builds the entire main view as a single Flet control.
-        This method overrides the one in BaseView and returns the
-        actual UI to be added to the page.
+        Returns:
+            ft.Control: The root UI control for the main view.
         """
         return ft.Column([self.main_layout], spacing=0, expand=True)
 
     def _build_app_bar(self) -> SourceManagerAppBar:
-        """Builds the AppBar component."""
+        """
+        Builds the AppBar component, including the greeting and navigation callbacks.
+        Returns:
+            SourceManagerAppBar: The app bar control.
+        """
         try:
             app_greeting = self.controller.user_config_manager.get_greeting()
         except AttributeError:
@@ -77,14 +80,22 @@ class MainView(BaseView):
         )
 
     def _build_sidebar(self) -> Sidebar:
-        """Builds the Sidebar component dynamically from config."""
+        """
+        Builds the Sidebar component dynamically from config.
+        Returns:
+            Sidebar: The sidebar control.
+        """
         return Sidebar(
             pages_config=PAGES,
             on_change=self.controller.navigation_controller.navigate_to_page,
         )
 
     def _build_content_area(self) -> ft.Container:
-        """Creates the container that will hold the current page's content."""
+        """
+        Creates the container that will hold the current page's content.
+        Returns:
+            ft.Container: The content area container.
+        """
         return ft.Container(
             content=ft.ProgressRing(),  # Show a loading ring initially
             alignment=ft.alignment.center,
@@ -94,7 +105,6 @@ class MainView(BaseView):
     def set_content(self, content: ft.Control):
         """
         Sets the content of the main content area.
-
         Args:
             content (ft.Control): The control to display in the content area.
         """
@@ -103,12 +113,10 @@ class MainView(BaseView):
     def get_view_class(self, page_name: str):
         """
         Maps a page name to its corresponding view class.
-
         Args:
             page_name (str): The name of the page.
-
         Returns:
-            The view class corresponding to the page name.
+            type: The view class corresponding to the page name, or None if not found.
         """
         view_map = {
             "home": HomeView,
@@ -123,23 +131,38 @@ class MainView(BaseView):
         return view_map.get(page_name)
 
     def refresh_theme(self):
-        """Refreshes the theme of the application."""
-        theme = self.controller.theme_manager.get_theme_data()
-        self.page.theme_mode = theme
+        """
+        Refreshes the theme of the application by applying the current mode and color from ThemeManager.
+        This should be called after any theme change to update the UI.
+        """
+        self.page.theme_mode = (
+            ft.ThemeMode.DARK
+            if self.controller.theme_manager.mode == "dark"
+            else ft.ThemeMode.LIGHT
+        )
+        self.page.theme = self.controller.theme_manager.get_theme_data()
         self.page.update()
 
     def update_greeting(self):
-        """Refreshes the greeting message in the app bar."""
-        new_greeting = self.controller.user_config_manager.get_greeting()
+        """
+        Refreshes the greeting message in the app bar to reflect the current display name.
+        """
+        new_greeting = self.controller.settings_manager.get_greeting()
         self.app_bar.update_greeting(new_greeting)
 
     def show(self):
-        """Clears the page and displays the main application layout."""
+        """
+        Clears the page and displays the main application layout (app bar, sidebar, content area).
+        """
         self.page.appbar = self.app_bar
         self.page.controls.clear()
         self.page.add(self.main_layout)
         self.page.update()
 
     def update_navigation(self, page_name: str):
-        """Updates the sidebar's selected item."""
+        """
+        Updates the sidebar's selected item to reflect the current page.
+        Args:
+            page_name (str): The name of the page to select in the sidebar.
+        """
         self.sidebar.update_selection(page_name)

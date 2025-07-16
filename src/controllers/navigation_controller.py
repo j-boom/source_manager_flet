@@ -10,7 +10,6 @@ from typing import Dict, Optional
 import flet as ft
 
 from .base_controller import BaseController
-from src.models import Project
 from config.app_config import PAGES, SPECIAL_PAGES
 
 
@@ -21,7 +20,12 @@ class NavigationController(BaseController):
         super().__init__(app_controller)
 
     def build_view_class_map(self) -> Dict[str, type]:
-        """Creates a mapping from page names to view classes for the factory."""
+        """
+        Creates a mapping from page names (as used in navigation) to their corresponding view classes.
+        This is used as a factory for instantiating views on demand.
+        Returns:
+            Dict[str, type]: Mapping from page name to view class.
+        """
         from views.pages import (
             HomeView,
             RecentProjectsView,
@@ -48,6 +52,7 @@ class NavigationController(BaseController):
             "SourcesView": SourcesView,
             "HelpView": HelpView,
         }
+        # Return a mapping from page name to the actual view class
         return {
             name: view_classes[class_name]
             for name, class_name in all_pages.items()
@@ -56,7 +61,8 @@ class NavigationController(BaseController):
 
     def navigate_to_page(self, page_name: str):
         """
-        Navigates to a specified page.
+        Navigates to a specified page by name. Handles special cases (like project_view) and ensures
+        the correct view is instantiated and displayed. Also updates navigation state and validates recent projects.
 
         Args:
             page_name (str): The name of the page to navigate to.
@@ -64,24 +70,30 @@ class NavigationController(BaseController):
         self.logger.info(f"Navigating to page: {page_name}")
         final_page_name = page_name
 
+        # Special case: project_view is an alias for either project_dashboard or new_project
         if page_name == "project_view":
             if self.controller.project_state_manager.has_loaded_project():
                 final_page_name = "project_dashboard"
             else:
                 final_page_name = "new_project"
 
+        # Validate recent projects list before showing recent_projects page
         if page_name == "recent_projects":
             self._validate_recent_projects()
 
+        # Update the current page in navigation manager
         self.controller.navigation_manager.set_current_page(final_page_name)
 
-        # Use the factory to get the correct view class
-        view_class = self.controller.navigation_controller.build_view_class_map().get(final_page_name)
-        
+        # Use the factory to get the correct view class for the page
+        view_class = self.controller.navigation_controller.build_view_class_map().get(
+            final_page_name
+        )
+
         if view_class:
+            # Instantiate the view and cache it
             view_instance = view_class(self.controller.page, self.controller)
             self.controller.views[final_page_name] = view_instance
-            
+
             # Build the view content
             content_to_display = view_instance.build()
 
@@ -91,12 +103,13 @@ class NavigationController(BaseController):
             self.controller.page.update()
 
         else:
-            self.logger.error(
-                f"Could not find view for page: {page_name}. "
-            )
-            
+            self.logger.error(f"Could not find view for page: {page_name}. ")
+
     def _validate_recent_projects(self):
-        """Checks the recent projects list and removes any that no longer exist on disk."""
+        """
+        Checks the recent projects list and removes any that no longer exist on disk.
+        This keeps the recent projects UI clean and prevents errors from missing files.
+        """
         self.logger.info("Validating recent projects list...")
         for project in list(self.controller.user_config_manager.get_recent_projects()):
             if not Path(project.path).exists():
@@ -107,7 +120,7 @@ class NavigationController(BaseController):
 
     def remove_recent_project(self, project_path: str):
         """
-        Removes a project from the recent projects list.
+        Removes a project from the recent projects list and updates the UI.
 
         Args:
             project_path (str): The path of the project to remove.
@@ -120,10 +133,12 @@ class NavigationController(BaseController):
         self, parent_path: Path, folder_name: str, description: str = ""
     ):
         """
-        Submits a new folder path to the user configuration.
+        Submits a new folder path to the user configuration and updates the UI.
 
         Args:
-            folder_path (str): The path of the new folder.
+            parent_path (Path): The parent directory for the new folder.
+            folder_name (str): The name of the new folder.
+            description (str, optional): Optional description for the folder.
         """
         self.logger.info(f"Submitting new folder: {folder_name} at {parent_path}")
         self.controller.data_service.create_new_folder(
@@ -131,38 +146,20 @@ class NavigationController(BaseController):
         )
         self.controller.page.update()
 
-    def setup_callbacks(self):
-        """Connects components together using callbacks for loose coupling."""
-        self.controller.settings_manager.set_callbacks(
-            on_theme_change=self.apply_theme_and_update_views,
-            on_display_name_change=self.handle_display_name_change,
-        )
-
-    def apply_theme_and_update_views(self):
-        """Applies the current theme to the page and refreshes all visible views."""
-        self.controller.page.theme_mode = (
-            ft.ThemeMode.DARK
-            if self.controller.theme_manager.mode == "dark"
-            else ft.ThemeMode.LIGHT
-        )
-        self.controller.page.theme = self.controller.theme_manager.get_theme_data()
-        self.controller.main_view.refresh_theme()
-        current_page_name = self.controller.navigation_manager.get_current_page()
-
-        if current_page_name in self.controller.views:
-            self.controller.views.pop(current_page_name, None)
-        self.controller.navigate_to(current_page_name)
-                         
-    def handle_display_name_change(self):
-        """Handles display name updates from the settings manager."""
-        self.controller.main_view.update_greeting()
-        if self.controller.navigation_manager.get_current_page() == "settings":
-            self.controller.views.pop("settings", None)
-            self.controller.navigate_to("settings")
-
     def create_view_for_page(self, page_name: str) -> Optional[ft.Control]:
-        """Factory method to create view instances on demand using the config."""
-        view_class = self.controller.navigation_controller.build_view_class_map().get(page_name)
+        """
+        Factory method to create view instances on demand using the config.
+        Returns a Flet control for the requested page, or a placeholder if not implemented.
+
+        Args:
+            page_name (str): The name of the page to create.
+
+        Returns:
+            Optional[ft.Control]: The view control, or a placeholder if not found.
+        """
+        view_class = self.controller.navigation_controller.build_view_class_map().get(
+            page_name
+        )
         if view_class:
             return view_class(self.controller.page, self.controller)
         return ft.Text(f"View for '{page_name}' not implemented.", color="red")
