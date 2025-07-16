@@ -162,7 +162,19 @@ class MainView(BaseView):
     def update_navigation(self, page_name: str):
         """
         Updates the sidebar's selected item to reflect the current page.
+        This now includes logic to map specific project views to the generic
+        'project_view' sidebar item.
+
         Args:
             page_name (str): The name of the page to select in the sidebar.
         """
-        self.sidebar.update_selection(page_name)
+        # Define which specific views should highlight the 'project_view' icon
+        project_page_aliases = ["project_dashboard", "new_project"]
+
+        if page_name in project_page_aliases:
+            # If the current page is one of the project-related views,
+            # tell the sidebar to select the main 'project_view' icon.
+            self.sidebar.update_selection("project_view")
+        else:
+            # Otherwise, use the page name directly.
+            self.sidebar.update_selection(page_name)

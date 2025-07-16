@@ -24,21 +24,21 @@ class Sidebar(ft.NavigationRail):
             pages_config: A list of dictionaries defining the pages.
             on_change: The callback function to execute when the selection changes.
         """
-        super().__init__()
 
-        # --- Store configuration and callbacks ---
-        self.on_change_handler = on_change
-        self._page_names = [p.get("name", "") for p in pages_config]
-
-        # --- Set non-theme-dependent properties ---
-        self.label_type = ft.NavigationRailLabelType.ALL
-        self.min_width = 100
-        self.min_extended_width = 200
-        self.group_alignment = -0.9
 
         # --- Build destinations and set the change handler ---
+        self.on_change_handler = on_change
         self.destinations = self._build_destinations(pages_config)
-        self.on_change = self._handle_change
+        self._page_names = [p.get("name", "") for p in pages_config]
+        
+        super().__init__(
+            label_type=ft.NavigationRailLabelType.ALL,
+            min_width=100,
+            min_extended_width=200,
+            group_alignment=-0.9,
+            destinations=self.destinations,
+            on_change=self._handle_change,
+        )
 
     def _build_destinations(
         self, pages_config: List[Dict[str, Any]]
@@ -71,12 +71,3 @@ class Sidebar(ft.NavigationRail):
                 self.selected_index = None  # Deselect if not found
         else:
             self.selected_index = None  # Deselect if page name is not in the list
-
-    def refresh_theme(self):
-        """
-        Applies theme-dependent properties. This method is called by the parent
-        (MainView) after the page theme has been set.
-        """
-        if self.page and self.page.theme:
-            self.bgcolor = self.page.theme.color_scheme.surface
-            # The destinations will automatically pick up the new theme colors.
