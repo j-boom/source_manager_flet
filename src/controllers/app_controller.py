@@ -79,8 +79,12 @@ class AppController:
         else:
             self.navigate_to("home")
 
-    def navigate_to(self, page_name: str):
+    def navigate_to(self, page_name: str, force_refresh: bool = False):
         """Handles navigation requests from any part of the UI."""
+        if force_refresh and page_name in self.views:
+            self.logger.info(f"Forcing refresh for view: '{page_name}'")
+            del self.views[page_name]
+
         self.logger.info(f"Navigation requested for '{page_name}'...")
         self.navigation_controller.navigate_to_page(page_name)
 
@@ -139,3 +143,18 @@ class AppController:
             self.logger.warning(
                 f"No view instance found for page '{page_name}' to update. A full navigation might be needed."
             )
+
+    def clear_project_dependent_view_cache(self):
+        """
+        Clears cached views that depend on a loaded project.
+
+        This is crucial to prevent showing stale data when switching projects.
+        It removes views like 'ProjectView' from the cache, forcing them to be
+        rebuilt with fresh data on the next navigation.
+        """
+        self.logger.info("Clearing project-dependent view cache...")
+        views_to_clear = ["project_dashboard", "project_view"]
+        for view_name in views_to_clear:
+            if view_name in self.views:
+                del self.views[view_name]
+                self.logger.debug(f"Removed '{view_name}' from view cache.")

@@ -170,7 +170,7 @@ class NewProjectView(BaseView):
         """Handle search field changes."""
         search_value = e.control.value if e.control.value else ""
         self.browser_manager.search(search_value)
-        self._update_view()
+        self.update_view()
 
     def _on_country_selected(self, e):
         """Handle country selection from dropdown."""
@@ -185,7 +185,7 @@ class NewProjectView(BaseView):
             self.search_field.value = ""
             self.browser_manager.search("")  # Clear search
 
-        self._update_view()
+        self.update_view()
 
     def _on_breadcrumb_clicked(self, index: int):
         """Handle breadcrumb navigation."""
@@ -204,7 +204,7 @@ class NewProjectView(BaseView):
             new_path = self.browser_manager.root_path.joinpath(*new_parts)
             self.browser_manager.navigate_to_path(new_path)
 
-        self._update_view()
+        self.update_view()
 
     def _on_back_clicked(self, e):
         """Handles the back button click to navigate to the home view."""
@@ -253,7 +253,7 @@ class NewProjectView(BaseView):
                 # Update country dropdown to reflect new location
                 self._update_country_dropdown_from_path(item_path)
 
-                self._update_view()
+                self.update_view()
             else:
                 self.logger.info(
                     f"--- _on_item_clicked: Calling controller.open_project with path: {item_path} ---"
@@ -280,6 +280,8 @@ class NewProjectView(BaseView):
         )
 
     # --- View Update Logic ---
+
+
     def _update_action_button(self):
         config = self.browser_manager.action_button_config
         if not self.action_button:
@@ -299,7 +301,7 @@ class NewProjectView(BaseView):
             else:
                 self.action_button.on_click = None
 
-    def _update_view(self):
+    def update_view(self):
         """Refreshes the breadcrumb, header, and file list."""
         # Rebuild the breadcrumb bar with updated breadcrumbs
         self.breadcrumb_bar = self._build_breadcrumb_bar()

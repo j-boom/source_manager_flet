@@ -376,11 +376,13 @@ class DataService:
             
             # Look for numeric patterns that could be BE numbers
             # Common pattern: YYYY followed by digits (e.g., 2024333333)
+            # TODO update this in production
             number_match = re.search(r'(\d{4,})', dir_name)
             
             if number_match:
                 return number_match.group(1)
             
+            # TODO is the following logic still needed?
             # If no number found in current directory, try parent directories
             # but only go up one level to avoid false positives
             if parent_path.parent and parent_path.parent != parent_path:

@@ -1,97 +1,103 @@
+"""
+Source Editor Dialog (Refactored)
+
+A dialog for editing a master source and its project-specific link data.
+"""
 import flet as ft
 import logging
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
-from .base_dialog import BaseDialog
-from config import create_field_widget
-from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
-from config.project_types_config import FieldType
+from typing import Dict, List, Optional, Any, Callable
+
+from config.source_types_config import get_fields_for_source_type
 from models.source_models import SourceRecord
-from models.project_models import ProjectSourceLink  # Import the link model
+from models.project_models import ProjectSourceLink
+from utils.validators import create_validated_field
 
-
-# Helper dataclass to make SourceFieldConfig compatible with create_field_widget
-@dataclass
-class _CompatibleFieldConfig:
-    """A helper class to adapt SourceFieldConfig to what create_field_widget expects."""
-
-    name: str
-    label: str
-    field_type: FieldType
-    required: bool = False
-    hint_text: str = ""
-    options: Optional[List[str]] = None
-    width: int = 400
-    validation_rules: Optional[Dict[str, Any]] = None
-
-    def __init__(self, source_field: SourceFieldConfig):
-        self.name = source_field.name
-        self.label = source_field.label
-        self.field_type = FieldType[source_field.field_type.name]
-        self.required = source_field.required
-        self.hint_text = source_field.hint_text
-        self.options = None
-        self.width = 400
-        self.validation_rules = None
-
-
-class SourceEditorDialog(BaseDialog):
+class SourceEditorDialog:
     """A dialog for viewing and editing a master source and its project-specific link data."""
 
     def __init__(
         self,
         page: ft.Page,
-        controller,
         source: SourceRecord,
         link: ProjectSourceLink,
-        on_close,
+        on_save: Callable[[str, Dict[str, Any], Dict[str, Any]], None],
     ):
-        # Initialize logging
-        self.logger = logging.getLogger(__name__)
-        self.logger.info(f"Initializing SourceEditorDialog for source: {source.title}")
+        """
+        Initializes the editor dialog.
 
-        self.controller = controller
+        Args:
+            page: The Flet Page object.
+            source: The master source record to edit.
+            link: The project-specific source link to edit.
+            on_save: Callback to execute with (source_id, master_data, link_data).
+        """
+        self.page = page
         self.source = source
-        self.link = link  # Store the project-specific link object
-        self.form_fields: Dict[str, ft.Control] = {}
+        self.link = link
+        self.on_save = on_save
+        self.dialog: Optional[ft.AlertDialog] = None
+        self.master_form_fields: Dict[str, ft.Control] = {}
+        self.logger = logging.getLogger(__name__)
 
-        # --- Project-specific fields ---
+        # --- UI Components for project-specific data ---
         self.notes_field = ft.TextField(
             label="Usage Notes (for this project)",
-            value=self.link.notes,
+            value=self.link.notes or "",
             multiline=True,
             min_lines=3,
         )
         self.declassify_field = ft.TextField(
             label="Declassify Information (for this project)",
-            value=self.link.declassify,
+            value=self.link.declassify or "",
         )
 
-        # The BaseDialog's __init__ will call _build_content and _build_actions
-        super().__init__(
-            page, f"Edit: {source.title}", on_close, width=450, height=550
-        )  # Increased height
+    def show(self):
+        """Builds and displays the dialog on the page."""
+        self.dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(f"Edit: {self.source.title}", size=20, weight=ft.FontWeight.BOLD),
+            content=ft.Column(
+                self._build_content(),
+                tight=True,
+                width=500,
+                height=550,
+                scroll=ft.ScrollMode.ADAPTIVE
+            ),
+            actions=[
+                ft.TextButton("Cancel", on_click=self._handle_close),
+                ft.FilledButton("Save Changes", on_click=self._handle_save_clicked),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=lambda e: self._close(),
+        )
+
+        self.page.dialog = self.dialog
+        self.dialog.open = True
+        self.page.update()
 
     def _build_content(self) -> List[ft.Control]:
         """Builds the form content, pre-populated with the source's data."""
         self.logger.debug("Building editor content")
+        self.master_form_fields.clear()
 
         # --- Build fields for the Master Source Record ---
         fields_to_create = get_fields_for_source_type(self.source.source_type.value)
         master_source_controls = []
         for field_config in fields_to_create:
+            # Get the current value from the source model
             current_value = getattr(self.source, field_config.name, "")
             if isinstance(current_value, list):
-                current_value = ", ".join(current_value)
+                current_value = ", ".join(map(str, current_value))
 
+            # Adapt config and create the widget using the centralized utility
             compatible_config = _CompatibleFieldConfig(field_config)
-            widget = create_field_widget(compatible_config, str(current_value))
+            widget = create_validated_field(compatible_config, str(current_value))
 
-            self.form_fields[field_config.name] = widget
+            self.master_form_fields[field_config.name] = widget
             master_source_controls.append(widget)
 
-        # --- Combine all controls ---
-        content_controls = [
+        # --- Combine all controls into a single list ---
+        return [
             ft.Text("Master Source Details", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
             *master_source_controls,
             ft.Divider(height=20),
@@ -100,40 +106,32 @@ class SourceEditorDialog(BaseDialog):
             self.declassify_field,
         ]
 
-        return content_controls
+    def _handle_save_clicked(self, e):
+        """Gathers updated data and calls the on_save callback."""
+        self.logger.info("Save Changes button clicked - collecting data.")
 
-    def _build_actions(self) -> list:
-        return [
-            ft.TextButton("Cancel", on_click=self._close_dialog),
-            ft.ElevatedButton("Save Changes", on_click=self._on_submit),
-        ]
-
-    def _on_submit(self, e):
-        """Gathers updated data and passes it to the controller for both master and link."""
-        self.logger.info("Save Changes button clicked - collecting updated data")
-
-        # --- Separate the data for master source vs. project link ---
-        master_source_data = {
-            name: control.value for name, control in self.form_fields.items()
+        # Gather data from master source form
+        master_data = {
+            name: control.value for name, control in self.master_form_fields.items()
         }
-        project_link_data = {
-            "notes": self.notes_field.value,
-            "declassify": self.declassify_field.value,
+        # Gather data from project-specific link form
+        link_data = {
+            "notes": self.notes_field.value or "",
+            "declassify": self.declassify_field.value or "",
         }
 
-        self.logger.debug(f"Master source data to update: {master_source_data}")
-        self.logger.debug(f"Project link data to update: {project_link_data}")
+        self.logger.debug(f"Master data to save: {master_data}")
+        self.logger.debug(f"Link data to save: {link_data}")
 
-        # --- Call controller methods to save both sets of data ---
-        # 1. Update the master source record
-        self.controller.source_controller.submit_master_source_update(
-            self.source.id, master_source_data
-        )
+        # Execute the callback with all necessary data
+        self.on_save(self.source.id, master_data, link_data)
+        self._close()
 
-        # 2. Update the project-specific source link
-        self.controller.source_controller.submit_project_source_link_update(
-            self.source.id, project_link_data
-        )
+    def _handle_close(self, e):
+        self._close()
 
-        self.logger.info("Source update initiated - closing dialog")
-        self._close_dialog()
+    def _close(self):
+        """Closes the dialog."""
+        if self.dialog:
+            self.dialog.open = False
+            self.page.update()

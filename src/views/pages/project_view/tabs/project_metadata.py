@@ -10,7 +10,8 @@ from collections import defaultdict
 from typing import Dict, Any
 
 from .base_tab import BaseTab
-from config.project_types_config import get_metadata_fields, get_dialog_fields, create_field_widget, CollectionStage
+from config.project_types_config import get_metadata_fields, get_dialog_fields, CollectionStage
+from utils import create_validated_field
 
 class ProjectMetadataTab(BaseTab):
     """A tab for viewing and editing project metadata in a multi-column layout."""
@@ -86,8 +87,8 @@ class ProjectMetadataTab(BaseTab):
             
             for field_config in fields_in_group:
                 current_value = project_data.get(field_config.name, "")
-                widget = create_field_widget(field_config, str(current_value))
-                
+                widget = create_validated_field(field_config, str(current_value))
+
                 # --- START OF CHANGES ---
                 # Determine if the field should be editable based on your existing logic
                 is_editable_field = (
