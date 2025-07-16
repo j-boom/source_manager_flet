@@ -16,23 +16,41 @@ if TYPE_CHECKING:
     from src.models.source_models import SourceRecord
 
 
+
 class DialogController(BaseController):
     """
-    Controller for handling the opening of all dialogs.
+    Controller for handling the opening and management of all dialogs in the application.
+
+    This class centralizes dialog logic, ensuring consistent dialog behavior and
+    separation of concerns from the main controller and views.
     """
+
 
     def open_dialog(self, dialog):
         """
-        Helper method to open a dialog by adding it to the page overlay.
+        Opens a dialog by adding it to the page overlay and displaying it.
+
+        Args:
+            dialog: The dialog instance to open (should be a Flet control).
         """
         self.controller.page.overlay.append(dialog)
         dialog.open = True
         self.controller.page.update()
 
-    def open_new_project_dialog(self, e, parent_path: Path):
-        """Opens the new project creation dialog."""
 
+    def open_new_project_dialog(self, e, parent_path: Path):
+        """
+        Opens the new project creation dialog.
+
+        Args:
+            e: The triggering event (not used).
+            parent_path (Path): The directory in which to create the new project.
+        """
         def on_dialog_closed(form_data: Optional[Dict[str, Any]]):
+            """
+            Callback for when the project creation dialog is closed.
+            If form_data is provided, creates a new project via the ProjectController.
+            """
             if form_data:
                 # If we have data, we pass it to the ProjectController to handle the business logic.
                 self.logger.info(
@@ -53,12 +71,19 @@ class DialogController(BaseController):
         )
         self.open_dialog(dialog)
 
+
     def open_add_source_to_project_dialog(self, e):
-        """Opens the dialog to add an existing source to the current project."""
+        """
+        Opens the dialog to add an existing source to the current project.
+
+        Args:
+            e: The triggering event (not used).
+        """
         dialog = AddSourceToProjectDialog(
             page=self.controller.page, controller=self.controller
         )
         self.open_dialog(dialog)
+
 
     def open_new_source_dialog(
         self,
@@ -68,6 +93,11 @@ class DialogController(BaseController):
     ):
         """
         Opens the new source creation dialog, optionally pre-filling some data.
+
+        Args:
+            e: The triggering event (not used).
+            add_to_project (bool): If True, the new source will be added to a project.
+            initial_data (Optional[Dict[str, Any]]): Data to pre-fill the dialog fields.
         """
         dialog = SourceCreationDialog(
             controller=self.controller,
@@ -76,30 +106,48 @@ class DialogController(BaseController):
         )
         self.open_dialog(dialog)
 
+
     def open_source_editor_dialog(
         self, source: "SourceRecord", on_close: Optional[Callable] = None
     ):
         """
         Opens the source editor dialog for a given source.
+
+        Args:
+            source (SourceRecord): The source to edit.
+            on_close (Optional[Callable]): Callback to invoke when the dialog closes.
         """
         dialog = SourceEditorDialog(
             controller=self.controller, source=source, on_close=on_close
         )
         self.open_dialog(dialog)
 
+
     def new_project_dialog_closed(self, e):
         """
-        Callback for when the new project dialog is closed.
+        Callback for when the new project dialog is closed (removes it from overlay).
+
+        Args:
+            e: The event/control to remove from the overlay.
         """
         self.controller.page.overlay.remove(e.control)
         self.controller.page.update()
 
-    def show_first_time_setup(self):
-        """Shows the initial setup dialog for new users."""
 
+    def show_first_time_setup(self):
+        """
+        Shows the initial setup dialog for new users.
+        When setup is complete, saves the display name, marks setup as complete,
+        updates the greeting, and navigates to the home page.
+        """
         def on_setup_complete(display_name: str):
+            """
+            Callback for when the first time setup is completed.
+            Saves the display name, marks setup as complete, updates greeting, and navigates home.
+            """
             self.controller.settings_manager.save_display_name(display_name)
             self.controller.user_config_manager.mark_setup_completed()
+            self.controller.main_view.update_greeting()
             self.controller.navigate_to("home")
 
         dialog = FirstTimeSetupDialog(self.controller.page, on_setup_complete)
