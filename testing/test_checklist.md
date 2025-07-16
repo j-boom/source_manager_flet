@@ -1,4 +1,3 @@
-
 # Source Manager - In-Depth Test Checklist
 
 This checklist provides a detailed set of test cases to rigorously validate the functionality, usability, and robustness of the Source Manager application.
@@ -138,3 +137,45 @@ This section focuses on verifying that data is correctly created, read, updated,
 - [ ] Source Deletion: Is the entire object for the deleted source removed from the JSON array?
 - [ ] **Data Integrity**
   - [ ] If a source is deleted, is it also removed from the sources array of any project in projects.json?
+
+## III. Code Documentation & Maintainability
+
+This section ensures that the codebase is well commented and documented for future maintainers.
+
+- [ ] All modules, classes, and functions have clear and descriptive docstrings.
+- [ ] All configuration files are well commented, explaining the purpose of each setting and section.
+- [ ] No comments reference past changes or version history; comments focus on clarity and intent.
+- [ ] Complex logic and non-obvious code sections are explained with inline comments.
+- [ ] The codebase is easy to understand for new contributors or maintainers.
+
+**Files to Review for Documentation:**
+
+- [ ] config/app_config.py
+- [ ] config/logging_config.py
+- [ ] config/project_types_config.py
+- [ ] config/source_types_config.py
+- [ ] src/controllers/app_controller.py
+- [ ] src/controllers/base_controller.py
+- [ ] src/controllers/dialog_controller.py
+- [ ] src/controllers/navigation_controller.py
+- [ ] src/controllers/powerpoint_controller.py
+- [ ] src/controllers/project_controller.py
+- [ ] src/controllers/source_controller.py
+- [ ] src/managers/navigation_manager.py
+- [ ] src/managers/project_browser_manager.py
+- [ ] src/managers/project_state_manager.py
+- [ ] src/managers/settings_manager.py
+- [ ] src/managers/theme_manager.py
+- [ ] src/managers/user_config_manager.py
+- [ ] src/managers/window_manager.py
+- [ ] src/models/project_models.py
+- [ ] src/models/project_state_manager.py
+- [ ] src/models/source_models.py
+- [ ] src/models/user_config_models.py
+- [ ] src/services/admin_auth_service.py
+- [ ] src/services/data_service.py
+- [ ] src/services/migration_service.py
+- [ ] src/services/powerpoint_service.py
+- [ ] src/views/base_view.py
+- [ ] src/views/main_view.py
+- [ ] utils/citation_generator.py
