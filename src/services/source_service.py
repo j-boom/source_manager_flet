@@ -16,6 +16,7 @@ from config import MASTER_SOURCES_DIR, get_source_file_for_country
 from src.models import SourceRecord, SourceType
 from .directory_service import DirectoryService
 
+
 class SourceService:
     """Manages loading, saving, and querying master source records."""
 
@@ -26,29 +27,6 @@ class SourceService:
         self._master_source_cache: Dict[str, Dict[str, SourceRecord]] = {}
         self.directory_service = directory_service
         self.logger.info("SourceService initialized")
-
-    def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
-        """Loads all master sources for a given country into the cache."""
-        if country in self._master_source_cache:
-            return self._master_source_cache[country]
-
-        source_file = self.master_sources_dir / get_source_file_for_country(country)
-        if not source_file.exists():
-            self._master_source_cache[country] = {}
-            return {}
-
-        try:
-            with source_file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-            sources_list = data.get("sources", [])
-            source_map = {
-                record["id"]: SourceRecord.from_dict(record) for record in sources_list
-            }
-            self._master_source_cache[country] = source_map
-            return source_map
-        except (json.JSONDecodeError, TypeError) as e:
-            self.logger.error(f"Error loading master sources for '{country}': {e}")
-            return {}
 
     def get_sources_by_country(self, country: str) -> List[SourceRecord]:
         """Retrieves all master source records for a specific country."""
@@ -151,7 +129,10 @@ class SourceService:
         )
 
         if not source_file_path.exists():
-            return False, f"Master source file for country '{source.country}' does not exist."
+            return (
+                False,
+                f"Master source file for country '{source.country}' does not exist.",
+            )
 
         try:
             with open(source_file_path, "r", encoding="utf-8") as f:

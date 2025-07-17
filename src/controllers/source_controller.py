@@ -134,14 +134,16 @@ class SourceController(BaseController):
         """
         Submits an update for a project-specific source link.
         """
+        self.logger.info(f"Updating project link for source ID {source_id}.")
         project = self.controller.project_controller.get_current_project()
         if not project:
+            self.logger.error("No active project to update source link.")
             return
 
         self.logger.info(f"Updating project link for source ID {source_id}.")
         try:
             self.controller.project_service.update_project_source_link(
-                project.id, source_id, link_data
+                project=project, source_id=source_id, link_data=link_data
             )
             self.controller.show_success_message("Source usage details updated.")
             self.controller.update_view()

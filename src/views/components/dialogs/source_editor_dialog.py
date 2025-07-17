@@ -95,7 +95,8 @@ class SourceEditorDialog:
             on_dismiss=lambda e: self._close(),
         )
 
-        self.page.dialog = self.dialog
+        if self not in self.page.overlay:
+            self.page.overlay.append(self.dialog)
         self.dialog.open = True
         self.page.update()
 
