@@ -96,9 +96,20 @@ class ProjectService:
 
         self.save_project(project)
 
+        self.save_project(project)
+
     def remove_source_from_project(self, project: Project, source_id: str):
-        """Removes a source link from a project."""
+        """Removes a source link from a project and updates the master source record."""
         project.remove_source(source_id)
+
+        # Update the master source's 'used_in' list
+        source_record = self.source_service.get_source_by_id(source_id)
+        if source_record:
+            source_record.used_in = [
+                p for p in source_record.used_in if p.get('project_id') != project.project_id
+            ]
+            self.source_service.update_master_source(source_id, source_record.to_dict())
+
         self.save_project(project)
 
     def derive_project_number_from_path(self, parent_path: Path) -> str:

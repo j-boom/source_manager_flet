@@ -1,3 +1,4 @@
+import logging
 import flet as ft
 from abc import ABC, abstractmethod
 
@@ -24,6 +25,7 @@ class BaseCard(ft.Card, ABC):
         # --- Content Structure ---
         # The content of the card must be built by the subclass.
         self.content = self._build_content()
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
     def _build_content(self) -> ft.Control:

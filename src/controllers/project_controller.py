@@ -83,7 +83,9 @@ class ProjectController(BaseController):
                 # Automatically open the newly created project
                 self.open_project(new_project.file_path)
             else:
-                self.controller.show_error_message(f"Failed to create project: {message}")
+                self.controller.show_error_message(
+                    f"Failed to create project: {message}"
+                )
 
         except Exception as e:
             self.logger.error(
@@ -176,20 +178,34 @@ class ProjectController(BaseController):
 
     def remove_source_from_project(self, source_id: str):
         """
-        Removes a source link from the project.
+        Removes a source link from the project and moves it to the 'on deck' list.
         """
+        self.logger.info(f"Removing source {source_id} from project.")
         project = self.get_current_project()
         if not project:
             self.controller.show_error_message("No project loaded.")
             return
-        
+
         try:
-            self.controller.project_service.remove_source_from_project(project, source_id)
-            self.controller.show_success_message("Source removed from project.")
+            # This will remove from project.sources and update the master record
+            self.controller.project_service.remove_source_from_project(
+                project, source_id
+            )
+
+            # Add the source to the 'on deck' list
+            on_deck_sources = project.metadata.get("on_deck_sources", [])
+            if source_id not in on_deck_sources:
+                on_deck_sources.append(source_id)
+                project.metadata["on_deck_sources"] = on_deck_sources
+                self.controller.project_service.save_project(project)
+
+            self.controller.show_success_message("Source moved to On Deck.")
             # Refresh the current view to reflect the change
             self.controller.update_view()
         except Exception as e:
-            self.logger.error(f"Failed to remove source {source_id} from project: {e}", exc_info=True)
+            self.logger.error(
+                f"Failed to remove source {source_id} from project: {e}", exc_info=True
+            )
             self.controller.show_error_message("Failed to remove source.")
 
     def get_current_project(self):

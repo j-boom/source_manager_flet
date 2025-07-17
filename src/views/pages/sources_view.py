@@ -299,8 +299,21 @@ class SourcesView(BaseView):
         project = self.controller.project_controller.get_current_project()
         self.results_list.controls.clear()
 
-        if self.current_sources:
-            for source in sorted(self.current_sources, key=lambda s: s.title):
+        # Get a list of source IDs already associated with the project
+        associated_source_ids = set()
+        if project:
+            on_deck_ids = set(project.metadata.get("on_deck_sources", []))
+            project_source_ids = {link.source_id for link in project.sources}
+            associated_source_ids = on_deck_ids.union(project_source_ids)
+
+        # Filter out associated sources
+        display_sources = [
+            source for source in self.current_sources 
+            if source.id not in associated_source_ids
+        ]
+
+        if display_sources:
+            for source in sorted(display_sources, key=lambda s: s.title):
                 self.results_list.controls.append(
                     OnDeckCard(
                         source=source,

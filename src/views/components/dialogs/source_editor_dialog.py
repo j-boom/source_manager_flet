@@ -6,11 +6,35 @@ A dialog for editing a master source and its project-specific link data.
 import flet as ft
 import logging
 from typing import Dict, List, Optional, Any, Callable
+from dataclasses import dataclass
 
-from config.source_types_config import get_fields_for_source_type
+from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
+from config.project_types_config import FieldConfig, ValidationRule, FieldType
 from models.source_models import SourceRecord
 from models.project_models import ProjectSourceLink
 from utils.validators import create_validated_field
+
+@dataclass
+class _CompatibleFieldConfig:
+    """A compatible field config to bridge SourceFieldConfig and FieldConfig."""
+    name: str
+    label: str
+    field_type: FieldType
+    required: bool = False
+    hint_text: str = ""
+    validation_rules: Optional[Dict[ValidationRule, Any]] = None
+    width: int = 400
+    options: Optional[List[str]] = None
+    
+    def __init__(self, s_config: SourceFieldConfig):
+        self.name = s_config.name
+        self.label = s_config.label
+        self.field_type = FieldType[s_config.field_type.name]
+        self.required = s_config.required
+        self.hint_text = s_config.hint_text
+        self.validation_rules = s_config.validation_rules
+        self.width = s_config.width
+        self.options = None # SourceFieldConfig does not have options
 
 class SourceEditorDialog:
     """A dialog for viewing and editing a master source and its project-specific link data."""

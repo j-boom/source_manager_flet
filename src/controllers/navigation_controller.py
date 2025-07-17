@@ -91,8 +91,10 @@ class NavigationController(BaseController):
 
         if view_class:
             # Instantiate the view and cache it
-            view_instance = view_class(self.controller.page, self.controller)
-            self.controller.views[final_page_name] = view_instance
+            view_instance = self.controller.views.get(final_page_name)
+            if not view_instance:
+                view_instance = view_class(self.controller.page, self.controller)
+                self.controller.views[final_page_name] = view_instance
 
             # Build the view content
             content_to_display = view_instance.build()
@@ -100,6 +102,7 @@ class NavigationController(BaseController):
             # Set the content in the main view and update navigation
             self.controller.main_view.set_content(content_to_display)
             self.controller.main_view.update_navigation(final_page_name)
+
             self.controller.page.update()
 
         else:

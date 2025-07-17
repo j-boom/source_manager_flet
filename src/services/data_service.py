@@ -125,9 +125,7 @@ class DataService:
             return False, f"Failed to save updated source: {e}"
 
     # --- Project and Source Relationship Logic ---
-    def get_country_for_project(self, project_path: Path) -> str:
-        """Get the country name for a project based on its path."""
-        return get_country_from_project_path(project_path)
+    
 
     def get_hydrated_sources_for_project(self, project: Project) -> List[SourceRecord]:
         """Get all master sources linked to a project."""

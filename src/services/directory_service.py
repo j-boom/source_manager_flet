@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 
-from config import PROJECT_DATA_DIR
+from config import PROJECT_DATA_DIR, get_country_from_project_path
 
 class DirectoryService:
     """Manages file and directory interactions."""
@@ -70,3 +70,7 @@ class DirectoryService:
                         countries.append(country_path.name)
         # Use set to ensure uniqueness and then sort alphabetically
         return sorted(list(set(countries)))
+    
+    def get_country_for_project(self, project_path: Path) -> str:
+        """Get the country name for a project based on its path."""
+        return get_country_from_project_path(project_path)

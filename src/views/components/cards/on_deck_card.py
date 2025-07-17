@@ -95,19 +95,18 @@ class OnDeckCard(BaseCard):
     def _handle_add_click(self, e):
         """Calls the correct controller method based on the card's context."""
         if self.context == "project_tab":
-            self.controller.source_controller.add_source_to_project(self.source.id)
+            self.controller.source_controller.add_source_to_project(self.source.id, {})
         else:  # Default context is "library"
             self.controller.project_controller.add_source_to_on_deck(self.source.id)
 
     def _handle_remove_click(self, e):
         """Calls the controller to remove the source from the On Deck list."""
-        # Check if the controller has the method before calling it
-        if hasattr(self.controller, "remove_source_from_on_deck"):
+        if hasattr(self.controller.project_controller, "remove_source_from_on_deck"):
             self.controller.project_controller.remove_source_from_on_deck(self.source.id)
 
     def _show_citation_dialog(self, e):
         """Shows the source citation dialog."""
         dialog = SourceCitationDialog(self.source)
-        self.page.dialog = dialog
+        self.page.overlay.append(dialog)
         dialog.open = True
         self.page.update()

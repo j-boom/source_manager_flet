@@ -4,22 +4,36 @@ from .base_tab import BaseTab
 from views.components import ProjectSourceCard, OnDeckCard
 from views.components.dialogs import AddSourceToProjectDialog
 
+
 class ProjectSourcesTab(BaseTab):
     """A tab for managing project sources with a user-curated 'On Deck' list."""
 
     def __init__(self, controller):
         super().__init__(controller)
-        self.on_deck_list = ft.ListView(expand=True, spacing=5, padding=ft.padding.only(top=10))
-        self.project_sources_list = ft.Column(expand=True, spacing=5, scroll=ft.ScrollMode.ADAPTIVE)
+        self.on_deck_list = ft.ListView(
+            expand=True, spacing=5, padding=ft.padding.only(top=10)
+        )
+        self.project_sources_list = ft.Column(
+            expand=True, spacing=5, scroll=ft.ScrollMode.ADAPTIVE
+        )
 
     def build(self) -> ft.Control:
         """Builds the UI for the project sources tab."""
         on_deck_column = ft.Column(
             [
                 ft.Text("On Deck", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
-                ft.Text("Sources selected for this project.", italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT),
+                ft.Text(
+                    "Sources selected for this project.",
+                    italic=True,
+                    size=12,
+                    color=ft.colors.ON_SURFACE_VARIANT,
+                ),
                 ft.Divider(),
-                ft.Container(self.on_deck_list, expand=True, border_radius=ft.border_radius.all(8)),
+                ft.Container(
+                    self.on_deck_list,
+                    expand=True,
+                    border_radius=ft.border_radius.all(8),
+                ),
             ],
             width=350,
             spacing=5,
@@ -27,11 +41,17 @@ class ProjectSourcesTab(BaseTab):
 
         project_sources_header = ft.Row(
             controls=[
-                ft.Text("Project Sources", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, expand=True),
+                ft.Text(
+                    "Project Sources",
+                    theme_style=ft.TextThemeStyle.TITLE_MEDIUM,
+                    expand=True,
+                ),
                 ft.ElevatedButton(
                     text="Add Source",
                     icon=ft.icons.ADD_ROUNDED,
-                    on_click=lambda _: self.controller.show_create_source_dialog(),
+                    on_click=lambda _: self.controller.dialog_controller.open_new_source_dialog(
+                        from_project_sources_tab=True
+                    ),
                     tooltip="Add a new source to the master list",
                 ),
             ],
@@ -42,7 +62,12 @@ class ProjectSourcesTab(BaseTab):
         project_sources_column = ft.Column(
             [
                 project_sources_header,
-                ft.Text("Sources currently included in this project. (Drag to Reorder)", italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT),
+                ft.Text(
+                    "Sources currently included in this project. (Drag to Reorder)",
+                    italic=True,
+                    size=12,
+                    color=ft.colors.ON_SURFACE_VARIANT,
+                ),
                 ft.Divider(),
                 ft.Container(self.project_sources_list, expand=True),
             ],
@@ -52,7 +77,12 @@ class ProjectSourcesTab(BaseTab):
 
         main_content = ft.Row(
             [
-                ft.Container(on_deck_column, padding=10, bgcolor=ft.colors.SURFACE_VARIANT, border_radius=8),
+                ft.Container(
+                    on_deck_column,
+                    padding=10,
+                    bgcolor=ft.colors.SURFACE_VARIANT,
+                    border_radius=8,
+                ),
                 project_sources_column,
             ],
             expand=True,
@@ -64,7 +94,8 @@ class ProjectSourcesTab(BaseTab):
     def _update_view(self):
         """Refreshes both lists based on the current project's state."""
         project = self.controller.project_state_manager.current_project
-        if not project: return
+        if not project:
+            return
 
         self.on_deck_list.controls.clear()
         self.project_sources_list.controls.clear()
@@ -81,25 +112,37 @@ class ProjectSourcesTab(BaseTab):
                         source=source,
                         controller=self.controller,
                         show_add_button=True,
-                        show_remove_button=True, # This enables the remove button
-                        context="project_tab"
+                        show_remove_button=True,  # This enables the remove button
+                        context="project_tab",
                     )
-                    add_button = next((c for c in card.content.trailing.controls if isinstance(c, ft.IconButton) and c.icon == ft.icons.ADD_TASK_ROUNDED), None)
+                    add_button = next(
+                        (
+                            c
+                            for c in card.content.trailing.controls
+                            if isinstance(c, ft.IconButton)
+                            and c.icon == ft.icons.ADD_TASK_ROUNDED
+                        ),
+                        None,
+                    )
                     if add_button:
-                        add_button.on_click = lambda e, s_id=source_id: self._show_add_to_project_dialog(s_id)
+                        add_button.on_click = (
+                            lambda e, s_id=source_id: self._show_add_to_project_dialog(
+                                s_id
+                            )
+                        )
                     self.on_deck_list.controls.append(card)
-        
+
         for link in project.sources:
             source = self.controller.source_service.get_source_by_id(link.source_id)
             if source:
-                card = ProjectSourceCard(source=source, link=link, controller=self.controller)
+                card = ProjectSourceCard(
+                    source=source, link=link, controller=self.controller
+                )
                 self.project_sources_list.controls.append(
                     ft.DragTarget(
                         group="project_sources",
                         content=ft.Draggable(
-                            group="project_sources",
-                            content=card,
-                            data=link.source_id
+                            group="project_sources", content=card, data=link.source_id
                         ),
                         data=link.source_id,
                         on_will_accept=self._drag_will_accept,
@@ -109,11 +152,22 @@ class ProjectSourcesTab(BaseTab):
                 )
 
         if not self.project_sources_list.controls:
-            self.project_sources_list.controls.append(ft.Text("No sources added yet.", italic=True, text_align=ft.TextAlign.CENTER))
+            self.project_sources_list.controls.append(
+                ft.Text(
+                    "No sources added yet.", italic=True, text_align=ft.TextAlign.CENTER
+                )
+            )
         if not self.on_deck_list.controls:
-            self.on_deck_list.controls.append(ft.Text("Add sources from the main 'Sources' page.", italic=True, text_align=ft.TextAlign.CENTER))
+            self.on_deck_list.controls.append(
+                ft.Text(
+                    "Add sources from the main 'Sources' page.",
+                    italic=True,
+                    text_align=ft.TextAlign.CENTER,
+                )
+            )
 
-        if self.page: self.page.update()
+        if self.page:
+            self.page.update()
 
     def _drag_will_accept(self, e: ft.DragTargetAcceptEvent):
         """Provides visual feedback by modifying the target control's appearance."""
@@ -128,7 +182,7 @@ class ProjectSourcesTab(BaseTab):
     def _drag_accept(self, e: ft.DragTargetAcceptEvent):
         """Handles the logic for reordering sources when a drop occurs."""
         e.control.content.content.opacity = 1
-        
+
         project = self.controller.project_state_manager.current_project
         if not project:
             e.control.update()
@@ -142,8 +196,11 @@ class ProjectSourcesTab(BaseTab):
             return
 
         source_links = project.sources
-        dragged_link = next((link for link in source_links if link.source_id == src_id_being_dragged), None)
-        
+        dragged_link = next(
+            (link for link in source_links if link.source_id == src_id_being_dragged),
+            None,
+        )
+
         target_index = -1
         for i, link in enumerate(source_links):
             if link.source_id == target_id:
@@ -164,11 +221,10 @@ class ProjectSourcesTab(BaseTab):
 
     def _show_add_to_project_dialog(self, source_id: str):
         def on_save(notes: str, declassify: str):
-            self.controller.add_source_to_project(source_id, notes, declassify)
+            self.controller.source_controller.add_source_to_project(
+                source_id, {"usage_notes": notes, "declassify_info": declassify}
+            )
             self._update_view()
 
-        dialog = AddSourceToProjectDialog(on_save=on_save)
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
-    
+        dialog = AddSourceToProjectDialog(page=self.page, on_save=on_save)
+        dialog.show()

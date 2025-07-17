@@ -47,6 +47,7 @@ class ProjectView(BaseView):
         except Exception as e:
             self.logger.error(f"❌ CiteSourcesTab initialization failed: {e}")
             
+        self.tabs_control = None # Placeholder for the ft.Tabs control
         self.logger.info("ProjectView initialization complete")
 
     def build(self) -> ft.Control:
@@ -64,12 +65,12 @@ class ProjectView(BaseView):
 
         self.logger.info(f"Building view for project: {project.project_title}")
         
-        # Go to the right page
+        # Determine the starting tab index
         nav_manager = self.controller.navigation_manager
-        start_tab_index = 0
-
-        if nav_manager.get_previous_page() == "sources":
-            start_tab_index = 1
+        start_tab_index = 1 if nav_manager.get_previous_page() == "sources" else 0
+        
+        # This will build the tabs control and assign it to self.tabs_control
+        tabs_content = self._build_tabs(start_tab_index)
 
         # Update the tabs with the latest project data
         try:
@@ -85,33 +86,6 @@ class ProjectView(BaseView):
         project_type_display = f"({project_type_config.display_name})" if project_type_config else ""
 
         self.logger.debug("Building tab structure")
-        
-        try:
-            tabs_content = ft.Tabs([
-                ft.Tab(
-                    text="Project Metadata",
-                    icon=ft.icons.INFO_OUTLINE,
-                    content=self.metadata_tab.build() 
-                ),
-                ft.Tab(
-                    text="Manage Sources",
-                    icon=ft.icons.SOURCE,
-                    content=self.sources_tab.build()
-                ),
-                ft.Tab(
-                    text="Cite Slides",
-                    icon=ft.icons.COMPARE_ARROWS,
-                    content=self.cite_sources_tab.build()
-                ),
-            ],
-            expand=True
-            )
-            
-            self.logger.debug("✅ Tabs created successfully")
-            
-        except Exception as e:
-            self.logger.error(f"❌ Failed to create tabs: {e}")
-            return self.show_error(f"Error creating project tabs: {e}")
 
         result = ft.Column([
             ft.Container(
@@ -130,16 +104,16 @@ class ProjectView(BaseView):
                 padding=ft.padding.all(20),
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.OUTLINE))
             ),
-            tabs_content
+            tabs_content # Use the built tabs control
         ])
         
         self.logger.info("✅ ProjectView build complete")
         return result
 
-    def _build_tabs(self) -> ft.Tabs:
-        """Constructs the Flet Tabs control with the built content from each tab class."""
-        return ft.Tabs(
-            selected_index=0,
+    def _build_tabs(self, start_tab_index: int = 0) -> ft.Tabs:
+        """Constructs the Flet Tabs control and assigns it to an instance variable."""
+        self.tabs_control = ft.Tabs(
+            selected_index=start_tab_index,
             animation_duration=300,
             tabs=[
                 ft.Tab(
@@ -160,6 +134,7 @@ class ProjectView(BaseView):
             ],
             expand=True
         )
+        return self.tabs_control
 
     def update_view(self):
         """

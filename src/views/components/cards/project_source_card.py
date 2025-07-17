@@ -26,7 +26,6 @@ class ProjectSourceCard(BaseCard):
     def _build_content(self) -> ft.Container:
         """Builds the card's content using a robust Row/Column layout."""
 
-        # --- FIX: Display both notes and declassify info ---
         text_content = ft.Column(
             [
                 ft.Text(
@@ -53,7 +52,6 @@ class ProjectSourceCard(BaseCard):
             alignment=ft.MainAxisAlignment.CENTER,
             expand=True,
         )
-        # --- END FIX ---
 
         action_buttons = ft.Row(
             [
@@ -89,14 +87,15 @@ class ProjectSourceCard(BaseCard):
 
     def _handle_view_edit_source(self, e):
         """Handles the view/edit source action."""
-        if hasattr(self.controller, "show_source_editor_dialog"):
-            self.controller.dialog_controller.show_source_editor_dialog(self.source.id)
+        if hasattr(self.controller.dialog_controller, "open_source_editor_dialog"):
+            self.controller.dialog_controller.open_source_editor_dialog(self.source.id)
         if e.control.page:
             e.control.page.update()
 
     def _handle_remove_from_project(self, e):
         """Handles removing the source from the project via the controller."""
-        if hasattr(self.controller, "remove_source_from_project"):
+        self.logger.info(f"Removing source '{self.source.id}' from project.")
+        if hasattr(self.controller.project_controller, "remove_source_from_project"):
             self.controller.project_controller.remove_source_from_project(self.source.id)
         if e.control.page:
             e.control.page.update()

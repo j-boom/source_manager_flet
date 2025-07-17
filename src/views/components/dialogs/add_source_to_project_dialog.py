@@ -1,42 +1,29 @@
 import flet as ft
 from typing import Callable
+from .base_dialog import BaseDialog
 
-class AddSourceToProjectDialog(ft.AlertDialog):
-    def __init__(self, on_save: Callable[[str, str], None]):
-        super().__init__()
-        self.modal = True
-        self.title = ft.Text("Add Source to Project")
-        self.on_save = on_save
-
+class AddSourceToProjectDialog(BaseDialog):
+    def __init__(self, page: ft.Page, on_save: Callable[[str, str], None]):
+        self.on_save_callback = on_save
         self.notes_field = ft.TextField(label="Usage Notes", multiline=True, min_lines=3, autofocus=True)
         self.declassify_field = ft.TextField(label="Declassify Information")
+        super().__init__(page=page, title="Add Source to Project", width=400)
 
-        self.content = ft.Column([
+    def _build_content(self) -> list[ft.Control]:
+        return [
             self.notes_field,
             self.declassify_field,
-        ], spacing=15, width=400)
+        ]
 
-        self.actions = [
-            ft.TextButton("Cancel", on_click=self._close),
+    def _build_actions(self) -> list[ft.Control]:
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
             ft.FilledButton("Save", on_click=self._save),
         ]
-        self.actions_alignment = ft.MainAxisAlignment.END
 
     def _save(self, e):
         notes = self.notes_field.value.strip()
         declassify = self.declassify_field.value.strip()
 
-        if not notes or not declassify:
-            if not notes:
-                self.notes_field.error_text = "Notes are required."
-            if not declassify:
-                self.declassify_field.error_text = "Declassify information is required."
-            self.page.update()
-            return
-
-        self.on_save(notes, declassify)
-        self._close(e)
-
-    def _close(self, e):
-        self.open = False
-        self.page.update()
+        self.on_save_callback(notes, declassify)
+        self._close_dialog(e)

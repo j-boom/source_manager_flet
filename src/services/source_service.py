@@ -13,7 +13,7 @@ from typing import List, Dict, Optional, Tuple, Any
 from datetime import datetime
 
 from config import MASTER_SOURCES_DIR, get_source_file_for_country
-from src.models import SourceRecord
+from src.models import SourceRecord, SourceType
 from .directory_service import DirectoryService
 
 class SourceService:
@@ -139,9 +139,12 @@ class SourceService:
                     value = [
                         author.strip() for author in value.split(",") if author.strip()
                     ]
+                # Ensure source_type is always an enum
+                elif key == "source_type" and isinstance(value, str):
+                    value = SourceType(value)
                 setattr(source, key, value)
 
-        source.last_modified = datetime.utcnow().isoformat()
+        source.last_modified = datetime.now().isoformat()
 
         source_file_path = self.master_sources_dir / get_source_file_for_country(
             source.country
@@ -172,8 +175,9 @@ class SourceService:
             with open(source_file_path, "w", encoding="utf-8") as f:
                 json.dump(master_data, f, indent=4)
 
-            if country in self._master_source_cache:
-                del self._master_source_cache[country]
+            # Invalidate cache for the updated country
+            if source.country in self._master_source_cache:
+                del self._master_source_cache[source.country]
 
             return True, "Source updated successfully."
         except Exception as e:

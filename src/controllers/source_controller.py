@@ -77,20 +77,23 @@ class SourceController(BaseController):
             usage_notes = link_data.get("usage_notes", "")
             declassify_info = link_data.get("declassify_info", "")
             # Data service handles creating the link and updating the master record
-            self.controller.source_service.add_source_to_project(
-                project.id, source_id, usage_notes, declassify_info
+            self.controller.project_service.add_source_to_project(
+                project, source_id, usage_notes, declassify_info
             )
 
             # If the source was on deck, remove it
-            if source_id in project.on_deck_sources:
-                project.on_deck_sources.remove(source_id)
+            if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
+                project.metadata["on_deck_sources"].remove(source_id)
+                self.controller.project_service.save_project(project)
+
 
             self.logger.info(
-                f"Source '{source_id}' successfully linked to project '{project.id}'."
+                f"Source '{source_id}' successfully linked to project '{project.project_id}'."
             )
             self.controller.show_success_message("Source added to project.")
             self.controller.update_view()  # Refresh to show the new source in the project list
         except Exception as e:
+            self.logger.error(f"Failed to add source to project: {e}", exc_info=True)
             self.controller.show_error_message(f"Failed to add source to project: {e}")
 
     def remove_source_from_project(self, source_id: str):
@@ -165,7 +168,7 @@ class SourceController(BaseController):
         """
         project = self.controller.project_controller.get_current_project()
         if project:
-            for link in project.source_links:
+            for link in project.sources:
                 if link.source_id == source_id:
                     return link
         return None
