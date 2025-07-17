@@ -100,6 +100,8 @@ class Project:
                 "usage_notes": source_link.notes or "",
                 "declassify": source_link.declassify or ""
             })
+
+        powerpoint_file = metadata.get("powerpoint_file", "")
         
         return {
             "project_metadata": project_metadata,
@@ -108,7 +110,7 @@ class Project:
             "slide_data": slide_data,
             "sources": sources,
             "on_deck_sources": on_deck_sources,
-            "powerpoint_file": metadata.get("powerpoint_file", ""),
+            "powerpoint_file": powerpoint_file,
             "number_header_citations": metadata.get("number_header_citations", 0)
         }
 
@@ -236,3 +238,12 @@ class Project:
     def remove_source(self, source_id: str):
         """Removes a source link from the project."""
         self.sources = [s for s in self.sources if s.source_id != source_id]
+
+    def associate_powerpoint_file(self, powerpoint_file: str):
+        """
+        Associates a PowerPoint file with the project.
+        
+        Args:
+            powerpoint_file: The file path of the PowerPoint file to associate.
+        """
+        self.metadata["powerpoint_file"] = powerpoint_file

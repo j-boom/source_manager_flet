@@ -14,6 +14,7 @@ from src.managers.project_state_manager import ProjectStateManager
 from src.managers.project_browser_manager import ProjectBrowserManager
 from src.managers.theme_manager import ThemeManager
 from src.managers.settings_manager import SettingsManager
+from src.managers.powerpoint_manager import PowerPointManager
 
 # Import necessary views
 from src.views.main_view import MainView
@@ -60,6 +61,7 @@ class AppController:
         self.project_browser_manager = ProjectBrowserManager(controller=self)
         self.theme_manager = ThemeManager()
         self.settings_manager = SettingsManager()
+        self.powerpoint_manager = PowerPointManager()
 
         # Setup sub controllers
         self.project_controller = ProjectController(self)
