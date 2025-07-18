@@ -61,7 +61,7 @@ class AppController:
         self.project_browser_manager = ProjectBrowserManager(controller=self)
         self.theme_manager = ThemeManager()
         self.settings_manager = SettingsManager()
-        self.powerpoint_manager = PowerPointManager()
+        self.powerpoint_manager = PowerPointManager(controller=self)
 
         # Setup sub controllers
         self.project_controller = ProjectController(self)

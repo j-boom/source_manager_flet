@@ -74,3 +74,8 @@ class DirectoryService:
     def get_country_for_project(self, project_path: Path) -> str:
         """Get the country name for a project based on its path."""
         return get_country_from_project_path(project_path)
+    
+    def derive_project_number_from_path(self, parent_path: Path) -> str:
+        """Gets the BE number from the string representation of the path."""
+        match = re.search(r"\b\d{10}\b", str(parent_path))
+        return match.group(0) if match else ""
