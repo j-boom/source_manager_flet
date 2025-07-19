@@ -1,7 +1,7 @@
 import flet as ft
 from .base_card import BaseCard
-from models.source_models import SourceRecord
-from models.project_models import ProjectSourceLink
+from src.models.source_models import SourceRecord
+from src.models.project_models import ProjectSourceLink
 
 
 class ProjectSourceCard(BaseCard):
@@ -29,7 +29,7 @@ class ProjectSourceCard(BaseCard):
         text_content = ft.Column(
             [
                 ft.Text(
-                    self.source.title,
+                    self.source.get_title(),
                     weight=ft.FontWeight.BOLD,
                     color=ft.colors.ON_SECONDARY_CONTAINER,
                 ),

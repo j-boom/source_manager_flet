@@ -209,7 +209,7 @@ class CiteSourcesTab(BaseTab):
         """
         selected_ids = self._get_selected_ids(self.available_list)
         if selected_ids:
-            self.controller.powerpoint_controller.add_citations_to_slide(
+            self.controller.powerpoint_controller.link_source_to_slide(
                 self.current_slide_id, selected_ids
             )
             self.update_view() # Refresh UI after data change
@@ -221,7 +221,7 @@ class CiteSourcesTab(BaseTab):
         """
         selected_ids = self._get_selected_ids(self.cited_list)
         if selected_ids:
-            self.controller.powerpoint_controller.remove_citations_from_slide(
+            self.controller.powerpoint_controller.unlink_source_from_slide(
                 self.current_slide_id, selected_ids
             )
             self.update_view() # Refresh UI after data change
@@ -264,12 +264,9 @@ class CiteSourcesTab(BaseTab):
                 current_slide_title_text = slide.get("title", "Untitled Slide")
                 break
         self.current_slide_title.value = f"Slide: {current_slide_title_text}"
-
-        # Get all sources for the project and the sources cited on the current slide.
-        all_project_source_ids = {link.source_id for link in project.sources}
    
         cited_on_this_slide_ids = set()
-        slide_data = getattr(project, "slide_data", [])
+        slide_data = project.metadata.get("slide_data", [])
         for slide in slide_data:
             if str(slide.get("slide_id")) == str(self.current_slide_id):
                 cited_on_this_slide_ids = set(slide.get("sources", []))
@@ -282,7 +279,7 @@ class CiteSourcesTab(BaseTab):
             source_id = source_link.source_id
             source_record = self.controller.source_service.get_source_by_id(source_id)
             if source_record:
-                checkbox = ft.Checkbox(label=f"{source_record.title} ({source_record.source_id})", data=source_id)
+                checkbox = ft.Checkbox(label=f"{source_record.get_title()}", data=source_id)
                 if source_id in cited_on_this_slide_ids:
                     self.cited_list.controls.append(checkbox)
                 else:

@@ -65,7 +65,7 @@ class PowerPointController(BaseController):
             return None
 
         # Merge with existing citation data
-        saved_slide_data = getattr(project, "slide_data", [])
+        saved_slide_data = project.metadata.get("slide_data", [])
         saved_map = {
             item["slide_id"]: item.get("sources", []) for item in saved_slide_data
         }
@@ -76,7 +76,6 @@ class PowerPointController(BaseController):
         # Save the synced data back to the 'slide_data' key within metadata.
         project.metadata["slide_data"] = fresh_slides
         self.controller.project_service.save_project(project)
-
         self.logger.info(f"Successfully synced {len(fresh_slides)} slides for project.")
         return fresh_slides
 

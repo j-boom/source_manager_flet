@@ -313,7 +313,7 @@ class SourcesView(BaseView):
         ]
 
         if display_sources:
-            for source in sorted(display_sources, key=lambda s: s.title):
+            for source in sorted(display_sources, key=lambda s: s.get_title()):
                 self.results_list.controls.append(
                     OnDeckCard(
                         source=source,

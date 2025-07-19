@@ -13,7 +13,7 @@ from typing import List, Dict, Optional, Tuple, Any
 from datetime import datetime
 
 from config import MASTER_SOURCES_DIR, get_source_file_for_country
-from src.models import SourceRecord, SourceType
+from src.models.source_models import SourceRecord, SourceRecordFactory
 from .directory_service import DirectoryService
 
 
@@ -43,11 +43,10 @@ class SourceService:
 
     def get_source_by_id(self, source_id: str) -> Optional[SourceRecord]:
         """Finds a master source by its unique ID across all countries."""
-        # First, check the cache
         for country_cache in self._master_source_cache.values():
             if source_id in country_cache:
                 return country_cache[source_id]
-        # If not in cache, load all sources and search
+        
         all_sources = self.get_all_master_sources()
         return next((s for s in all_sources if s.id == source_id), None)
 
@@ -57,126 +56,115 @@ class SourceService:
     def create_new_source(
         self, country: str, form_data: Dict[str, Any]
     ) -> Tuple[bool, str, Optional[SourceRecord]]:
-        """Create a new master source for a specific country."""
+        """Create a new master source for a specific country using the factory."""
         source_type_str = form_data.get("source_type")
         if not source_type_str:
             return False, "Source type not specified.", None
 
-        source_data = form_data.copy()
-        source_data["id"] = str(uuid.uuid4())
-        source_data["country"] = country
-
-        if "authors" in source_data and isinstance(source_data["authors"], str):
-            source_data["authors"] = [
-                author.strip()
-                for author in source_data["authors"].split(",")
-                if author.strip()
-            ]
-
         try:
-            new_source = SourceRecord.from_dict(source_data)
+            # Use the factory to correctly build the object with its defined fields
+            new_source = SourceRecordFactory.create_source_record(
+                source_type=source_type_str, initial_values=form_data
+            )
+            # Set the remaining metadata attributes
+            new_source.country = country
+            new_source.id = str(uuid.uuid4()) # Override the default UUID if needed
         except Exception as e:
+            self.logger.error(f"Failed to create source model: {e}", exc_info=True)
             return False, f"Failed to create source model: {e}", None
 
-        source_file_path = self.master_sources_dir / get_source_file_for_country(
-            country
-        )
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
+        
+        sources_list = []
+        master_data = {"sources": sources_list}
         if source_file_path.exists():
             with open(source_file_path, "r", encoding="utf-8") as f:
                 master_data = json.load(f)
-            sources_list = master_data.get("sources", [])
-        else:
-            sources_list = []
-            master_data = {"sources": sources_list}
+                sources_list = master_data.get("sources", [])
 
         sources_list.append(new_source.to_dict())
+        master_data["sources"] = sources_list
 
         try:
             with open(source_file_path, "w", encoding="utf-8") as f:
                 json.dump(master_data, f, indent=4)
 
+            # Invalidate the cache for the country where the source was added
             if country in self._master_source_cache:
                 del self._master_source_cache[country]
 
             return True, "Source created successfully.", new_source
         except Exception as e:
+            self.logger.error(f"Failed to save master source file: {e}", exc_info=True)
             return False, f"Failed to save master source file: {e}", None
 
     def update_master_source(
         self, source_id: str, updated_data: Dict[str, Any]
     ) -> Tuple[bool, str]:
-        """Finds a master source, updates it with new data, and saves the country file."""
+        """Finds a master source, updates it, and saves the corresponding country file."""
         source = self.get_source_by_id(source_id)
         if not source:
             return False, f"Source with ID '{source_id}' not found."
 
-        # Update the source object's attributes
+        # Update the source object's dynamic fields and metadata
         for key, value in updated_data.items():
-            if hasattr(source, key):
-                if key == "authors" and isinstance(value, str):
-                    value = [
-                        author.strip() for author in value.split(",") if author.strip()
-                    ]
-                # Ensure source_type is always an enum
-                elif key == "source_type" and isinstance(value, str):
-                    value = SourceType(value)
-                setattr(source, key, value)
+            if key in ["display_name", "country", "used_in"]:
+                if getattr(source, key) != value:
+                    setattr(source, key, value)
+                    source.last_modified = datetime.now()
+            else:
+                # Use the dedicated method for updating dynamic fields
+                source.set_field_value(key, value)
 
-        source.last_modified = datetime.now().isoformat()
+        country_to_save = source.country
+        if not country_to_save:
+            return False, f"Source {source_id} has no country; cannot determine where to save."
 
-        source_file_path = self.master_sources_dir / get_source_file_for_country(
-            source.country
-        )
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country_to_save)
 
         if not source_file_path.exists():
-            return (
-                False,
-                f"Master source file for country '{source.country}' does not exist.",
-            )
+            return False, f"Master source file for country '{country_to_save}' does not exist."
 
         try:
             with open(source_file_path, "r", encoding="utf-8") as f:
                 master_data = json.load(f)
-
+            
             sources_list = master_data.get("sources", [])
-
-            found = False
+            found_and_updated = False
             for i, record_data in enumerate(sources_list):
                 if record_data.get("id") == source_id:
                     sources_list[i] = source.to_dict()
-                    found = True
+                    found_and_updated = True
                     break
 
-            if not found:
-                return (
-                    False,
-                    f"Could not find source ID '{source_id}' in file '{source_file_path.name}'.",
-                )
+            if not found_and_updated:
+                return False, f"Could not find source ID '{source_id}' in file '{source_file_path.name}'."
 
             with open(source_file_path, "w", encoding="utf-8") as f:
                 json.dump(master_data, f, indent=4)
 
-            # Invalidate cache for the updated country
             if source.country in self._master_source_cache:
                 del self._master_source_cache[source.country]
 
             return True, "Source updated successfully."
         except Exception as e:
+            self.logger.error(f"Failed to save updated source: {e}", exc_info=True)
             return False, f"Failed to save updated source: {e}"
 
     def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
-        """Load master sources for a specific country."""
+        """Loads master sources for a specific country, with caching."""
         if country in self._master_source_cache:
             return self._master_source_cache[country]
-        source_file_path = self.master_sources_dir / get_source_file_for_country(
-            country
-        )
+
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
         if not source_file_path.exists():
             self._master_source_cache[country] = {}
             return {}
+        
         try:
             with open(source_file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+            
             sources_list = data.get("sources", [])
             source_map = {
                 record_data["id"]: SourceRecord.from_dict(record_data)
@@ -185,10 +173,10 @@ class SourceService:
             self._master_source_cache[country] = source_map
             return source_map
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"Error loading master sources for country '{country}': {e}")
+            self.logger.error(f"Error loading master sources for '{country}': {e}", exc_info=True)
             return {}
-
+            
     def get_master_sources_for_country(self, country: str) -> List[SourceRecord]:
-        """Get all master sources for a specific country."""
+        """Get all master sources for a specific country. Note: This is a duplicate of get_sources_by_country."""
         source_map = self._load_master_sources_for_country(country)
         return list(source_map.values())

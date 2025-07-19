@@ -81,7 +81,7 @@ class OnDeckCard(BaseCard):
 
         return ft.ListTile(
             title=ft.Text(
-                self.source.title,
+                self.source.get_title(),
                 size=13,
                 weight=ft.FontWeight.BOLD,
                 overflow=ft.TextOverflow.ELLIPSIS,
