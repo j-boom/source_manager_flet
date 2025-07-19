@@ -1,6 +1,6 @@
 import flet as ft
 from .base_tab import BaseTab
-from typing import List
+from typing import List, Optional
 from views.components import SlideCarousel
 import logging
 
