@@ -39,6 +39,9 @@ OLD_DATA_PATH = "/Users/jim/Documents/Source Manager/Directory Source Citations"
 # Directory for user project files
 USER_PROJECTS_DIR = USER_DATA_DIR / "projects"
 
+# Path to the target folder
+DEFAULT_SAVE_DIR = "/Users/jim/Documents"
+
 
 # =============================================================================
 # Application Settings

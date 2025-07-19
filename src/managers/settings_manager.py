@@ -8,6 +8,7 @@ from config.app_config import (
     DEFAULT_WINDOW_WIDTH,
     DEFAULT_WINDOW_HEIGHT,
     DEFAULT_THEME,
+    DEFAULT_SAVE_DIR,
 )
 
 from src.models.user_config_models import (
@@ -243,3 +244,12 @@ class SettingsManager:
             p for p in self.user_config.recent_projects if p.path != path_to_remove
         ]
         self.save_config()
+
+    def get_default_save_directory(self) -> str:
+        """
+        Returns the default directory for saving new projects.
+        This is typically the user's home directory.
+        Returns:
+            str: The default save directory path.
+        """
+        return DEFAULT_SAVE_DIR

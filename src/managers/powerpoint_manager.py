@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from pptx import Presentation
 from typing import List, Tuple, Optional, Dict
-
+from pprint import pprint
 
 class PowerPointManager:
     """
@@ -52,45 +52,7 @@ class PowerPointManager:
                 )
 
             self.logger.info(f"Successfully extracted {len(slides_data)} slides.")
-            return slides_data
-
-        except Exception as e:
-            self.logger.error(
-                f"Failed to read presentation file at {filepath}: {e}", exc_info=True
-            )
-            return None
-
-    def get_slide_data(self, filepath: str) -> List[Dict] | None:
-        """
-        Extract slide data from a presentation.
-
-        Args:
-            presentation: The loaded Presentation object
-
-        Returns:
-            List of tuples containing (slide_id, slide_title)
-        """
-        self.logger.info(f"Reading slides from: {filepath}")
-        file_path = Path(filepath)
-        if not file_path.exists():
-            self.logger.warning(f"File not found: {filepath}")
-            return None
-
-        try:
-            prs = Presentation(file_path)
-            slides_data = []
-            for i, slide in enumerate(prs.slides):
-                slide_id = slide.slide_id
-                title = self._extract_slide_title(slide, i)
-
-                slides_data.append(
-                    {
-                        "slide_id": slide_id,
-                        "title": title,
-                        "sources": [],  # Placeholder for sources
-                    }
-                )
-            self.logger.info(f"Successfully extracted {len(slides_data)} slides.")
+            pprint(slides_data)
             return slides_data
 
         except Exception as e:

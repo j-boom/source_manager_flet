@@ -2,6 +2,8 @@ import flet as ft
 from .base_tab import BaseTab
 from typing import List
 from views.components import SlideCarousel
+import logging
+
 
 class CiteSourcesTab(BaseTab):
     """
@@ -21,7 +23,7 @@ class CiteSourcesTab(BaseTab):
             controller: The main application controller.
         """
         super().__init__(controller)
-        self.current_slide_index = 0
+        self.current_slide_id: Optional[str] = None
 
         # --- UI Components ---
         self.slide_carousel = SlideCarousel(on_slide_selected=self._on_slide_selected)
@@ -58,6 +60,7 @@ class CiteSourcesTab(BaseTab):
 
         self.main_view = self._build_main_view()
         self.prompt_view = self._build_associate_file_prompt()
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def build(self) -> ft.Control:
         """
@@ -84,7 +87,7 @@ class CiteSourcesTab(BaseTab):
                 ft.FilledButton(
                     "Select Presentation File",
                     icon=ft.icons.ATTACH_FILE,
-                    on_click=lambda e: self.controller.citation.get_slides_for_current_project(),
+                    on_click=self._request_pptx_association,
                 ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
@@ -175,19 +178,12 @@ class CiteSourcesTab(BaseTab):
             expand=True,
         )
 
-    def _on_slide_selected(self, slide_index: int):
+    def _on_slide_selected(self, slide_id: str):
         """
         Callback for when a new slide is selected from the carousel.
         Updates the current slide index and refreshes the view.
         """
-        self.current_slide_index = slide_index
-        project = self.controller.project_state_manager.current_project
-        if project:
-            slides = project.metadata.get("slides", [])
-            if 0 <= slide_index < len(slides):
-                self.current_slide_title.value = slides[slide_index].get(
-                    "title", f"Slide {slide_index + 1}"
-                )
+        self.current_slide_id = slide_id
         self.update_view()
 
     def _get_selected_ids(self, source_list: ft.ListView) -> List[str]:
@@ -213,8 +209,8 @@ class CiteSourcesTab(BaseTab):
         """
         selected_ids = self._get_selected_ids(self.available_list)
         if selected_ids:
-            self.controller.citation.add_citations_to_slide(
-                self.current_slide_index, selected_ids
+            self.controller.powerpoint_controller.add_citations_to_slide(
+                self.current_slide_id, selected_ids
             )
             self.update_view() # Refresh UI after data change
 
@@ -225,8 +221,8 @@ class CiteSourcesTab(BaseTab):
         """
         selected_ids = self._get_selected_ids(self.cited_list)
         if selected_ids:
-            self.controller.citation.remove_citations_from_slide(
-                self.current_slide_index, selected_ids
+            self.controller.powerpoint_controller.remove_citations_from_slide(
+                self.current_slide_id, selected_ids
             )
             self.update_view() # Refresh UI after data change
 
@@ -242,52 +238,61 @@ class CiteSourcesTab(BaseTab):
         Refreshes the entire view based on the current project state.
         This is the main method for synchronizing the UI with the data model.
         """
-        project = self.controller.project_state_manager.current_project
+        project = self.controller.project_controller.get_current_project()
+        if not project: return
 
-        # Determine which view to show: the prompt or the main interface.
-        has_slides = project and "slides" in project.metadata and project.metadata["slides"]
+        self.controller.powerpoint_controller.get_synced_slide_data()
+        slides = project.metadata.get("slide_data", [])
+        has_slides = bool(slides)
+
         self.prompt_view.visible = not has_slides
         self.main_view.visible = has_slides
 
         if not has_slides:
-            if self.page:
-                self.page.update()
+            if self.page: self.page.update()
             return
+        
+        if not self.current_slide_id and slides:
+            self.current_slide_id = slides[0].get("slide_id", "")
 
-        # --- Populate Main View ---
-        slides = project.metadata.get("slides", [])
-        self.slide_carousel.update(slides, self.current_slide_title)
+        self.slide_carousel.update(slides, self.current_slide_id)
+        self.slide_carousel.scroll_to_key(self.current_slide_id)
 
-        # Update slide title if it's out of sync
-        if 0 <= self.current_slide_index < len(slides):
-            self.current_slide_title.value = slides[self.current_slide_index].get(
-                "title", f"Slide {self.current_slide_index + 1}"
-            )
+        current_slide_title_text = "Select a Slide"
+        for slide in slides:
+            if str(slide.get("slide_id")) == str(self.current_slide_id):
+                current_slide_title_text = slide.get("title", "Untitled Slide")
+                break
+        self.current_slide_title.value = f"Slide: {current_slide_title_text}"
 
         # Get all sources for the project and the sources cited on the current slide.
         all_project_source_ids = {link.source_id for link in project.sources}
-        citations = project.metadata.get("citations", {})
-        cited_on_this_slide_ids = set(
-            citations.get(str(self.current_slide_index), [])
-        )
-
+   
+        cited_on_this_slide_ids = set()
+        slide_data = getattr(project, "slide_data", [])
+        for slide in slide_data:
+            if str(slide.get("slide_id")) == str(self.current_slide_id):
+                cited_on_this_slide_ids = set(slide.get("sources", []))
+                break
         # Clear and repopulate the available and cited lists.
         self.available_list.controls.clear()
         self.cited_list.controls.clear()
 
-        # Sort sources for consistent ordering.
-        for source_id in sorted(list(all_project_source_ids)):
-            source_record = self.controller.data_service.get_source_by_id(source_id)
+        for source_link in project.sources:
+            source_id = source_link.source_id
+            source_record = self.controller.source_service.get_source_by_id(source_id)
             if source_record:
-                # Create a checkbox for each source.
-                checkbox = ft.Checkbox(
-                    label=f"{source_record.title} ({source_record.source_id})",
-                    data=source_id
-                )
+                checkbox = ft.Checkbox(label=f"{source_record.title} ({source_record.source_id})", data=source_id)
                 if source_id in cited_on_this_slide_ids:
                     self.cited_list.controls.append(checkbox)
                 else:
                     self.available_list.controls.append(checkbox)
 
-        if self.page:
-            self.page.update()
+        if self.page: self.page.update()
+
+    def _request_pptx_association(self, e):
+        """
+        Handles the button click to start the file selection process.
+        """
+        self.logger.info("Requesting PowerPoint file association")
+        self.controller.powerpoint_controller.pick_powerpoint_file()

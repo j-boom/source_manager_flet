@@ -16,9 +16,8 @@ class PowerPointController(BaseController):
         super().__init__(controller)
         self.powerpoint_manager = self.controller.powerpoint_manager
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.file_picker = ft.FilePicker(
-            on_result=self._on_powerpoint_file_picked
-        )
+        self.file_picker = ft.FilePicker(on_result=self._on_powerpoint_file_picked)
+        self.controller.page.overlay.append(self.file_picker)
 
     def _get_project_or_handle_error(self, operation_name: str) -> Optional[Project]:
         """
@@ -34,102 +33,99 @@ class PowerPointController(BaseController):
             return None
         return project
 
-    def get_synced_slide_data(self) -> list[dict]:
+    def get_synced_slide_data(self) -> Optional[List[Dict]]:
         """
-        Gets the slide list from the .pptx file and syncs it with the saved
-        source mappings in the project's 'slide_data'.
+        Ensures the project's slide data is synced with the linked .pptx file.
+
+        This is the primary method for loading slide data. It reads the file,
+        merges it with existing citation data, and saves the result back to the
+        project's metadata.
+
+        Returns:
+            The list of synced slide dictionaries, or None if an error occurs.
         """
         project = self._get_project_or_handle_error("Get Synced Slide Data")
         if not project:
-            return []
+            return None
 
-        filepath = project.metadata.get("powerpoint_file", None)
+        filepath = project.metadata.get("powerpoint_file")
         if not filepath:
-            self.logger.warning(
-                "Attempted to get slide data for a project with no linked PowerPoint file."
-            )
-            return []
+            self.logger.info("No PowerPoint file is associated with this project.")
+            # Ensure old slide data is cleared if file is unlinked
+            if "slide_data" in project.metadata:
+                del project.metadata["slide_data"]
+                self.controller.project_service.save_project(project)
+            return None
 
         fresh_slides = self.powerpoint_manager.get_slides_from_file(filepath)
         if fresh_slides is None:
             self.controller.show_error_message(
                 f"Could not read the PowerPoint file at:\n{filepath}"
             )
-            return []
+            return None
 
+        # Merge with existing citation data
         saved_slide_data = getattr(project, "slide_data", [])
         saved_map = {
             item["slide_id"]: item.get("sources", []) for item in saved_slide_data
         }
-
         for slide in fresh_slides:
             if slide["slide_id"] in saved_map:
                 slide["sources"] = saved_map[slide["slide_id"]]
 
+        # Save the synced data back to the 'slide_data' key within metadata.
+        project.metadata["slide_data"] = fresh_slides
+        self.controller.project_service.save_project(project)
+
+        self.logger.info(f"Successfully synced {len(fresh_slides)} slides for project.")
         return fresh_slides
 
-    def link_source_to_slide(self, slide_id: int, source_id: str):
-        """
-        Adds a source's UUID to a specific slide's source list and saves the project.
-        """
+    def link_source_to_slide(self, slide_id: str, source_ids: List[str]):
+        """Adds a list of source UUIDs to a specific slide's source list."""
         project = self._get_project_or_handle_error("Link Source")
         if not project:
             return
 
-        self.logger.info(f"Linking source {source_id} to slide {slide_id}")
+        slide_data = project.metadata.get("slide_data", [])
+        slide_entry = next(
+            (s for s in slide_data if str(s.get("slide_id")) == str(slide_id)), None
+        )
 
-        slide_data = getattr(project, "slide_data", [])
-
-        slide_found = False
-        for slide in slide_data:
-            if slide["slide_id"] == slide_id:
-                if source_id not in slide.get("sources", []):
-                    slide.setdefault("sources", []).append(source_id)
-                slide_found = True
-                break
-
-        if not slide_found:
-            powerpoint_file = project.metadata.get("powerpoint_file", None)
-            fresh_slides = self.powerpoint_manager.get_slides_from_file(powerpoint_file)
+        if not slide_entry:
             title = "Untitled Slide"
-            if fresh_slides:
-                for s in fresh_slides:
-                    if s["slide_id"] == slide_id:
-                        title = s["title"]
-                        break
-            slide_data.append(
-                {"slide_id": slide_id, "title": title, "sources": [source_id]}
-            )
+            slide_entry = {"slide_id": slide_id, "title": title, "sources": []}
+            slide_data.append(slide_entry)
+
+        for source_id in source_ids:
+            if source_id not in slide_entry["sources"]:
+                slide_entry["sources"].append(source_id)
 
         project.metadata["slide_data"] = slide_data
-
         self.controller.project_service.save_project(project)
-        self.controller.show_success_message("Source linked successfully!")
-
+        self.controller.show_success_message("Sources linked successfully!")
         self.controller.update_view()
 
-    def unlink_source_from_slide(self, slide_id: int, source_id: str):
-        """
-        Removes a source's UUID from a specific slide's source list and saves the project.
-        """
+    def unlink_source_from_slide(self, slide_id: str, source_ids: List[str]):
+        """Removes a list of source UUIDs from a specific slide's source list."""
         project = self._get_project_or_handle_error("Unlink Source")
         if not project:
             return
 
-        self.logger.info(f"Unlinking source {source_id} from slide {slide_id}")
-
         slide_data = project.metadata.get("slide_data", [])
+        slide_entry = next(
+            (s for s in slide_data if str(s.get("slide_id")) == str(slide_id)), None
+        )
 
-        for slide in slide_data:
-            if slide["slide_id"] == slide_id:
-                if "sources" in slide and source_id in slide["sources"]:
-                    slide["sources"].remove(source_id)
-                break
+        if slide_entry:
+            slide_entry["sources"] = [
+                s_id
+                for s_id in slide_entry.get("sources", [])
+                if s_id not in source_ids
+            ]
 
         project.metadata["slide_data"] = slide_data
-
         self.controller.project_service.save_project(project)
-        self.controller.show_success_message("Source unlinked successfully!")
+        self.controller.show_success_message("Sources unlinked successfully!")
         self.controller.update_view()
 
     # --- Source Group Management Methods (Project-Specific) ---
@@ -192,56 +188,39 @@ class PowerPointController(BaseController):
 
     # --- New Methods for File Picking ---
 
-    def handle_link_powerpoint_request(self, e):
+    def pick_powerpoint_file(self):
         """
         Callback method that is executed after the user selects a file from the picker (or cancels).
         """
-        if e.files:
-            # If files were selected, get the path of the first file.
-            filepath = e.files[0].path
-            self.logger.info(f"PowerPoint file selected: {filepath}")
-
-            # Get the currently active project from the state manager.
-            project = self.controller.project_controller.get_current_project()
-
-            if project:
-                # Update the project model with the path to the PowerPoint file.
-                project.metadata['powerpoint_file'] = filepath
-
-                # Use the project state manager to update the project data.
-                # This will save the changes and notify all subscribers (like the view)
-                # that the project has been updated, triggering a UI refresh.
-                self.controller.project_service.save_project(project)
-                self.logger.info(
-                    f"Associated '{filepath}' with project '{project.project_title}'"
-                )
-        else:
-            self.logger.info("File picker was cancelled. No file selected.")
-
-        # There's no need to call self.page.update() here directly.
-        # The ProjectStateManager's event system is responsible for notifying the
-        # view to update itself, which is a better separation of concerns.
+        self.logger.info("Requesting PowerPoint file selection...")
+        self.file_picker.pick_files(
+            allow_multiple=False,
+            dialog_title="Select PowerPoint File",
+            allowed_extensions=["pptx"],
+            initial_directory=self.controller.settings_manager.get_default_save_directory(),
+        )
 
     def _on_powerpoint_file_picked(self, e: ft.FilePickerResultEvent):
-        """
-        Callback method that executes after the user selects a file (or cancels).
-        """
-        if e.files:
-            # A file was selected
-            selected_file_path = e.files[0].path
-            self.logger.info(f"PowerPoint file selected: {selected_file_path}")
-
-            project = self.controller.project_controller.get_current_project()
-            if project:
-                # Update the project object in memory
-                project.metadata["powerpoint_file"] = selected_file_path
-                # Save the change to the JSON file
-                project.save()
-                self.controller.show_success_message(
-                    "PowerPoint file linked successfully!"
-                )
-                # Refresh the CiteSourcesTab to show the editor view
-                self.controller.update_view()
-        else:
-            # The user cancelled the dialog
+        """Callback method that executes after the user selects a file."""
+        if not e.files:
             self.logger.info("File picking cancelled by user.")
+            return
+
+        selected_file_path = e.files[0].path
+        self.logger.info(f"PowerPoint file selected: {selected_file_path}")
+
+        project = self.controller.project_controller.get_current_project()
+        if not project:
+            return
+
+        project.metadata["powerpoint_file"] = selected_file_path
+        self.controller.project_service.save_project(project)
+
+        slides = self.get_synced_slide_data()
+
+        if slides is not None:
+            self.controller.show_success_message(
+                f"Successfully linked and imported {len(slides)} slides!"
+            )
+
+        self.controller.update_view()

@@ -1,7 +1,7 @@
 import flet as ft
-from typing import List, Tuple, Callable
+from typing import Dict, List, Callable
 
-class SlideCarousel:
+class SlideCarousel(ft.Container):
     """
     A self-contained, horizontally-scrolling carousel component with arrow buttons
     to display and select presentation slides.
@@ -14,6 +14,7 @@ class SlideCarousel:
             on_slide_selected: A callback function to execute when a slide is clicked.
                                It receives the selected slide's ID as an argument.
         """
+        super().__init__()
         self.on_slide_selected = on_slide_selected
         
         self.list_view = ft.ListView(
@@ -24,7 +25,7 @@ class SlideCarousel:
             expand=True,
         )
 
-        self.view = ft.Row(
+        self.content = ft.Row(
             [
                 ft.IconButton(
                     icon=ft.icons.ARROW_BACK_IOS_NEW_ROUNDED,
@@ -42,7 +43,7 @@ class SlideCarousel:
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN
         )
 
-    def update(self, slide_data: List[Tuple[str, str]], current_slide_id: str):
+    def update(self, slide_data: List[Dict], current_slide_id: str):
         """
         Rebuilds the carousel with new slide data and highlights the selected slide.
 
@@ -57,11 +58,13 @@ class SlideCarousel:
                 self.list_view.update()
             return
 
-        for i, (slide_id, title) in enumerate(slide_data):
+        for i, slide_dict in enumerate(slide_data):
+            slide_id = slide_dict.get('slide_id')
+            title = slide_dict.get('title')
             is_selected = (slide_id == current_slide_id)
 
             slide_icon = ft.Container(
-                key=slide_id,
+                key=str(slide_id),
                 content=ft.Text(str(i + 1), weight=ft.FontWeight.BOLD, size=16),
                 width=52,
                 height=52,
@@ -81,8 +84,7 @@ class SlideCarousel:
             )
             self.list_view.controls.append(slide_icon)
         
-        if self.list_view.page:
-            self.list_view.update()
+        if self.list_view.page: self.list_view.update()
 
     def scroll_to_key(self, key: str):
         """Public method to scroll the list to a specific key."""
