@@ -105,31 +105,32 @@ class ProjectController(BaseController):
 
     def update_project_metadata(self, updated_data: Dict[str, Any]):
         """
-        Updates the metadata for the currently loaded project.
+        Orchestrates the metadata save process according to the correct architecture.
+        1. Tells the Manager to update the in-memory state.
+        2. Tells the Service to persist that updated state to disk.
         """
-        project = self.controller.project_state_manager.current_project
-        if not project:
+        if not self.get_current_project():
             self.controller.show_error_message("No project is loaded.")
             return
 
-        self.logger.info(f"Updating metadata for project: {project.project_title}")
-
-        # Update the project object's attributes from the form data
-        for key, value in updated_data.items():
-            if hasattr(project, key):
-                setattr(project, key, value)
-            elif key in project.metadata:
-                project.metadata[key] = value
-
-        # Save the updated project object back to its file
         try:
-            self.controller.project_service.save_project(project)
+            # Get the current project at the beginning of the try block, as you suggested.
+            project_to_save = self.get_current_project()
+            if not project_to_save:
+                # This is a safeguard, though the initial check should prevent this.
+                self.controller.show_error_message("Could not retrieve project to save.")
+                return
+
+            # Step 1: Tell the manager to update the project object in memory.
+            self.controller.project_state_manager.update_project_in_memory(updated_data)
+
+            # Step 2: Tell the service to save the updated project to the JSON file.
+            self.controller.project_service.save_project(project_to_save)
+
             self.controller.show_success_message("Project metadata saved.")
+
         except Exception as e:
-            self.logger.error(
-                f"Failed to save metadata for project {project.project_title}: {e}",
-                exc_info=True,
-            )
+            self.logger.error(f"Failed to save metadata: {e}", exc_info=True)
             self.controller.show_error_message("Failed to save metadata.")
 
     def add_source_to_on_deck(self, source_id: str):
@@ -198,8 +199,6 @@ class ProjectController(BaseController):
                 on_deck_sources.append(source_id)
                 project.metadata["on_deck_sources"] = on_deck_sources
                 self.controller.project_service.save_project(project)
-
-            self.controller.show_success_message("Source moved to On Deck.")
             # Refresh the current view to reflect the change
             self.controller.update_view()
         except Exception as e:

@@ -35,7 +35,7 @@ MASTER_SOURCES_DIR = BASE_DATA_DIR / "program_files" / "master_sources"
 USER_DATA_DIR = BASE_DATA_DIR / "user_data"
 
 # Path to legacy data (used for migration from older versions)
-OLD_DATA_PATH = "/Users/jim/Documents/Source Manager/Directory Source Citations"
+OLD_DATA_PATH = "/Users/jim/Documents/Source Manager/Directory_Source_Citations"
 # Directory for user project files
 USER_PROJECTS_DIR = USER_DATA_DIR / "projects"
 

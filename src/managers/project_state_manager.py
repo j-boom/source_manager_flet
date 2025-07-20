@@ -71,3 +71,23 @@ class ProjectStateManager:
         if not self.has_loaded_project():
             return []
         return self.current_project.sources
+
+    def update_project_in_memory(self, data_to_update: Dict[str, Any]):
+        """
+        Updates the currently loaded project object in memory with new data.
+        This does NOT save to disk.
+        """
+        if not self.current_project:
+            self.logger.warning("Attempted to update project, but no project is loaded.")
+            return
+
+        self.logger.info(f"Updating in-memory project '{self.current_project.project_title}' with new data.")
+        project = self.current_project
+
+        for key, value in data_to_update.items():
+            if hasattr(project, key):
+                setattr(project, key, value)
+            elif key in project.metadata:
+                project.metadata[key] = value
+
+        self.logger.info("In-memory project updated successfully.")

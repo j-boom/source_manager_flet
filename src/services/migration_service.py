@@ -100,7 +100,7 @@ class MigrationService:
         # Build file path (derived from filename structure)
         benjamin = file_info["benjamin"]
         year = file_info["year"]
-        file_path = f"/Users/jim/Documents/Source Manager/Directory Source Citations/ROW/{year}/{benjamin}/{filename}"
+        file_path = f"/Users/jim/Documents/Source Manager/Directory_Source_Citations/ROW/{year}/{benjamin}/{filename}"
         
         # Remove .json extension from filename for title
         title = filename.replace('.json', '')

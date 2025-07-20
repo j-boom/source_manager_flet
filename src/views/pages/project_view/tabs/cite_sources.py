@@ -241,7 +241,7 @@ class CiteSourcesTab(BaseTab):
         project = self.controller.project_controller.get_current_project()
         if not project: return
 
-        self.controller.powerpoint_controller.get_synced_slide_data()
+        self.controller.powerpoint_controller.get_slide_data_from_project()
         slides = project.metadata.get("slide_data", [])
         has_slides = bool(slides)
 
