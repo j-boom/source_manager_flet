@@ -355,7 +355,13 @@ PROJECT_TYPES_CONFIG: Dict[str, ProjectTypeConfig] = {
         display_name="Other",
         description="Other project types",
         filename_pattern="{document_title} - {current_year}",
-        field_names=["project_type", "project_title", "current_year", "document_title", "request_year"],
+        field_names=[
+            "project_type",
+            "project_title",
+            "current_year",
+            "document_title",
+            "request_year",
+        ],
     ),
 }
 

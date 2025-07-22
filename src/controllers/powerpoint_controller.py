@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, List, Dict
+from collections import defaultdict
 
 import flet as ft
 
@@ -179,3 +180,23 @@ class PowerPointController(BaseController):
         
         # After the sync, the main view needs to be updated to show the new slides.
         self.controller.update_view()
+
+    def get_source_usage_map(self) -> Dict[str, List[str]]:
+        """
+        Creates a map of source IDs to a list of slide titles where they are used.
+
+        Returns:
+            A dictionary where keys are source_ids and values are lists of slide titles.
+        """
+        project = self._get_project_or_handle_error("Get Source Usage Map")
+        if not project:
+            return {}
+
+        usage_map = defaultdict(list)
+        slide_data = project.metadata.get("slide_data", [])
+        for slide in slide_data:
+            slide_title = slide.get("title", "Untitled Slide")
+            for source_id in slide.get("sources", []):
+                usage_map[source_id].append(slide_title)
+        
+        return dict(usage_map)

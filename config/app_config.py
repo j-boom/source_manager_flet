@@ -1,4 +1,3 @@
-
 """
 Application Configuration
 
@@ -110,10 +109,10 @@ SPECIAL_PAGES = {
 }
 
 
-
 # =============================================================================
 # Country-Based Source Mapping Configuration
 # =============================================================================
+
 
 def get_country_from_project_path(project_path: Path) -> str:
     """

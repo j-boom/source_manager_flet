@@ -2,6 +2,7 @@ import flet as ft
 from .base_tab import BaseTab
 from typing import List, Optional
 from views.components import SlideCarousel
+from views.components.dialogs.create_source_group_dialog import CreateSourceGroupDialog
 import logging
 
 
@@ -36,7 +37,7 @@ class CiteSourcesTab(BaseTab):
         self.change_ppt_btn = ft.ElevatedButton(
             "Sync With PowerPoint",
             icon=ft.icons.SYNC_OUTLINED,
-            on_click=lambda e: self.controller.citation.get_slides_for_current_project(
+            on_click=lambda e: self.controller.powerpoint_controller.sync_with_powerpoint(
                 force_reselect=True
             ),
         )
@@ -204,15 +205,36 @@ class CiteSourcesTab(BaseTab):
 
     def _move_to_cited(self, e):
         """
-        Moves selected sources from the available list to the cited list
-        and updates the project data model.
+        Moves selected sources and groups from the available list to the cited list
+        and updates the project data model. It expands groups into individual sources.
         """
-        selected_ids = self._get_selected_ids(self.available_list)
-        if selected_ids:
+        project = self.controller.project_controller.get_current_project()
+        if not project:
+            return
+
+        selected_items = self._get_selected_ids(self.available_list)
+        if not selected_items:
+            return
+
+        source_groups = project.metadata.get("source_groups", {})
+        final_source_ids_to_link = set()
+
+        for item_id in selected_items:
+            if item_id.startswith("group_"):
+                group_name = item_id.replace("group_", "", 1)
+                group_member_ids = source_groups.get(group_name, [])
+                final_source_ids_to_link.update(group_member_ids)
+            else:
+                final_source_ids_to_link.add(item_id)
+
+        if final_source_ids_to_link:
             self.controller.powerpoint_controller.link_source_to_slide(
-                self.current_slide_id, selected_ids
+                self.current_slide_id, list(final_source_ids_to_link)
             )
-            self.update_view() # Refresh UI after data change
+            # Deselect all items after moving
+            for control in self.available_list.controls:
+                control.value = False
+            self.update_view()
 
     def _move_to_available(self, e):
         """
@@ -226,12 +248,32 @@ class CiteSourcesTab(BaseTab):
             )
             self.update_view() # Refresh UI after data change
 
-    def _show_create_group_dialog(self, e):
-        """Placeholder for showing a dialog to group sources."""
-        # Future implementation: show a dialog to create a source group.
-        if self.page:
-            self.page.show_snack_bar(ft.SnackBar(ft.Text("Grouping not yet implemented."), open=True))
 
+    def _show_create_group_dialog(self, e):
+        """Shows a dialog to create a source group."""
+        project = self.controller.project_controller.get_current_project()
+        if not project:
+            return
+
+        all_sources_checkboxes = []
+        for source_link in project.sources:
+            source_record = self.controller.source_service.get_source_by_id(source_link.source_id)
+            if source_record:
+                all_sources_checkboxes.append(
+                    ft.Checkbox(label=source_record.get_title(), data=source_link.source_id)
+                )
+
+        def on_save(group_name: str, selected_ids: List[str]):
+            self.controller.powerpoint_controller.save_source_group(group_name, selected_ids)
+            self.update_view()
+
+        dialog = CreateSourceGroupDialog(
+            all_sources=all_sources_checkboxes,
+            on_save=on_save,
+        )
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
 
     def update_view(self):
         """
@@ -241,8 +283,7 @@ class CiteSourcesTab(BaseTab):
         project = self.controller.project_controller.get_current_project()
         if not project: return
 
-        self.controller.powerpoint_controller.get_slide_data_from_project()
-        slides = project.metadata.get("slide_data", [])
+        slides = self.controller.powerpoint_controller.get_slide_data_from_project()
         has_slides = bool(slides)
 
         self.prompt_view.visible = not has_slides
@@ -271,10 +312,25 @@ class CiteSourcesTab(BaseTab):
             if str(slide.get("slide_id")) == str(self.current_slide_id):
                 cited_on_this_slide_ids = set(slide.get("sources", []))
                 break
+
         # Clear and repopulate the available and cited lists.
         self.available_list.controls.clear()
         self.cited_list.controls.clear()
+        
+        # Display source groups in the available list
+        source_groups = project.metadata.get("source_groups", {})
+        for group_name in source_groups:
+            group_checkbox = ft.Checkbox(
+                label=f"GROUP: {group_name}",
+                data=f"group_{group_name}" # Prefix to identify it as a group
+            )
+            self.available_list.controls.append(group_checkbox)
 
+        # Add a divider if there are groups and sources
+        if source_groups and project.sources:
+            self.available_list.controls.append(ft.Divider())
+
+        # Display individual sources
         for source_link in project.sources:
             source_id = source_link.source_id
             source_record = self.controller.source_service.get_source_by_id(source_id)

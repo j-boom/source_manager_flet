@@ -2,21 +2,21 @@
 Source Creation Dialog (Refactored)
 
 A dialog component for creating new master source records with a dynamic form.
+This version inherits from BaseDialog to ensure consistent behavior like scrolling.
 """
 
 import flet as ft
 import logging
 from typing import Dict, List, Optional, Any, Callable
 
+from .base_dialog import BaseDialog
 from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
-from config.project_types_config import FieldConfig, ValidationRule
-
+from config.project_types_config import FieldConfig
 from models.source_models import SourceType
-
 from utils import create_validated_field, generate_source_title
 
-class SourceCreationDialog:
-    """A dialog for creating a new master source record."""
+class SourceCreationDialog(BaseDialog):
+    """A dialog for creating a new master source record, with scrollable dynamic content."""
 
     def __init__(
         self,
@@ -36,19 +36,20 @@ class SourceCreationDialog:
             target_country: The country to pre-select in the country dropdown.
             from_project_sources_tab: Flag to show project-specific fields.
         """
-        self.page = page
         self.on_create = on_create
         self.available_countries = available_countries
         self.target_country = target_country
         self.from_project_sources_tab = from_project_sources_tab
-        self.dialog: Optional[ft.AlertDialog] = None
         self.form_fields: Dict[str, ft.Control] = {}
         self.logger = logging.getLogger(__name__)
 
         # --- UI Components ---
         self.source_type_dropdown = self._build_source_type_dropdown()
         self.country_dropdown = self._build_country_dropdown()
-        self.dynamic_fields_container = ft.Column(spacing=15, scroll=ft.ScrollMode.ADAPTIVE)
+        
+        # This container will hold the dynamically generated form fields.
+        # The BaseDialog will make this scrollable.
+        self.dynamic_fields_container = ft.Column(spacing=15)
 
         # Conditionally visible project-specific fields
         self.notes_field = ft.TextField(
@@ -60,38 +61,37 @@ class SourceCreationDialog:
             visible=self.from_project_sources_tab
         )
 
-    def show(self):
-        """Builds and displays the dialog on the page."""
-        # Populate the dynamic fields for the initial selection before showing
+        # Initialize the BaseDialog superclass
+        super().__init__(
+            page=page,
+            title="Create New Master Source",
+            width=500,
+            height=450  # Giving a fixed height is crucial for scrolling
+        )
+        
+        # Populate initial fields after super().__init__ has run
         if self.source_type_dropdown.value:
             self._populate_dynamic_fields(self.source_type_dropdown.value)
 
-        self.dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Create New Master Source", size=20, weight=ft.FontWeight.BOLD),
-            content=ft.Column(
-                [
-                    ft.Row([self.source_type_dropdown, self.country_dropdown], spacing=10),
-                    ft.Divider(height=1, thickness=1),
-                    self.dynamic_fields_container,
-                    self.notes_field,
-                    self.declassify_field,
-                ],
-                tight=True,
-                width=500,
-                height=450,
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=self._handle_close),
-                ft.FilledButton("Create Source", on_click=self._handle_create_clicked),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-            on_dismiss=lambda e: self._close(),
-        )
+    def _build_content(self) -> List[ft.Control]:
+        """
+        Builds the main content of the dialog, which will be placed
+        inside the scrollable column of the BaseDialog.
+        """
+        return [
+            ft.Row([self.source_type_dropdown, self.country_dropdown], spacing=10),
+            ft.Divider(height=1, thickness=1),
+            self.dynamic_fields_container,
+            self.notes_field,
+            self.declassify_field,
+        ]
 
-        self.page.dialog = self.dialog
-        self.dialog.open = True
-        self.page.update()
+    def _build_actions(self) -> List[ft.Control]:
+        """Builds the action buttons for the dialog."""
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
+            ft.FilledButton("Create Source", on_click=self._handle_create_clicked),
+        ]
 
     def _build_source_type_dropdown(self) -> ft.Dropdown:
         return ft.Dropdown(
@@ -99,7 +99,8 @@ class SourceCreationDialog:
             options=[ft.dropdown.Option(st.value, st.name.title()) for st in SourceType],
             on_change=self._on_source_type_change,
             autofocus=True,
-            expand=True
+            expand=True,
+            value=SourceType.BOOK.value # Default to a common type
         )
 
     def _build_country_dropdown(self) -> ft.Dropdown:
@@ -123,15 +124,15 @@ class SourceCreationDialog:
                 label=s_config.label,
                 field_type=s_config.field_type,
                 required=s_config.required,
-                hint_text= s_config.hint_text,
+                hint_text=s_config.hint_text,
                 validation_rules=s_config.validation_rules,
                 width=s_config.width,
             )
-
             widget = create_validated_field(compatible_config)
             self.form_fields[s_config.name] = widget
             self.dynamic_fields_container.controls.append(widget)
 
+        # Update the page if the dialog is already visible
         if self.dialog and self.dialog.open:
             self.page.update()
 
@@ -143,7 +144,6 @@ class SourceCreationDialog:
 
     def _handle_create_clicked(self, e: ft.ControlEvent):
         """Gathers data, validates it, and calls the on_create callback."""
-        # --- Validation ---
         is_valid = True
         if not self.country_dropdown.value:
             self.country_dropdown.error_text = "Country is required."
@@ -157,9 +157,11 @@ class SourceCreationDialog:
         else:
             self.source_type_dropdown.error_text = None
 
+        # Update UI to show/hide error messages
+        self.country_dropdown.update()
+        self.source_type_dropdown.update()
+
         if not is_valid:
-            self.country_dropdown.update()
-            self.source_type_dropdown.update()
             return
 
         # --- Data Collection ---
@@ -172,21 +174,10 @@ class SourceCreationDialog:
             form_data["usage_notes"] = self.notes_field.value
             form_data["declassify_info"] = self.declassify_field.value
 
-        # Generate the standardized title from the collected form data
         generated_title = generate_source_title(form_data["source_type"], form_data)
-        
-        # Add the generated title to the data payload
         form_data["title"] = generated_title
 
-        # --- Execute Callback ---
         self.logger.info("Validation passed. Executing on_create callback.")
         self.on_create(form_data)
-        self._close()
+        self._close_dialog()
 
-    def _handle_close(self, e):
-        self._close()
-
-    def _close(self):
-        if self.dialog:
-            self.dialog.open = False
-            self.page.update()

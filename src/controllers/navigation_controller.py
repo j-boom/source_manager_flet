@@ -130,7 +130,9 @@ class NavigationController(BaseController):
         """
         self.logger.info(f"Removing recent project: {project_path}")
         self.controller.user_config_manager.remove_recent_project(project_path)
-        self.controller.page.update()
+        self.controller.update_view()
+        self.navigate_to_page('recent_projects')
+
 
     def submit_new_folder(
         self, parent_path: Path, folder_name: str, description: str = ""

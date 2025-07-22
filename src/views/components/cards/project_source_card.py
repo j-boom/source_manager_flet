@@ -1,3 +1,4 @@
+from typing import List
 import flet as ft
 from .base_card import BaseCard
 from src.models.source_models import SourceRecord
@@ -10,7 +11,7 @@ class ProjectSourceCard(BaseCard):
     of the current project. It inherits from BaseCard for consistent styling.
     """
 
-    def __init__(self, source: SourceRecord, link: ProjectSourceLink, controller):
+    def __init__(self, source: SourceRecord, link: ProjectSourceLink, controller, used_on_slides: List[str]):
         """
         Initializes the card.
 
@@ -21,11 +22,27 @@ class ProjectSourceCard(BaseCard):
         """
         self.source = source
         self.link = link
+        self.used_on_slides = used_on_slides or []
         super().__init__(controller=controller)
 
     def _build_content(self) -> ft.Container:
         """Builds the card's content using a robust Row/Column layout."""
-
+        # --- Section to display slide usage ---
+        usage_section = ft.Column(spacing=2, visible=bool(self.used_on_slides))
+        if self.used_on_slides:
+            usage_section.controls.append(
+                ft.Text("Used on:", weight=ft.FontWeight.BOLD, size=11, color=ft.colors.ON_SECONDARY_CONTAINER)
+            )
+            for slide_title in self.used_on_slides:
+                usage_section.controls.append(
+                    ft.Row(
+                        [
+                            ft.Icon(ft.icons.SLIDESHOW_OUTLINED, size=12, opacity=0.7),
+                            ft.Text(f"{slide_title}", size=11, italic=True, color=ft.colors.ON_SECONDARY_CONTAINER),
+                        ],
+                        spacing=5,
+                    )
+                )
         text_content = ft.Column(
             [
                 ft.Text(

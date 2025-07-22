@@ -8,64 +8,66 @@ This section focuses on ensuring all visual components behave as expected and th
 
 ### 1. General Application & Windowing
 
-- [ ] **Application Startup**
-  - [ ] Does the application launch without any console errors or visible exceptions?
-  - [ ] Is the initial view (Home) loaded correctly and promptly?
+- [√] **Application Startup**
+
+  - [√] Does the application launch without any console errors or visible exceptions?
+  - [√] Is the initial view (Home) loaded correctly and promptly?
 
 - [ ] **First-Time Setup**
-  - [ ] After deleting user_config.json, does the "First Time Setup" dialog appear automatically on launch?
-  - [ ] Does the dialog prevent continuation until a valid data path is selected?
-  - [ ] Does clicking "Begin" successfully create the necessary config files and close the dialog?
+
+  - [√] After deleting user_config.json, does the "First Time Setup" dialog appear automatically on launch?
+  - [√] Does the dialog prevent continuation until a valid data path is selected?
+  - [√] Does clicking "Begin" successfully create the necessary config files and close the dialog?
 
 - [ ] **Window State Persistence**
+
   - [ ] Resize the window, close the app, and relaunch. Does it open with the previous dimensions?
   - [ ] Move the window, close, and relaunch. Does it open at the last position?
 
 - [ ] **Theme Switching**
-  - [ ] Does the theme toggle button in the app bar have a clear icon change (e.g., sun to moon)?
-  - [ ] Is the theme change applied instantly to all elements, including text, backgrounds, and controls?
-  - [ ] Is the selected theme correctly loaded when the app restarts?
 
-- [ ] **Responsiveness & Layout**
-  - [ ] Shrink the window to its minimum possible size. Do all elements remain visible and usable (e.g., via scrolling)?
-  - [ ] Expand the window to full screen. Does the layout expand gracefully without excessive whitespace or stretched elements?
-  - [ ] Are there any components that overlap or become misaligned during resizing?
+  - [√] Does the theme toggle button in the app bar have a clear icon change (e.g., sun to moon)?
+  - [√] Is the theme change applied instantly to all elements, including text, backgrounds, and controls?
+  - [√] Is the selected theme correctly loaded when the app restarts?
 
+- [√] **Responsiveness & Layout**
+  - [√] Shrink the window to its minimum possible size. Do all elements remain visible and usable (e.g., via scrolling)?
+  - [√] Expand the window to full screen. Does the layout expand gracefully without excessive whitespace or stretched elements?
+  - [√] Are there any components that overlap or become misaligned during resizing?
 
 ### 2. Navigation
 
 - [ ] **Sidebar Navigation**
-  - [ ] Does clicking each icon reliably navigate to the correct view?
-  - [ ] Is the selected_index visually distinct (highlighted) for the active view?
-  - [ ] Is there a tooltip on hover for each navigation icon?
+
+  - [√] Does clicking each icon reliably navigate to the correct view?
+  - [√] Is the selected_index visually distinct (highlighted) for the active view?
+  - [X] Is there a tooltip on hover for each navigation icon?
 
 - [ ] **Breadcrumb Navigation**
-  - [ ] Is the breadcrumb hidden on top-level views (Home, Settings, etc.)?
-  - [ ] When navigating to a project, does it show Home > [Project Name]?
-  - [ ] Does clicking "Home" in the breadcrumb navigate back to the home screen?
-  - [ ] If navigating deeper (e.g., to a source within a project), does the breadcrumb update accordingly?
-
+  - [√] Is the breadcrumb hidden on top-level views (Home, Settings, etc.)?
+  - [√] If navigating deeper (e.g., to a source within a project), does the breadcrumb update accordingly?
 
 ### 3. Home View (/)
 
 - [ ] **Recent Projects Section**
-  - [ ] Empty State: If no projects have been opened, is a helpful message displayed (e.g., "No recent projects. Create one to get started!")?
-  - [ ] Does it correctly display the most recently opened projects, with the latest one first?
+
+  - [√] Empty State: If no projects have been opened, is a helpful message displayed (e.g., "No recent projects. Create one to get started!")?
+  - [√] Does it correctly display the most recently opened projects, with the latest one first?
   - [ ] Does clicking a "Recent Project" card navigate to the correct project's view?
 
 - [ ] **On Deck Sources Section**
-  - [ ] Empty State: If all sources are assigned to projects, is a message like "All sources are organized!" displayed?
-  - [ ] Does it correctly show only sources that are not currently part of any project?
+  - [√] Empty State: If all sources are assigned to projects, is a message like "All sources are organized!" displayed?
+  - [√] Does it correctly show only sources that are not currently part of any project?
   - [ ] Does clicking an "On Deck" card open the Source Editor dialog pre-filled with that source's data?
 
 ### 4. Project Creation & Management
 
-- [ ] **Create New Project Dialog**
-  - [ ] Can the dialog be opened from both the sidebar and the Floating Action Button (FAB)?
-  - [ ] Validation: Is the "Create" button disabled if the project name is empty or just whitespace?
-  - [ ] Does it prevent the creation of projects with duplicate names?
-  - [ ] Does pressing Enter in the text field trigger the creation?
-  - [ ] Does clicking "Cancel" or the background overlay close the dialog without creating a project?
+- [√] **Create New Project Dialog**
+
+  - [√] Validation: Is the "Create" button disabled if the project name is empty or just whitespace?
+  - [√] Does it prevent the creation of projects with duplicate names?
+  - [√] Does pressing Enter in the text field trigger the creation?
+  - [√] Does clicking "Cancel" or the background overlay close the dialog without creating a project?
 
 - [ ] **Project View (/project/{project_id})**
   - [ ] **Metadata Tab**
@@ -82,14 +84,15 @@ This section focuses on ensuring all visual components behave as expected and th
     - [ ] Does the "Copy to Clipboard" button provide feedback (e.g., a snackbar message) on success?
     - [ ] PowerPoint Export: Does the feature generate a .pptx file? Does the file contain the citations as expected?
 
-
 ### 5. Source Library (/sources)
 
 - [ ] **View All Sources**
+
   - [ ] Is a list of all sources displayed, regardless of project assignment?
   - [ ] Is there a search or filter functionality? Does it work correctly?
 
 - [ ] **Create/Edit Source Dialog**
+
   - [ ] Does the form dynamically update to show the correct fields when the "Source Type" dropdown is changed?
   - [ ] Validation: Are required fields for each source type marked and validated?
   - [ ] When editing, are all fields pre-populated with the correct existing data?

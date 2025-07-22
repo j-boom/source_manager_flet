@@ -90,7 +90,6 @@ class SourceController(BaseController):
             self.logger.info(
                 f"Source '{source_id}' successfully linked to project '{project.project_id}'."
             )
-            self.controller.show_success_message("Source added to project.")
             self.controller.update_view()  # Refresh to show the new source in the project list
         except Exception as e:
             self.logger.error(f"Failed to add source to project: {e}", exc_info=True)

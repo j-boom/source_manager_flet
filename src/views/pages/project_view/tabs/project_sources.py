@@ -100,6 +100,9 @@ class ProjectSourcesTab(BaseTab):
         self.on_deck_list.controls.clear()
         self.project_sources_list.controls.clear()
 
+        # Get the map of where each source is used
+        source_usage_map = self.controller.powerpoint_controller.get_source_usage_map()
+
         on_deck_ids = project.metadata.get("on_deck_sources", [])
         project_source_ids = {link.source_id for link in project.sources}
 
@@ -135,8 +138,9 @@ class ProjectSourcesTab(BaseTab):
         for link in project.sources:
             source = self.controller.source_service.get_source_by_id(link.source_id)
             if source:
+                used_on_slides = self.controller.source_usage_map.get(link.source_id, [])
                 card = ProjectSourceCard(
-                    source=source, link=link, controller=self.controller
+                    source=source, link=link, controller=self.controller, used_on_slides=used_on_slides
                 )
                 self.project_sources_list.controls.append(
                     ft.DragTarget(
@@ -161,7 +165,6 @@ class ProjectSourcesTab(BaseTab):
             self.on_deck_list.controls.append(
                 ft.Text(
                     "Add sources from the main 'Sources' page.",
-                    italic=True,
                     text_align=ft.TextAlign.CENTER,
                 )
             )
