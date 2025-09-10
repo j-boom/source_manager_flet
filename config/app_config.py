@@ -6,7 +6,6 @@ including paths, constants, and navigation structure.
 """
 
 from pathlib import Path
-
 import flet as ft
 
 
@@ -34,37 +33,23 @@ LOGS_DIR = PROJECT_ROOT / "logs"
 # Directory containing all project data, organized by region/country/project
 PROJECT_DATA_DIR = BASE_DATA_DIR / "Directory_Source_Citations"
 
-# Directory containing master source files (used for reference or templates)
-MASTER_SOURCES_DIR = BASE_DATA_DIR / "program_files" / "master_sources"
-
 # Directory containing program-specific files like master sources and configuration
 PROGRAM_FILES_DIR = BASE_DATA_DIR / "program_files"
-# Directory for application configuration files (source_types.json, project_types.json)
-CONFIG_DIR = PROGRAM_FILES_DIR / "config"
-# Path to the source types configuration file
-SOURCE_TYPES_PATH = CONFIG_DIR / "source_types.json"
-# Path to the project types configuration file
-PROJECT_TYPES_PATH = CONFIG_DIR / "project_types.json"
-
-# Base directory for all application data (user, project, and master sources)
-BASE_DATA_DIR = Path("/Users/jim/Documents/Source Manager")
-
-# Directory for application logs (kept with source code for development)
-LOGS_DIR = PROJECT_ROOT / "logs"
-
-# Directory containing all project data, organized by region/country/project
-PROJECT_DATA_DIR = BASE_DATA_DIR / "Directory_Source_Citations"
 
 # Directory containing master source files (used for reference or templates)
 MASTER_SOURCES_DIR = PROGRAM_FILES_DIR / "master_sources"
 
-# Directory for user-specific data (e.g., user config, user projects)
-USER_DATA_DIR = BASE_DATA_DIR / "user_data"
+# Directory for application configuration files (source_types.json, project_types.json)
+CONFIG_DIR = PROGRAM_FILES_DIR / "config"
 
-# Path to legacy data (used for migration from older versions)
-OLD_DATA_PATH = "/Users/jim/Documents/Source Manager/Directory_Source_Citations"
-# Directory for user project files
-USER_PROJECTS_DIR = USER_DATA_DIR / "projects"
+# Path to the source types configuration file
+SOURCE_TYPES_PATH = CONFIG_DIR / "source_types.json"
+
+# Path to the project types configuration file
+PROJECT_TYPES_PATH = CONFIG_DIR / "project_types.json"
+
+# Directory for user-specific data (e.g., user config, user projects)
+USER_DATA_DIR = PROGRAM_FILES_DIR / "user_data"
 
 # Path to the target folder
 DEFAULT_SAVE_DIR = "/Users/jim/Documents"
@@ -134,7 +119,7 @@ SPECIAL_PAGES = {
     "recent_projects": {"view_name": "RecentProjectsView"},
     "settings": {"view_name": "SettingsView"},
     "help": {"view_name": "HelpView"},
-    "admin": {"view_name": "AdminView"}
+    "admin": {"view_name": "AdminView"},
 }
 
 
