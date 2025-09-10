@@ -73,7 +73,7 @@ class ProjectCreationDialog:
             on_dismiss=lambda e: self._close(),
         )
 
-        self.page.dialog = self.dialog
+        self.page.overlay.append(self.dialog)
         self.dialog.open = True
         self.page.update()
 
@@ -91,19 +91,59 @@ class ProjectCreationDialog:
 
     def _update_form_fields(self, project_type_code: str):
         """Clears and rebuilds the dynamic form fields."""
+        from datetime import datetime
+        from src.models.project_models import FieldConfig
+
         self.form_fields.clear()
         self.fields_container.controls.clear()
-        dialog_fields = self.dialog_controller.get_project_type_fields(project_type_code)
+        dialog_fields_data = self.dialog_controller.get_project_type_fields(project_type_code)
 
-        for field_config in dialog_fields:
-            initial_val = self.initial_be_number if field_config.get("name") == "be_number" else ""
-            widget = create_validated_field(field_config, initial_value=initial_val)
+        for field_data in dialog_fields_data:
+            field_name = field_data.get("name")
 
-            if field_config.get("name") == "be_number" and self.initial_be_number:
-                widget.read_only = True # Make BE number read-only if pre-filled
+            # The project_type is determined by the dropdown, so we should never
+            # create a separate field for it in the dynamic form area.
+            if field_name == "project_type":
+                continue
 
-            self.form_fields[field_config.get("name")] = widget
-            self.fields_container.controls.append(widget)
+            widget = None
+            
+            # Check for a calculation rule
+            calculation_rule = field_data.get("calculation")
+            if calculation_rule == "current_year":
+                current_year = str(datetime.now().year)
+                widget = ft.TextField(
+                    label=field_data.get("label"),
+                    value=current_year,
+                    read_only=True,
+                    border_radius=8,
+                )
+                # Store the control so its value can be retrieved on submission
+                self.form_fields[field_name] = widget
+            elif calculation_rule == "be_number_from_path":
+                widget = ft.TextField(
+                    label=field_data.get("label"),
+                    value=self.initial_be_number,
+                    read_only=True,
+                    border_radius=8,
+                )
+                self.form_fields[field_name] = widget
+            else:
+                # --- Create a FieldConfig object for the validator ---
+                # This is necessary because create_validated_field expects a FieldConfig object.
+                # We must filter the dictionary to only include keys that FieldConfig expects.
+                expected_keys = ['name', 'label', 'field_type', 'required', 'hint_text', 'validation_rules', 'width', 'options']
+                clean_dict = {key: value for key, value in field_data.items() if key in expected_keys}
+                field_config = FieldConfig(**clean_dict)
+                
+                # --- Create the widget ---
+                # The initial value is now handled by calculation rules, so it's always empty here.
+                widget = create_validated_field(field_config, initial_value="")
+
+                self.form_fields[field_name] = widget
+
+            if widget:
+                self.fields_container.controls.append(widget)
 
         if self.dialog and self.dialog.open:
             self.page.update()
@@ -132,15 +172,22 @@ class ProjectCreationDialog:
             if hasattr(control, "value"):
                 form_data[name] = control.value
 
-        is_valid, errors = validate_form_data(project_type, form_data)
+        is_valid, errors = validate_form_data(
+            project_type, form_data, self.dialog_controller.controller.admin_service
+        )
         if not is_valid:
             self.logger.warning(f"Form validation failed: {errors}")
             error_dialog = ft.AlertDialog(
                 title=ft.Text("Validation Errors"),
                 content=ft.Text("\n".join(errors)),
-                actions=[ft.TextButton("OK", on_click=lambda _: self.page.close(error_dialog))]
             )
-            self.page.open(error_dialog)
+            def close_error_dialog(e):
+                error_dialog.open = False
+                self.page.update()
+            error_dialog.actions=[ft.TextButton("OK", on_click=close_error_dialog)]
+            self.page.overlay.append(error_dialog)
+            error_dialog.open = True
+            self.page.update()
             return
 
         self.logger.info("Validation passed. Executing on_create callback.")

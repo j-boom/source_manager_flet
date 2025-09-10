@@ -3,13 +3,30 @@ Source Title Generator Utility
 
 Provides a function to programmatically generate standardized titles for source records.
 """
+from typing import List, TYPE_CHECKING
+from src.models.source_models import SourceFieldConfig
 
-from src.services.config_service import ConfigService
+if TYPE_CHECKING:
+    from src.services.admin_service import AdminService
 
-config_service = ConfigService()
+def get_filterable_fields(admin_service: "AdminService") -> List[SourceFieldConfig]:
+    """
+    Gathers all unique fields marked as 'is_filterable' from all source types.
+    """
+    all_source_types = admin_service.get_source_types()
+    filterable_fields = {}  # Use dict to avoid duplicates by name
+    for type_config in all_source_types.values():
+        for field_data in type_config.get("fields", []):
+            if field_data.get("is_filterable"):
+                # Use .get for name to avoid KeyError if name is missing
+                field_name = field_data.get("name")
+                if field_name and field_name not in filterable_fields:
+                    filterable_fields[field_name] = SourceFieldConfig(**field_data)
+    # Sort by label for consistent display order
+    return sorted(list(filterable_fields.values()), key=lambda f: f.label)
 
 
-def generate_source_title(source_type: str, form_data: dict) -> str:
+def generate_source_title(source_type: str, form_data: dict, admin_service: "AdminService") -> str:
     """
     Generates a standardized title for a source based on its type and data.
 
@@ -17,8 +34,7 @@ def generate_source_title(source_type: str, form_data: dict) -> str:
     fields are marked as 'is_title_part', and joins their values together.
     """
     title_parts = []
-    # Get the configuration for all fields related to this source type
-    all_source_types = config_service.get_source_types()
+    all_source_types = admin_service.get_source_types()
     source_type_config = all_source_types.get(source_type, {})
     field_configs = source_type_config.get("fields", [])
 

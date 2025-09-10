@@ -13,9 +13,6 @@ from ...base_view import BaseView
 from .tabs.project_metadata import ProjectMetadataTab
 from .tabs.project_sources import ProjectSourcesTab
 from .tabs.cite_sources import CiteSourcesTab
-from src.services.config_service import ConfigService
-
-config_service = ConfigService()
 
 class ProjectView(BaseView):
     """Project view with a tabbed interface for different project aspects."""
@@ -83,9 +80,11 @@ class ProjectView(BaseView):
             self.logger.error(f"❌ Failed to update tab views: {e}")
             return self.show_error(f"Error loading project data: {e}")
 
-        project_info = f"Project: {project.project_title}"
-        project_type_config = get_project_type_config(project.project_type.value)
-        project_type_display = f"({project_type_config.display_name})" if project_type_config else ""
+        project_info = f"Project: {project.project_title}"        
+        project_type_config = self.controller.project_controller.get_project_type_config(
+            project.project_type
+        )
+        project_type_display = f"({project_type_config.get('display_name')})" if project_type_config else ""
 
         self.logger.debug("Building tab structure")
 

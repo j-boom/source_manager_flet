@@ -58,18 +58,22 @@ class DirectoryService:
             self.logger.error(f"Failed to create directory {new_folder_path}: {e}")
             return False, f"Failed to create directory: {e}"
         
-    def get_country_folders(self) -> List[str]:
-        """Gets all country-level folders from within the primary region folders."""
+    def get_country_folders(self) -> List[Dict[str, str]]:
+        """
+        Gets all country-level folders from within the primary region folders.
+        Returns a list of dictionaries with 'name' and 'path' for use in UI components.
+        """
         countries = []
         primary_folders = self.get_primary_folders()
         for region in primary_folders:
             region_path = self.project_data_dir / region
             if region_path.is_dir():
                 for country_path in region_path.iterdir():
-                    if country_path.is_dir() and not country_path.name.startswith('.') and not country_path.name == 'Non CR Products':
-                        countries.append(country_path.name)
-        # Use set to ensure uniqueness and then sort alphabetically
-        return sorted(list(set(countries)))
+                    # A country is a directory, not hidden, and not a 4-digit year folder
+                    if country_path.is_dir() and not country_path.name.startswith('.') and not country_path.name.isdigit():
+                        countries.append({'name': country_path.name, 'path': str(country_path)})
+        # Sort alphabetically by country name
+        return sorted(countries, key=lambda x: x['name'])
     
     def get_country_for_project(self, project_path: Path) -> str:
         """Get the country name for a project based on its path."""
@@ -77,5 +81,7 @@ class DirectoryService:
     
     def derive_project_number_from_path(self, parent_path: Path) -> str:
         """Gets the BE number from the string representation of the path."""
-        match = re.search(r"\b\d{10}\b", str(parent_path))
-        return match.group(0) if match else ""
+        folder_name = parent_path.name
+        # This regex looks for the BE number patterns at the beginning of the folder name.
+        match = re.match(r"(\d{10}\b|\d{4}[A-Z]{2}\d{4}\b|\d{4}-\d{5}\b)", folder_name)
+        return match.group(1) if match else ""

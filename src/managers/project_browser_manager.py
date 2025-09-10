@@ -53,7 +53,9 @@ class ProjectBrowserManager:
             return False
 
         folder_name = self.current_path.name
-        return bool(re.match(r"^\d{4}[A-Z]{2}\d{4}\b|^\d{10}\b", folder_name))
+        # This regex checks if the folder name STARTS WITH a valid BE number format.
+        # It now accepts 10-digit, YYYYCCDDDD, or the user's XXXX-XXXXX format.
+        return bool(re.match(r"^\d{10}\b|^\d{4}[A-Z]{2}\d{4}\b|^\d{4}-\d{5}\b", folder_name))
 
     # --- Public Properties for View Display ---
     @property
@@ -90,6 +92,14 @@ class ProjectBrowserManager:
             self.current_path = self.root_path
 
         self.search_term = ""  # Reset search on folder change
+        self.update_state()
+
+    def navigate_to_root(self):
+        """Navigates to the root project directory and resets state."""
+        self.current_path = self.root_path
+        self.search_term = ""
+        # This was missing, but needed to correctly reset the country dropdown in the view
+        self.selected_primary_folder = None
         self.update_state()
 
     def navigate_to_path(self, path: Path):
@@ -139,28 +149,11 @@ class ProjectBrowserManager:
 
     def get_all_countries(self) -> List[Dict[str, str]]:
         """
-        Gets all countries from all primary folders.
-        Returns a list of dictionaries with 'name' and 'path' keys.
-        Only includes actual country names, not year folders (4-digit numbers).
+        Gets all countries from all primary folders by delegating to the DirectoryService.
+        Returns a list of dictionaries with 'name' and 'path' keys, suitable for a dropdown.
         """
-        countries = []
-        for primary_folder in self.primary_folders:
-            primary_path = self.root_path / primary_folder
-            if primary_path.exists() and primary_path.is_dir():
-                # Get all subdirectories (countries) in this primary folder
-                country_items = self.controller.directory_service.get_folder_contents(str(primary_path))
-                for item in country_items:
-                    if (item.get('is_directory', False) and 
-                        not item['name'].startswith('.') and
-                        not item['name'].isdigit()):  # Exclude 4-digit year folders
-                        countries.append({
-                            'name': item['name'],
-                            'path': item['path'],
-                            'region': primary_folder
-                        })
-        
-        # Sort countries alphabetically by name
-        countries.sort(key=lambda x: x['name'])
+        # Delegate the logic to the service layer to avoid duplication.
+        countries = self.controller.directory_service.get_country_folders()
         return countries
 
     def select_country(self, country_path: str):
@@ -192,18 +185,14 @@ class ProjectBrowserManager:
         
         # Walk through all subdirectories starting from current path
         for root, dirs, files in os.walk(str(self.current_path)):
-            # Filter out hidden directories and files
+            # Filter out hidden directories
             dirs[:] = [d for d in dirs if not d.startswith('.')]
             
             for dir_name in dirs:
                 # Check if folder name starts with search term
                 if dir_name.lower().startswith(search_term):
                     full_path = os.path.join(root, dir_name)
-                    matching_folders.append({
-                        'name': dir_name,
-                        'path': full_path,
-                        'is_directory': True
-                    })
+                    matching_folders.append({'name': dir_name, 'path': full_path, 'is_directory': True})
         
         # Sort results by name
         matching_folders.sort(key=lambda x: x['name'])

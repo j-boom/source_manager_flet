@@ -51,7 +51,7 @@ class SourceService:
         return next((s for s in all_sources if s.id == source_id), None)
 
     def get_available_countries(self) -> List[str]:
-        return self.directory_service.get_country_folders()
+        return [c['name'] for c in self.directory_service.get_country_folders()]
 
     def create_new_source(
         self, country: str, form_data: Dict[str, Any]

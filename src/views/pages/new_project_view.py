@@ -189,17 +189,13 @@ class NewProjectView(BaseView):
 
     def _on_breadcrumb_clicked(self, index: int):
         """Handle breadcrumb navigation."""
-        parts = self.browser_manager.breadcrumb_parts
-
         if index == 0:  # Clicked on "Projects" - go to root
-            self.browser_manager.current_path = self.browser_manager.root_path
-            # Reset country dropdown and disable search
-            self.country_dropdown.value = None
-            self.search_field.disabled = True
-            self.search_field.value = ""
-            self.browser_manager.search("")
+            # Delegate to the manager to handle resetting the state.
+            # This assumes a `navigate_to_root` method exists on the manager.
+            self.browser_manager.navigate_to_root()
         else:
             # Navigate to the clicked breadcrumb level
+            parts = self.browser_manager.breadcrumb_parts
             new_parts = parts[1 : index + 1]  # exclude root "Projects" part
             new_path = self.browser_manager.root_path.joinpath(*new_parts)
             self.browser_manager.navigate_to_path(new_path)
@@ -268,6 +264,9 @@ class NewProjectView(BaseView):
 
     def _on_add_project_clicked(self, e):
         """Tells the controller to show the project creation dialog."""
+        self.logger.info(
+            f"Add Project button clicked for path: {self.browser_manager.current_path}"
+        )
         self.controller.dialog_controller.open_new_project_dialog(
             parent_path=self.browser_manager.current_path
         )
@@ -303,15 +302,9 @@ class NewProjectView(BaseView):
 
     def update_view(self):
         """Refreshes the breadcrumb, header, and file list."""
-        # Rebuild the breadcrumb bar with updated breadcrumbs
-        self.breadcrumb_bar = self._build_breadcrumb_bar()
-
-        # Update the main column controls with the new breadcrumb_bar
-        if hasattr(self, "main_column") and self.main_column:
-            self.main_column.controls[1] = (
-                self.breadcrumb_bar
-            )  # breadcrumb_bar is at index 1
-
+        # --- FIX: Update existing components instead of rebuilding them ---
+        if self.breadcrumb:
+            self.breadcrumb.update_crumbs(self.browser_manager.breadcrumb_parts)
         self._update_action_button()
         self._update_file_list()
         if hasattr(self, "page") and self.page:

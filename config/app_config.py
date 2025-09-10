@@ -18,7 +18,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 SRC_DIR = PROJECT_ROOT / "src"
 
 # Base directory for all application data (user, project, and master sources)
-BASE_DATA_DIR = Path("/Users/jim/Documents/Source Manager")
+BASE_DATA_DIR = Path("/Users/jim/Documents/Development/Source Manager")
 
 # Directory for application logs (kept with source code for development)
 LOGS_DIR = PROJECT_ROOT / "logs"

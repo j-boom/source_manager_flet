@@ -4,23 +4,32 @@ Validation Utilities
 This module provides centralized, reusable validation functions for form data
 based on rules defined in the application's configuration.
 """
-
 import re
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional, Dict, TYPE_CHECKING
 from src.models.project_models import FieldConfig, ValidationRule, FieldType
-from src.services.config_service import ConfigService
 import flet as ft
 
-config_service = ConfigService()
+if TYPE_CHECKING:
+    from src.services.admin_service import AdminService
 
-def _get_project_type_fields(project_type_code: str) -> List[FieldConfig]:
+def _get_project_type_fields(project_type_code: str, admin_service: "AdminService") -> List[FieldConfig]:
     """
     Retrieves the field configurations for a given project type.
     """
-    project_types_config = config_service.get_project_types()
+    project_types_config = admin_service.get_project_types()
     project_type_data = project_types_config.get(project_type_code, {})
     fields_data = project_type_data.get("fields", [])
-    return [FieldConfig(**f) for f in fields_data]
+    
+    # The FieldConfig model does not accept layout-specific keys.
+    # We must filter the dictionaries to only include keys that FieldConfig expects.
+    expected_keys = ['name', 'label', 'field_type', 'required', 'hint_text', 'validation_rules', 'width', 'options']
+    
+    clean_field_data = []
+    for field_data in fields_data:
+        clean_dict = {key: value for key, value in field_data.items() if key in expected_keys}
+        clean_field_data.append(clean_dict)
+        
+    return [FieldConfig(**f) for f in clean_field_data]
 
 
 def validate_field_value(field_config: FieldConfig, value: Any) -> tuple[bool, str]:
@@ -60,7 +69,7 @@ def validate_field_value(field_config: FieldConfig, value: Any) -> tuple[bool, s
 
     return True, ""
 
-def validate_form_data(project_type_code: str, form_data: dict) -> tuple[bool, list[str]]:
+def validate_form_data(project_type_code: str, form_data: dict, admin_service: "AdminService") -> tuple[bool, list[str]]:
     """
     Validates an entire dictionary of form data for a given project type.
 
@@ -71,7 +80,7 @@ def validate_form_data(project_type_code: str, form_data: dict) -> tuple[bool, l
     Returns:
         A tuple containing a boolean (is_valid) and a list of error messages.
     """
-    fields_to_validate = _get_project_type_fields(project_type_code)
+    fields_to_validate = _get_project_type_fields(project_type_code, admin_service)
     errors = []
 
     for field in fields_to_validate:
@@ -82,17 +91,24 @@ def validate_form_data(project_type_code: str, form_data: dict) -> tuple[bool, l
 
     return not errors, errors
 
-def create_validated_field(field_config: FieldConfig, initial_value: str = "") -> ft.Control:
+def create_validated_field(field_config: [FieldConfig, Dict], initial_value: str = "") -> ft.Control:
     """
     Creates a Flet widget with built-in real-time validation.
 
     Args:
-        field_config: The configuration for the field.
+        field_config: The configuration for the field (can be a FieldConfig object or a dict).
         initial_value: The starting value for the field.
 
     Returns:
         A Flet control with validation attached to its on_change event.
     """
+    # Defensively convert dict to FieldConfig if needed. This makes the function
+    # more robust if it's called from parts of the UI that handle raw config dicts.
+    if isinstance(field_config, dict):
+        expected_keys = ['name', 'label', 'field_type', 'required', 'hint_text', 'validation_rules', 'width', 'options']
+        clean_dict = {key: value for key, value in field_config.items() if key in expected_keys}
+        field_config = FieldConfig(**clean_dict)
+
     label = f"{field_config.label} *" if field_config.required else field_config.label
 
     def handle_validation(e: ft.ControlEvent):

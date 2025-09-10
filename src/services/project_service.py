@@ -9,21 +9,23 @@ import re
 import uuid
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
 from datetime import datetime
 
 from src.models import Project, ProjectSourceLink, SourceRecord
 from .source_service import SourceService
-from .config_service import ConfigService
+
+if TYPE_CHECKING:
+    from .admin_service import AdminService
 
 
 class ProjectService:
     """Handles loading, saving, and modifying project data."""
 
-    def __init__(self, source_service: SourceService, config_service: ConfigService):
+    def __init__(self, source_service: SourceService, admin_service: "AdminService"):
         self.logger = logging.getLogger(__name__)
         self.source_service = source_service
-        self.config_service = config_service
+        self.admin_service = admin_service
         self.logger.info("ProjectService initialized")
 
     def load_project(self, file_path: Path) -> Optional[Project]:
@@ -61,7 +63,7 @@ class ProjectService:
     ) -> Tuple[bool, str, Optional[Project]]:
         """Creates a new project object and file from form data."""
         project_type_code = form_data.get("project_type")
-        project_configs = self.config_service.get_project_types()
+        project_configs = self.admin_service.get_project_types()
         project_config = project_configs.get(project_type_code)
 
         if not project_config:
@@ -86,6 +88,8 @@ class ProjectService:
             project_title=title,
             file_path=file_path,
             metadata=metadata,
+            # Embed the field definitions at creation time for self-contained projects.
+            fields=project_config.get("fields", []),
         )
 
         try:

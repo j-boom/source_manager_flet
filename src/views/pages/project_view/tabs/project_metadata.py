@@ -61,9 +61,18 @@ class ProjectMetadataTab(BaseTab):
         project_type_code = project.project_type
         project_data = self._extract_form_data(project)
 
-        # Get the project type configuration
-        project_config = self.controller.project_controller.get_project_type_config(project_type_code)
-        all_display_fields = {field.get("name"): field for field in project_config.get("fields", [])}
+        # --- NEW LOGIC ---
+        # Prioritize field definitions embedded in the project file for self-containment.
+        # Fall back to the global configuration for older projects.
+        if hasattr(project, 'fields') and project.fields:
+            self.logger.info("Using embedded field definitions from project file.")
+            all_display_fields_list = project.fields
+        else:
+            self.logger.warning(f"Project '{project.project_title}' has no embedded fields. Falling back to global config for type '{project_type_code}'.")
+            project_config = self.controller.project_controller.get_project_type_config(project_type_code)
+            all_display_fields_list = project_config.get("fields", [])
+        
+        all_display_fields = {field.get("name"): field for field in all_display_fields_list}
 
         # Group fields by their column group for layout
         grouped_fields = defaultdict(list)
@@ -141,7 +150,14 @@ class ProjectMetadataTab(BaseTab):
         Returns:
             Dict[str, Any]: Flat dictionary of all form field values.
         """
-        return project.metadata
+        # Start with the dynamic metadata dictionary
+        form_data = project.metadata.copy()
+        
+        # Overlay top-level, authoritative fields to ensure consistency.
+        # This prevents stale data in the metadata dict from being shown.
+        form_data['project_title'] = project.project_title
+        
+        return form_data
 
     def _on_action_button_click(self, e):
         """

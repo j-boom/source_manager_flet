@@ -9,19 +9,21 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List
 
-from config.app_config import PROJECT_ROOT
+from config.app_config import PROJECT_TYPES_PATH, SOURCE_TYPES_PATH
 
 class AdminService:
     """Service for managing dynamic application configurations."""
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.config_dir = PROJECT_ROOT / "data" / "config"
-        self.config_dir.mkdir(parents=True, exist_ok=True)
         
-        self.project_types_path = self.config_dir / "project_types.json"
-        self.source_types_path = self.config_dir / "source_types.json"
+        self.project_types_path = PROJECT_TYPES_PATH
+        self.source_types_path = SOURCE_TYPES_PATH
 
+        # Ensure parent directories exist before loading
+        self.project_types_path.parent.mkdir(parents=True, exist_ok=True)
+        self.source_types_path.parent.mkdir(parents=True, exist_ok=True)
+        
         self.project_types_config = self._load_json(self.project_types_path)
         self.source_types_config = self._load_json(self.source_types_path)
         self.logger.info("AdminService initialized and configurations loaded.")
@@ -51,11 +53,14 @@ class AdminService:
 
     def get_project_types(self) -> Dict[str, Any]:
         """Returns the current project types configuration."""
+        # The new standard format expects all project types to be nested under this key.
+        # The backward-compatibility layer has been removed to enforce the new structure.
         return self.project_types_config.get("PROJECT_TYPES_CONFIG", {})
     
     def get_source_types(self) -> Dict[str, Any]:
         """Returns the current source types configuration."""
-        return self.source_types_config
+        # The new standard format expects all source types to be nested under this key.
+        return self.source_types_config.get("SOURCE_TYPES_CONFIG", {})
         
     def save_project_types(self, new_config: Dict[str, Any]) -> bool:
         """Saves the updated project types configuration."""
@@ -69,8 +74,10 @@ class AdminService:
 
     def save_source_types(self, new_config: Dict[str, Any]) -> bool:
         """Saves the updated source types configuration."""
-        if self._save_json(self.source_types_path, new_config):
+        # Wrap in the root key
+        data_to_save = {"SOURCE_TYPES_CONFIG": new_config}
+        if self._save_json(self.source_types_path, data_to_save):
             # Update in-memory cache
-            self.source_types_config = new_config
+            self.source_types_config = data_to_save
             return True
         return False

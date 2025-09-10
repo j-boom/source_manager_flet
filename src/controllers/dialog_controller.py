@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Callable, Optional, Dict, Any, TYPE_CHECKING, List
+from src.models.project_models import FieldConfig
 
 import flet as ft
 
@@ -28,7 +29,7 @@ class DialogController(BaseController):
 
     def __init__(self, app_controller):
         super().__init__(app_controller)
-        self.config_service = self.controller.config_service
+        self.admin_service = self.controller.admin_service
 
     def open_dialog(self, dialog):
         """
@@ -103,6 +104,7 @@ class DialogController(BaseController):
         Args:
             parent_path: The directory where the project will be created.
         """
+        self.logger.info(f"Opening new project dialog for path: {parent_path}")
         # The BE number can be derived from the parent path's name
         initial_be = self.controller.directory_service.derive_project_number_from_path(
             parent_path
@@ -117,7 +119,7 @@ class DialogController(BaseController):
                 form_data=form_data,
             )
 
-        project_types = self.config_service.get_project_types()
+        project_types = self.admin_service.get_project_types()
         # Instantiate the refactored dialog
         dialog = ProjectCreationDialog(
             page=self.controller.page,
@@ -130,12 +132,18 @@ class DialogController(BaseController):
 
     def get_project_type_fields(self, project_type_code: str) -> List[Dict[str, Any]]:
         """
-        Gets the fields for a given project type.
+        Gets the raw field configuration dictionaries for a given project type
+        that are configured to appear in the creation dialog.
         """
-        project_configs = self.config_service.get_project_types()
+        project_configs = self.admin_service.get_project_types()
         project_config = project_configs.get(project_type_code)
         if project_config:
-            return project_config.get("fields", [])
+            all_fields_data = project_config.get("fields", [])
+            # Filter for fields meant for the dialog
+            dialog_fields_data = [
+                f for f in all_fields_data if f.get("collection_stage") == "dialog"
+            ]
+            return dialog_fields_data
         return []
 
     def open_add_source_to_project_dialog(self, e):
@@ -189,7 +197,7 @@ class DialogController(BaseController):
                     )
                 )
 
-        source_types = self.config_service.get_source_types()
+        source_types = self.admin_service.get_source_types()
         # --- Instantiate and show the dialog ---
         dialog = SourceCreationDialog(
             page=self.controller.page,
@@ -206,7 +214,7 @@ class DialogController(BaseController):
         """
         Gets the fields for a given source type.
         """
-        source_configs = self.config_service.get_source_types()
+        source_configs = self.admin_service.get_source_types()
         source_config = source_configs.get(source_type_code)
         if source_config:
             return source_config.get("fields", [])
@@ -255,6 +263,7 @@ class DialogController(BaseController):
             source=source,
             link=link,
             on_save=on_save_callback,
+            admin_service=self.admin_service,
         )
         dialog.show()
 

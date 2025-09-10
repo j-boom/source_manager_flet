@@ -8,7 +8,6 @@ from src.services.directory_service import DirectoryService
 from src.services.source_service import SourceService
 from src.services.admin_service import AdminService
 from src.services.admin_auth_service import AdminAuthService
-from src.services.config_service import ConfigService
 
 # Import the main managers
 from src.managers.user_config_manager import UserConfigManager
@@ -56,9 +55,8 @@ class AppController:
         # Initialize services
         self.directory_service = DirectoryService()
         self.source_service = SourceService(directory_service=self.directory_service)
-        self.config_service = ConfigService()
-        self.project_service = ProjectService(source_service=self.source_service, config_service=self.config_service)
         self.admin_service = AdminService()
+        self.project_service = ProjectService(source_service=self.source_service, admin_service=self.admin_service)
         self.admin_auth_service = AdminAuthService()
 
         # Initialize managers

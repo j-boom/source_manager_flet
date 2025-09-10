@@ -217,5 +217,5 @@ class ProjectController(BaseController):
         """
         Gets the configuration for a given project type.
         """
-        project_configs = self.controller.config_service.get_project_types()
+        project_configs = self.controller.admin_service.get_project_types()
         return project_configs.get(project_type_code, {})

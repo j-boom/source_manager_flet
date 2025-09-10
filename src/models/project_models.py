@@ -79,6 +79,9 @@ class Project:
     # A dictionary to hold all dynamic metadata based on the project type
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    # A list of field definitions, embedded at creation time for self-containment
+    fields: List[Dict[str, Any]] = field(default_factory=list)
+
     # The ordered list of sources used by this project
     sources: List[ProjectSourceLink] = field(default_factory=list)
 
@@ -90,6 +93,7 @@ class Project:
             "project_title": self.project_title,
             "file_path": str(self.file_path.as_posix()),
             "metadata": self.metadata,
+            "fields": self.fields,
             "sources": [s.to_dict() for s in self.sources],
         }
 
@@ -104,6 +108,7 @@ class Project:
             project_title=data.get("project_title", ""),
             file_path=Path(data.get("file_path", "")),
             metadata=data.get("metadata", {}),
+            fields=data.get("fields", []),
             sources=[ProjectSourceLink.from_dict(s) for s in data.get("sources", [])],
         )
 

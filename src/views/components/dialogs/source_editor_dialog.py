@@ -12,10 +12,7 @@ from src.models.source_models import SourceFieldConfig
 from src.models.project_models import FieldConfig, ValidationRule, FieldType
 from src.models.source_models import SourceRecord
 from src.models.project_models import ProjectSourceLink
-from src.services.config_service import ConfigService
 from utils.validators import create_validated_field
-
-config_service = ConfigService()
 
 @dataclass
 class _CompatibleFieldConfig:
@@ -27,11 +24,6 @@ class _CompatibleFieldConfig:
     validation_rules: Dict[ValidationRule, Any] = field(default_factory=dict)
     width: Optional[int] = None
     options: Optional[List[str]] = None
-
-    def __post_init__(self):
-        # Ensure field_type is of type FieldType enum
-        if isinstance(self.field_type, str):
-            self.field_type = FieldType(self.field_type)
 
     @classmethod
     def from_source_field_config(cls, s_config: SourceFieldConfig):
@@ -56,6 +48,7 @@ A dialog for viewing and editing a master source and its project-specific link d
         source: SourceRecord,
         link: ProjectSourceLink,
         on_save: Callable[[str, Dict[str, Any], Dict[str, Any]], None],
+        admin_service: "AdminService",
     ):
         """
         Initializes the editor dialog.
@@ -65,13 +58,16 @@ A dialog for viewing and editing a master source and its project-specific link d
             source: The master source record to edit.
             link: The project-specific source link to edit.
             on_save: Callback to execute with (source_id, master_data, link_data).
+            admin_service: The admin service instance.
         """
         self.page = page
         self.source = source
         self.link = link
         self.on_save = on_save
         self.dialog: Optional[ft.AlertDialog] = None
+        self.admin_service = admin_service
         self.master_form_fields: Dict[str, ft.Control] = {}
+        self.field_configs: Dict[str, _CompatibleFieldConfig] = {}
         self.logger = logging.getLogger(__name__)
 
         # --- UI Components for project-specific data ---
@@ -108,7 +104,7 @@ Builds and displays the dialog on the page.
             on_dismiss=lambda e: self._close(),
         )
 
-        if self not in self.page.overlay:
+        if self.dialog not in self.page.overlay:
             self.page.overlay.append(self.dialog)
         self.dialog.open = True
         self.page.update()
@@ -119,17 +115,18 @@ Builds the form content, pre-populated with the source's data.
 """
         self.logger.debug("Building editor content")
         self.master_form_fields.clear()
+        self.field_configs.clear()
 
         # --- Build fields for the Master Source Record ---
-        all_source_types = config_service.get_source_types()
-        source_type_config = all_source_types.get(self.source.source_type.value, {})
+        all_source_types = self.admin_service.get_source_types()
+        source_type_config = all_source_types.get(self.source.source_type, {})
         fields_to_create_data = source_type_config.get("fields", [])
         fields_to_create = [SourceFieldConfig(**f) for f in fields_to_create_data]
 
         master_source_controls = []
         for field_config in fields_to_create:
             # Get the current value from the source model
-            current_value = getattr(self.source, field_config.name, "")
+            current_value = self.source.get_field_value(field_config.name, "")
             if isinstance(current_value, list):
                 current_value = ", ".join(map(str, current_value))
 
@@ -138,6 +135,7 @@ Builds the form content, pre-populated with the source's data.
             widget = create_validated_field(compatible_config, str(current_value))
 
             self.master_form_fields[field_config.name] = widget
+            self.field_configs[field_config.name] = compatible_config
             master_source_controls.append(widget)
 
         # --- Combine all controls into a single list ---
@@ -152,9 +150,24 @@ Builds the form content, pre-populated with the source's data.
 
     def _handle_save_clicked(self, e):
         """
-Gathers updated data and calls the on_save callback.
+Gathers updated data, validates it, and calls the on_save callback.
 """
-        self.logger.info("Save Changes button clicked - collecting data.")
+        self.logger.info("Save Changes button clicked - validating and collecting data.")
+        is_valid = True
+
+        # --- Validate dynamic fields ---
+        for name, control in self.master_form_fields.items():
+            config = self.field_configs.get(name)
+            if config and config.required and not control.value:
+                control.error_text = f"{config.label} is required."
+                is_valid = False
+            else:
+                control.error_text = None
+            control.update()
+
+        if not is_valid:
+            self.page.update() # Update the page to show all error texts
+            return
 
         # Gather data from master source form
         master_data = {

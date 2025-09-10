@@ -3,9 +3,9 @@ from typing import Dict, List
 from ..base_view import BaseView
 from models.source_models import SourceRecord, SourceFieldConfig
 from ..components.cards.on_deck_card import OnDeckCard
-from src.services.config_service import ConfigService
 
-config_service = ConfigService()
+# --- FIX: Import the missing function ---
+from utils.source_title_generator import get_filterable_fields
 
 
 class SourcesView(BaseView):
@@ -208,7 +208,7 @@ class SourcesView(BaseView):
         self.filter_controls = {}
 
         # Get all fields marked as 'is_filterable' from the config
-        filterable_fields = get_filterable_fields()
+        filterable_fields = get_filterable_fields(self.controller.admin_service)
 
         # Create a text field for each one
         for field_config in filterable_fields:
