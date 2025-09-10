@@ -12,17 +12,18 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 
-from config import get_project_type_config, get_country_from_project_path
-from src.models import Project, ProjectType, ProjectSourceLink, SourceRecord
+from src.models import Project, ProjectSourceLink, SourceRecord
 from .source_service import SourceService
+from .config_service import ConfigService
 
 
 class ProjectService:
     """Handles loading, saving, and modifying project data."""
 
-    def __init__(self, source_service: SourceService):
+    def __init__(self, source_service: SourceService, config_service: ConfigService):
         self.logger = logging.getLogger(__name__)
         self.source_service = source_service
+        self.config_service = config_service
         self.logger.info("ProjectService initialized")
 
     def load_project(self, file_path: Path) -> Optional[Project]:
@@ -60,7 +61,9 @@ class ProjectService:
     ) -> Tuple[bool, str, Optional[Project]]:
         """Creates a new project object and file from form data."""
         project_type_code = form_data.get("project_type")
-        project_config = get_project_type_config(project_type_code)
+        project_configs = self.config_service.get_project_types()
+        project_config = project_configs.get(project_type_code)
+
         if not project_config:
             return False, f"Invalid project type: {project_type_code}", None
 
@@ -69,7 +72,7 @@ class ProjectService:
         title = metadata.get("project_title") or "Untitled Project"
 
         try:
-            filename = project_config.filename_pattern.format(**metadata) + ".json"
+            filename = project_config['filename_pattern'].format(**metadata) + ".json"
         except KeyError as e:
             return False, f"Missing required field for filename: {e}", None
 
@@ -79,7 +82,7 @@ class ProjectService:
 
         project = Project(
             project_id=str(uuid.uuid4()),
-            project_type=ProjectType(project_type_code),
+            project_type=project_type_code,
             project_title=title,
             file_path=file_path,
             metadata=metadata,

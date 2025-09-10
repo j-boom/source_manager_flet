@@ -10,11 +10,6 @@ from collections import defaultdict
 from typing import Dict, Any
 
 from .base_tab import BaseTab
-from config.project_types_config import (
-    get_metadata_fields,
-    get_dialog_fields,
-    CollectionStage,
-)
 from utils import create_validated_field
 
 
@@ -63,23 +58,17 @@ class ProjectMetadataTab(BaseTab):
                 self.page.update()
             return
 
-        project_type_code = project.project_type.value
+        project_type_code = project.project_type
         project_data = self._extract_form_data(project)
 
-        # Get all metadata and dialog fields for this project type
-        metadata_fields = get_metadata_fields(project_type_code)
-        dialog_fields = get_dialog_fields(project_type_code)
-
-        # Show ALL fields except document_title which should remain hidden
-        all_display_fields = {field.name: field for field in metadata_fields}
-        for field in dialog_fields:
-            if field.name != "document_title":  # Hide document_title
-                all_display_fields[field.name] = field
+        # Get the project type configuration
+        project_config = self.controller.project_controller.get_project_type_config(project_type_code)
+        all_display_fields = {field.get("name"): field for field in project_config.get("fields", [])}
 
         # Group fields by their column group for layout
         grouped_fields = defaultdict(list)
         for field in all_display_fields.values():
-            grouped_fields[field.column_group or "Project Metadata"].append(field)
+            grouped_fields[field.get("column_group", "Project Metadata")].append(field)
 
         # Only show the three main columns in this order
         column_order = ["Facility Information", "Team", "Project Info"]
@@ -89,7 +78,7 @@ class ProjectMetadataTab(BaseTab):
             if group_name not in grouped_fields:
                 continue
 
-            fields_in_group = sorted(grouped_fields[group_name], key=lambda f: f.tab_order)
+            fields_in_group = sorted(grouped_fields[group_name], key=lambda f: f.get("tab_order", 0))
 
             # Start each column with a header and divider
             column_controls = [
@@ -102,14 +91,14 @@ class ProjectMetadataTab(BaseTab):
             ]
 
             for field_config in fields_in_group:
-                current_value = project_data.get(field_config.name, "")
+                current_value = project_data.get(field_config.get("name"), "")
                 # Create the appropriate widget for this field
                 widget = create_validated_field(field_config, str(current_value))
 
                 # Determine if the field should be editable in the current mode
-                is_dialog_field = field_config.collection_stage == CollectionStage.DIALOG
+                is_dialog_field = field_config.get("collection_stage") == "dialog"
                 # Project title is a special case: it's a dialog field but should be editable
-                is_editable = self.is_edit_mode and (not is_dialog_field or field_config.name == "project_title")
+                is_editable = self.is_edit_mode and (not is_dialog_field or field_config.get("name") == "project_title")
 
                 # Apply read-only/disabled state based on edit mode
                 if isinstance(widget, (ft.Checkbox, ft.Dropdown)):
@@ -124,7 +113,7 @@ class ProjectMetadataTab(BaseTab):
                         widget.filled=True
                         widget.border_color = ft.colors.TRANSPARENT
                 
-                self.form_fields[field_config.name] = widget
+                self.form_fields[field_config.get("name")] = widget
                 column_controls.append(widget)
                 
             form_columns.append(ft.Column(controls=column_controls, spacing=10, expand=True))
@@ -152,12 +141,7 @@ class ProjectMetadataTab(BaseTab):
         Returns:
             Dict[str, Any]: Flat dictionary of all form field values.
         """
-        # Start with metadata dictionary which contains most fields
-        form_data = project.metadata.copy() if project.metadata else {}
-
-        # Add main project fields that are stored at the top level
-        form_data["project_title"] = project.project_title
-        return form_data
+        return project.metadata
 
     def _on_action_button_click(self, e):
         """

@@ -10,7 +10,6 @@ import logging
 from pathlib import Path
 from typing import Callable, Dict, Any, List, Optional
 
-from config import get_dialog_fields, get_project_type_display_names
 from utils.validators import create_validated_field, validate_form_data
 
 class ProjectCreationDialog:
@@ -20,7 +19,9 @@ class ProjectCreationDialog:
         self,
         page: ft.Page,
         on_create: Callable[[Dict[str, Any]], None],
-        initial_be_number: str = ""
+        initial_be_number: str = "",
+        project_types: Dict[str, Any] = None,
+        dialog_controller: "DialogController" = None,
     ):
         """
         Initializes the dialog.
@@ -29,10 +30,14 @@ class ProjectCreationDialog:
             page: The Flet Page object.
             on_create: A callback to execute with the validated form_data dictionary.
             initial_be_number: An optional initial value for the 'be_number' field.
+            project_types: A dictionary of project types.
+            dialog_controller: The dialog controller.
         """
         self.page = page
         self.on_create = on_create
         self.initial_be_number = initial_be_number
+        self.project_types = project_types
+        self.dialog_controller = dialog_controller
         self.dialog: Optional[ft.AlertDialog] = None
         self.form_fields: Dict[str, ft.Control] = {}
         self.logger = logging.getLogger(__name__)
@@ -74,12 +79,11 @@ class ProjectCreationDialog:
 
     def _build_project_type_dropdown(self) -> ft.Dropdown:
         """Builds the project type dropdown."""
-        project_types = get_project_type_display_names()
         return ft.Dropdown(
             label="Project Type *",
             options=[
-                ft.dropdown.Option(key=code, text=name)
-                for code, name in project_types.items()
+                ft.dropdown.Option(key=code, text=config.get("display_name"))
+                for code, config in self.project_types.items()
             ],
             on_change=self._on_project_type_change,
             autofocus=True,
@@ -89,16 +93,16 @@ class ProjectCreationDialog:
         """Clears and rebuilds the dynamic form fields."""
         self.form_fields.clear()
         self.fields_container.controls.clear()
-        dialog_fields = get_dialog_fields(project_type_code)
+        dialog_fields = self.dialog_controller.get_project_type_fields(project_type_code)
 
         for field_config in dialog_fields:
-            initial_val = self.initial_be_number if field_config.name == "be_number" else ""
+            initial_val = self.initial_be_number if field_config.get("name") == "be_number" else ""
             widget = create_validated_field(field_config, initial_value=initial_val)
 
-            if field_config.name == "be_number" and self.initial_be_number:
+            if field_config.get("name") == "be_number" and self.initial_be_number:
                 widget.read_only = True # Make BE number read-only if pre-filled
 
-            self.form_fields[field_config.name] = widget
+            self.form_fields[field_config.get("name")] = widget
             self.fields_container.controls.append(widget)
 
         if self.dialog and self.dialog.open:

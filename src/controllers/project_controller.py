@@ -212,3 +212,10 @@ class ProjectController(BaseController):
         Returns the currently loaded project object.
         """
         return self.controller.project_state_manager.current_project
+
+    def get_project_type_config(self, project_type_code: str) -> Dict[str, Any]:
+        """
+        Gets the configuration for a given project type.
+        """
+        project_configs = self.controller.config_service.get_project_types()
+        return project_configs.get(project_type_code, {})

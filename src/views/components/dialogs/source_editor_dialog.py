@@ -6,38 +6,49 @@ A dialog for editing a master source and its project-specific link data.
 import flet as ft
 import logging
 from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
-from config.project_types_config import FieldConfig, ValidationRule, FieldType
-from models.source_models import SourceRecord
-from models.project_models import ProjectSourceLink
+from src.models.source_models import SourceFieldConfig
+from src.models.project_models import FieldConfig, ValidationRule, FieldType
+from src.models.source_models import SourceRecord
+from src.models.project_models import ProjectSourceLink
+from src.services.config_service import ConfigService
 from utils.validators import create_validated_field
+
+config_service = ConfigService()
 
 @dataclass
 class _CompatibleFieldConfig:
-    """A compatible field config to bridge SourceFieldConfig and FieldConfig."""
     name: str
     label: str
     field_type: FieldType
     required: bool = False
     hint_text: str = ""
-    validation_rules: Optional[Dict[ValidationRule, Any]] = None
-    width: int = 400
+    validation_rules: Dict[ValidationRule, Any] = field(default_factory=dict)
+    width: Optional[int] = None
     options: Optional[List[str]] = None
-    
-    def __init__(self, s_config: SourceFieldConfig):
-        self.name = s_config.name
-        self.label = s_config.label
-        self.field_type = FieldType[s_config.field_type.name]
-        self.required = s_config.required
-        self.hint_text = s_config.hint_text
-        self.validation_rules = s_config.validation_rules
-        self.width = s_config.width
-        self.options = None # SourceFieldConfig does not have options
+
+    def __post_init__(self):
+        # Ensure field_type is of type FieldType enum
+        if isinstance(self.field_type, str):
+            self.field_type = FieldType(self.field_type)
+
+    @classmethod
+    def from_source_field_config(cls, s_config: SourceFieldConfig):
+        return cls(
+            name=s_config.name,
+            label=s_config.label,
+            field_type=FieldType(s_config.field_type), # Convert string to FieldType enum
+            required=s_config.required,
+            hint_text=s_config.hint_text,
+            width=s_config.width,
+            # validation_rules and options are not in SourceFieldConfig, so they will use defaults
+        )
 
 class SourceEditorDialog:
-    """A dialog for viewing and editing a master source and its project-specific link data."""
+    """
+A dialog for viewing and editing a master source and its project-specific link data.
+"""
 
     def __init__(
         self,
@@ -76,7 +87,9 @@ class SourceEditorDialog:
         )
 
     def show(self):
-        """Builds and displays the dialog on the page."""
+        """
+Builds and displays the dialog on the page.
+"""
         self.dialog = ft.AlertDialog(
             modal=True,
             title=ft.Text(f"Edit: {self.source.title}", size=20, weight=ft.FontWeight.BOLD),
@@ -101,12 +114,18 @@ class SourceEditorDialog:
         self.page.update()
 
     def _build_content(self) -> List[ft.Control]:
-        """Builds the form content, pre-populated with the source's data."""
+        """
+Builds the form content, pre-populated with the source's data.
+"""
         self.logger.debug("Building editor content")
         self.master_form_fields.clear()
 
         # --- Build fields for the Master Source Record ---
-        fields_to_create = get_fields_for_source_type(self.source.source_type.value)
+        all_source_types = config_service.get_source_types()
+        source_type_config = all_source_types.get(self.source.source_type.value, {})
+        fields_to_create_data = source_type_config.get("fields", [])
+        fields_to_create = [SourceFieldConfig(**f) for f in fields_to_create_data]
+
         master_source_controls = []
         for field_config in fields_to_create:
             # Get the current value from the source model
@@ -115,7 +134,7 @@ class SourceEditorDialog:
                 current_value = ", ".join(map(str, current_value))
 
             # Adapt config and create the widget using the centralized utility
-            compatible_config = _CompatibleFieldConfig(field_config)
+            compatible_config = _CompatibleFieldConfig.from_source_field_config(field_config)
             widget = create_validated_field(compatible_config, str(current_value))
 
             self.master_form_fields[field_config.name] = widget
@@ -132,7 +151,9 @@ class SourceEditorDialog:
         ]
 
     def _handle_save_clicked(self, e):
-        """Gathers updated data and calls the on_save callback."""
+        """
+Gathers updated data and calls the on_save callback.
+"""
         self.logger.info("Save Changes button clicked - collecting data.")
 
         # Gather data from master source form
@@ -156,7 +177,9 @@ class SourceEditorDialog:
         self._close()
 
     def _close(self):
-        """Closes the dialog."""
+        """
+Closes the dialog.
+"""
         if self.dialog:
             self.dialog.open = False
             self.page.update()

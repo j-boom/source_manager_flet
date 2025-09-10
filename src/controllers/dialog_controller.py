@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Optional, Dict, Any, TYPE_CHECKING
+from typing import Callable, Optional, Dict, Any, TYPE_CHECKING, List
 
 import flet as ft
 
@@ -26,6 +26,10 @@ class DialogController(BaseController):
     separation of concerns from the main controller and views.
     """
 
+    def __init__(self, app_controller):
+        super().__init__(app_controller)
+        self.config_service = self.controller.config_service
+
     def open_dialog(self, dialog):
         """
         Opens a dialog by adding it to the page overlay and displaying it.
@@ -51,6 +55,7 @@ class DialogController(BaseController):
         )
         # Use the show() method from the BaseDialog pattern to correctly display the dialog
         dialog.show()
+
     def open_folder_creation_dialog(self, parent_path: Path):
         """
         Opens the folder creation dialog.
@@ -112,13 +117,26 @@ class DialogController(BaseController):
                 form_data=form_data,
             )
 
+        project_types = self.config_service.get_project_types()
         # Instantiate the refactored dialog
         dialog = ProjectCreationDialog(
             page=self.controller.page,
             on_create=on_create_callback,
             initial_be_number=initial_be,
+            project_types=project_types,
+            dialog_controller=self,
         )
         dialog.show()
+
+    def get_project_type_fields(self, project_type_code: str) -> List[Dict[str, Any]]:
+        """
+        Gets the fields for a given project type.
+        """
+        project_configs = self.config_service.get_project_types()
+        project_config = project_configs.get(project_type_code)
+        if project_config:
+            return project_config.get("fields", [])
+        return []
 
     def open_add_source_to_project_dialog(self, e):
         """
@@ -171,6 +189,7 @@ class DialogController(BaseController):
                     )
                 )
 
+        source_types = self.config_service.get_source_types()
         # --- Instantiate and show the dialog ---
         dialog = SourceCreationDialog(
             page=self.controller.page,
@@ -178,8 +197,20 @@ class DialogController(BaseController):
             available_countries=available_countries,
             target_country=target_country,
             from_project_sources_tab=from_project_sources_tab,
+            source_types=source_types,
+            dialog_controller=self,
         )
         dialog.show()
+
+    def get_source_type_fields(self, source_type_code: str) -> List[Dict[str, Any]]:
+        """
+        Gets the fields for a given source type.
+        """
+        source_configs = self.config_service.get_source_types()
+        source_config = source_configs.get(source_type_code)
+        if source_config:
+            return source_config.get("fields", [])
+        return []
 
     def open_source_editor_dialog(self, source_id: str):
         """

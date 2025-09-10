@@ -13,7 +13,9 @@ from ...base_view import BaseView
 from .tabs.project_metadata import ProjectMetadataTab
 from .tabs.project_sources import ProjectSourcesTab
 from .tabs.cite_sources import CiteSourcesTab
-from config.project_types_config import get_project_type_config
+from src.services.config_service import ConfigService
+
+config_service = ConfigService()
 
 class ProjectView(BaseView):
     """Project view with a tabbed interface for different project aspects."""

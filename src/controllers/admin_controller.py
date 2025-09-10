@@ -1,36 +1,42 @@
-"""
-Admin Controller
-
-Handles the business logic for the AdminView.
-"""
 from .base_controller import BaseController
 
 class AdminController(BaseController):
-    """Controller for the admin view."""
+    """Controller for handling admin-related operations."""
 
-    def __init__(self, controller):
-        super().__init__(controller)
-        self.admin_service = self.controller.admin_service
+    def __init__(self, app_controller):
+        super().__init__(app_controller)
+        self.config_service = self.controller.config_service
 
-    def get_project_types_config(self):
-        """Fetches the project types config from the service."""
-        return self.admin_service.get_project_types()
+    def get_all_source_types(self):
+        """Returns a list of all source types."""
+        return list(self.config_service.get_source_types().keys())
 
-    def get_source_types_config(self):
-        """Fetches the source types config from the service."""
-        return self.admin_service.get_source_types()
+    def get_all_project_types(self):
+        """Returns a list of all project types."""
+        return list(self.config_service.get_project_types().keys())
 
-    def save_project_types_config(self, new_config):
-        """Saves the project types config via the service."""
-        if self.admin_service.save_project_types(new_config):
-            self.controller.show_success_message("Project types saved successfully.")
-            # Here you might trigger a notification that a restart is needed
-        else:
-            self.controller.show_error_message("Failed to save project types.")
+    def get_source_type_config(self, type_name: str):
+        """Returns the configuration for a given source type."""
+        source_types = self.config_service.get_source_types()
+        return source_types.get(type_name, {})
 
-    def save_source_types_config(self, new_config):
-        """Saves the source types config via the service."""
-        if self.admin_service.save_source_types(new_config):
-            self.controller.show_success_message("Source types saved successfully.")
-        else:
-            self.controller.show_error_message("Failed to save source types.")
+    def get_field_types(self):
+        """Returns a list of all field types."""
+        return ["text", "number", "date", "boolean", "textarea", "checkbox"]
+
+    def save_source_type_config(self, type_name: str, config: dict):
+        """Saves the configuration for a given source type."""
+        source_types = self.config_service.get_source_types()
+        source_types[type_name] = config
+        self.config_service.save_source_types(source_types)
+
+    def get_project_type_config(self, type_name: str):
+        """Returns the configuration for a given project type."""
+        project_types = self.config_service.get_project_types()
+        return project_types.get(type_name, {})
+
+    def save_project_type_config(self, type_name: str, config: dict):
+        """Saves the configuration for a given project type."""
+        project_types = self.config_service.get_project_types()
+        project_types[type_name] = config
+        self.config_service.save_project_types(project_types)

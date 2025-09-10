@@ -10,9 +10,6 @@ import logging
 from typing import Dict, List, Optional, Any, Callable
 
 from .base_dialog import BaseDialog
-from config.source_types_config import get_fields_for_source_type, SourceFieldConfig
-from config.project_types_config import FieldConfig
-from models.source_models import SourceType
 from utils import create_validated_field, generate_source_title
 
 class SourceCreationDialog(BaseDialog):
@@ -23,6 +20,8 @@ class SourceCreationDialog(BaseDialog):
         page: ft.Page,
         on_create: Callable[[Dict[str, Any]], None],
         available_countries: List[str],
+        dialog_controller: "DialogController",
+        source_types: Dict[str, Any] = None,
         target_country: Optional[str] = None,
         from_project_sources_tab: bool = False
     ):
@@ -33,11 +32,15 @@ class SourceCreationDialog(BaseDialog):
             page: The Flet Page object.
             on_create: A callback to execute with the validated source data.
             available_countries: A list of countries to populate the country dropdown.
+            dialog_controller: The dialog controller.
+            source_types: A dictionary of source types.
             target_country: The country to pre-select in the country dropdown.
             from_project_sources_tab: Flag to show project-specific fields.
         """
         self.on_create = on_create
         self.available_countries = available_countries
+        self.dialog_controller = dialog_controller
+        self.source_types = source_types
         self.target_country = target_country
         self.from_project_sources_tab = from_project_sources_tab
         self.form_fields: Dict[str, ft.Control] = {}
@@ -96,11 +99,11 @@ class SourceCreationDialog(BaseDialog):
     def _build_source_type_dropdown(self) -> ft.Dropdown:
         return ft.Dropdown(
             label="Source Type *",
-            options=[ft.dropdown.Option(st.value, st.name.title()) for st in SourceType],
+            options=[ft.dropdown.Option(st, st.title()) for st in self.source_types.keys()],
             on_change=self._on_source_type_change,
             autofocus=True,
             expand=True,
-            value=SourceType.BOOK.value # Default to a common type
+            value=list(self.source_types.keys())[0] if self.source_types else None
         )
 
     def _build_country_dropdown(self) -> ft.Dropdown:
@@ -116,20 +119,11 @@ class SourceCreationDialog(BaseDialog):
         """Clears and rebuilds the form fields based on the selected source type."""
         self.form_fields.clear()
         self.dynamic_fields_container.controls.clear()
-        fields_to_create: List[SourceFieldConfig] = get_fields_for_source_type(source_type_value)
+        fields_to_create = self.dialog_controller.get_source_type_fields(source_type_value)
 
         for s_config in fields_to_create:
-            compatible_config = FieldConfig(
-                name=s_config.name,
-                label=s_config.label,
-                field_type=s_config.field_type,
-                required=s_config.required,
-                hint_text=s_config.hint_text,
-                validation_rules=s_config.validation_rules,
-                width=s_config.width,
-            )
-            widget = create_validated_field(compatible_config)
-            self.form_fields[s_config.name] = widget
+            widget = create_validated_field(s_config)
+            self.form_fields[s_config.get("name")] = widget
             self.dynamic_fields_container.controls.append(widget)
 
         # Update the page if the dialog is already visible
@@ -180,4 +174,3 @@ class SourceCreationDialog(BaseDialog):
         self.logger.info("Validation passed. Executing on_create callback.")
         self.on_create(form_data)
         self._close_dialog()
-

@@ -10,7 +10,37 @@ from typing import Dict, Optional
 import flet as ft
 
 from .base_controller import BaseController
-from config.app_config import PAGES, SPECIAL_PAGES
+
+PAGES = [
+    {"name": "home", "icon": ft.icons.HOME_OUTLINED, "view_name": "HomeView"},
+    {
+        "name": "new_project",
+        "icon": ft.icons.CREATE_NEW_FOLDER_OUTLINED,
+        "view_name": "NewProjectView",
+    },
+    {
+        "name": "recent_projects",
+        "icon": ft.icons.FOLDER_OPEN_OUTLINED,
+        "view_name": "RecentProjectsView",
+    },
+    {"name": "sources", "icon": ft.icons.BOOK_OUTLINED, "view_name": "SourcesView"},
+    {
+        "name": "reports",
+        "icon": ft.icons.ASSESSMENT_OUTLINED,
+        "view_name": "ReportsView",
+    },
+    {
+        "name": "settings",
+        "icon": ft.icons.SETTINGS_OUTLINED,
+        "view_name": "SettingsView",
+    },
+    {"name": "help", "icon": ft.icons.HELP_OUTLINE, "view_name": "HelpView"},
+]
+
+SPECIAL_PAGES = {
+    "project_dashboard": {"view_name": "ProjectView"},
+    "admin": {"view_name": "AdminView"},
+}
 
 
 class NavigationController(BaseController):
@@ -29,7 +59,7 @@ class NavigationController(BaseController):
         Returns:
             Dict[str, type]: Mapping from page name to view class.
         """
-        from views.pages import (
+        from src.views.pages import (
             HomeView,
             RecentProjectsView,
             NewProjectView,
@@ -55,7 +85,7 @@ class NavigationController(BaseController):
             "SettingsView": SettingsView,
             "SourcesView": SourcesView,
             "HelpView": HelpView,
-            "AdminVew": AdminView,
+            "AdminView": AdminView,
         }
         # Return a mapping from page name to the actual view class
         return {

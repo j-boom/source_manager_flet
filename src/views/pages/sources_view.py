@@ -1,9 +1,11 @@
 import flet as ft
 from typing import Dict, List
 from ..base_view import BaseView
-from models.source_models import SourceRecord
+from models.source_models import SourceRecord, SourceFieldConfig
 from ..components.cards.on_deck_card import OnDeckCard
-from config.source_types_config import get_filterable_fields
+from src.services.config_service import ConfigService
+
+config_service = ConfigService()
 
 
 class SourcesView(BaseView):

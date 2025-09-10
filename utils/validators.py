@@ -7,8 +7,21 @@ based on rules defined in the application's configuration.
 
 import re
 from typing import Any, List, Optional, Dict
-from config.project_types_config import FieldConfig, ValidationRule, get_dialog_fields, FieldType
+from src.models.project_models import FieldConfig, ValidationRule, FieldType
+from src.services.config_service import ConfigService
 import flet as ft
+
+config_service = ConfigService()
+
+def _get_project_type_fields(project_type_code: str) -> List[FieldConfig]:
+    """
+    Retrieves the field configurations for a given project type.
+    """
+    project_types_config = config_service.get_project_types()
+    project_type_data = project_types_config.get(project_type_code, {})
+    fields_data = project_type_data.get("fields", [])
+    return [FieldConfig(**f) for f in fields_data]
+
 
 def validate_field_value(field_config: FieldConfig, value: Any) -> tuple[bool, str]:
     """
@@ -58,7 +71,7 @@ def validate_form_data(project_type_code: str, form_data: dict) -> tuple[bool, l
     Returns:
         A tuple containing a boolean (is_valid) and a list of error messages.
     """
-    fields_to_validate = get_dialog_fields(project_type_code)
+    fields_to_validate = _get_project_type_fields(project_type_code)
     errors = []
 
     for field in fields_to_validate:
