@@ -19,6 +19,9 @@ class NavigationController(BaseController):
     def __init__(self, app_controller):
         super().__init__(app_controller)
 
+        # This flag acts as a simple session state. It's False when the app starts.
+        self.is_admin_authenticated = False
+
     def build_view_class_map(self) -> Dict[str, type]:
         """
         Creates a mapping from page names (as used in navigation) to their corresponding view classes.
@@ -35,6 +38,7 @@ class NavigationController(BaseController):
             SourcesView,
             ReportsView,
             HelpView,
+            AdminView,
         )
 
         all_pages = {p["name"]: p["view_name"] for p in PAGES}
@@ -51,6 +55,7 @@ class NavigationController(BaseController):
             "SettingsView": SettingsView,
             "SourcesView": SourcesView,
             "HelpView": HelpView,
+            "AdminVew": AdminView,
         }
         # Return a mapping from page name to the actual view class
         return {
@@ -76,6 +81,17 @@ class NavigationController(BaseController):
                 final_page_name = "project_dashboard"
             else:
                 final_page_name = "new_project"
+
+        # If the page is the admin page, make sure the user knows the password
+        if page_name == "admin":
+            if self.is_admin_authenticated:
+                final_page_name = "admin"
+            else:
+                # If not authenticated, open the login dialog.
+                self.controller.dialog_controller.open_admin_login_dialog(
+                    on_success=self._handle_admin_login_success
+                )
+                return  # Stop navigation until login is successful
 
         # Validate recent projects list before showing recent_projects page
         if page_name == "recent_projects":
@@ -108,6 +124,16 @@ class NavigationController(BaseController):
         else:
             self.logger.error(f"Could not find view for page: {page_name}. ")
 
+    def _handle_admin_login_success(self):
+        """
+        Callback executed after a successful admin login. This method sets the
+        authentication flag to True and then re-initiates navigation to the admin page.
+        """
+        self.logger.info("Admin login successful. Setting auth state.")
+        self.is_admin_authenticated = True
+        # Now that we are authenticated, proceed with navigation to the admin page.
+        self.navigate_to_page("admin")
+
     def _validate_recent_projects(self):
         """
         Checks the recent projects list and removes any that no longer exist on disk.
@@ -131,8 +157,7 @@ class NavigationController(BaseController):
         self.logger.info(f"Removing recent project: {project_path}")
         self.controller.user_config_manager.remove_recent_project(project_path)
         self.controller.update_view()
-        self.navigate_to_page('recent_projects')
-
+        self.navigate_to_page("recent_projects")
 
     def submit_new_folder(
         self, parent_path: Path, folder_name: str, description: str = ""

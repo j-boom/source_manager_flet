@@ -11,6 +11,7 @@ from src.views.components.dialogs import (
     SourceEditorDialog,
     FirstTimeSetupDialog,
     FolderCreationDialog,
+    AdminLoginDialog,
 )
 
 if TYPE_CHECKING:
@@ -36,6 +37,20 @@ class DialogController(BaseController):
         dialog.open = True
         self.controller.page.update()
 
+    def open_admin_login_dialog(self, on_success: Callable):
+        """
+        Opens the dialog to prompt for the admin password.
+
+        Args:
+            on_success: The function to call if authentication is successful.
+        """
+        dialog = AdminLoginDialog(
+            page=self.controller.page,
+            controller=self.controller,
+            on_login_success=on_success,
+        )
+        # Use the show() method from the BaseDialog pattern to correctly display the dialog
+        dialog.show()
     def open_folder_creation_dialog(self, parent_path: Path):
         """
         Opens the folder creation dialog.
@@ -47,6 +62,7 @@ class DialogController(BaseController):
         Args:
             parent_path: The path where the new folder should be created.
         """
+
         def on_create_callback(folder_name: str, description: str):
             """This function is passed to the dialog to be called on success."""
             self.logger.info(f"Folder creation dialog confirmed for '{folder_name}'")
@@ -54,7 +70,7 @@ class DialogController(BaseController):
             success, message = self.controller.directory_service.create_new_folder(
                 parent_path=parent_path,
                 folder_name=folder_name,
-                description=description
+                description=description,
             )
             if success:
                 self.controller.project_browser_manager.update_state()
@@ -67,7 +83,7 @@ class DialogController(BaseController):
         dialog = FolderCreationDialog(
             page=self.controller.page,
             parent_path=parent_path,
-            on_create=on_create_callback
+            on_create=on_create_callback,
         )
         # Show the dialog
         dialog.show()
@@ -83,7 +99,9 @@ class DialogController(BaseController):
             parent_path: The directory where the project will be created.
         """
         # The BE number can be derived from the parent path's name
-        initial_be = self.controller.directory_service.derive_project_number_from_path(parent_path)
+        initial_be = self.controller.directory_service.derive_project_number_from_path(
+            parent_path
+        )
 
         def on_create_callback(form_data: Dict[str, Any]):
             """This function contains the logic to execute on successful creation."""
@@ -91,14 +109,14 @@ class DialogController(BaseController):
             self.controller.project_controller.create_project(
                 parent_path=parent_path,
                 project_type=form_data["project_type"],
-                form_data=form_data
+                form_data=form_data,
             )
 
         # Instantiate the refactored dialog
         dialog = ProjectCreationDialog(
             page=self.controller.page,
             on_create=on_create_callback,
-            initial_be_number=initial_be
+            initial_be_number=initial_be,
         )
         dialog.show()
 
@@ -109,34 +127,49 @@ class DialogController(BaseController):
         Args:
             e: The triggering event (not used).
         """
-        dialog = AddSourceToProjectDialog(
-            page=self.controller.page, controller=self.controller
-        )
+
+        def on_save():
+            self.controller.show_success_message(
+                "Successfully Saved Add Source To Project"
+            )
+
+        dialog = AddSourceToProjectDialog(page=self.controller.page, on_save=on_save)
         self.open_dialog(dialog)
 
-    def open_new_source_dialog(self, from_project_sources_tab: bool = False, target_country_from_view: Optional[str] = None):
+    def open_new_source_dialog(
+        self,
+        from_project_sources_tab: bool = False,
+        target_country_from_view: Optional[str] = None,
+    ):
         """
         Opens the refactored source creation dialog.
         """
         self.logger.info("Opening new source dialog.")
-        
+
         # --- Define the callback function ---
         def on_create_callback(form_data: Dict[str, Any]):
-            self.logger.info("Source creation dialog confirmed. Passing to SourceController.")
+            self.logger.info(
+                "Source creation dialog confirmed. Passing to SourceController."
+            )
             # Delegate the actual creation logic to the SourceController
             self.controller.source_controller.create_new_source(
-                source_data=form_data,
-                add_to_project=from_project_sources_tab
+                source_data=form_data, add_to_project=from_project_sources_tab
             )
 
         # --- Get data needed by the dialog ---
-        available_countries = self.controller.source_controller.get_available_countries()
-        
+        available_countries = (
+            self.controller.source_controller.get_available_countries()
+        )
+
         target_country = target_country_from_view
         if not target_country:
             project = self.controller.project_controller.get_current_project()
             if project:
-                target_country = self.controller.directory_service.get_country_for_project(project.file_path)
+                target_country = (
+                    self.controller.directory_service.get_country_for_project(
+                        project.file_path
+                    )
+                )
 
         # --- Instantiate and show the dialog ---
         dialog = SourceCreationDialog(
@@ -144,7 +177,7 @@ class DialogController(BaseController):
             on_create=on_create_callback,
             available_countries=available_countries,
             target_country=target_country,
-            from_project_sources_tab=from_project_sources_tab
+            from_project_sources_tab=from_project_sources_tab,
         )
         dialog.show()
 
@@ -161,28 +194,36 @@ class DialogController(BaseController):
         link = self.controller.source_controller.get_project_source_link(source_id)
 
         if not source or not link:
-            self.controller.show_error_message("Could not find source details for editing.")
+            self.controller.show_error_message(
+                "Could not find source details for editing."
+            )
             return
 
         # --- Define the callback function ---
-        def on_save_callback(s_id: str, master_data: Dict[str, Any], link_data: Dict[str, Any]):
+        def on_save_callback(
+            s_id: str, master_data: Dict[str, Any], link_data: Dict[str, Any]
+        ):
             self.logger.info(f"Editor dialog confirmed for source_id: {s_id}")
             # Delegate saving to the SourceController
             try:
-                self.controller.source_controller.submit_master_source_update(s_id, master_data)
-                self.controller.source_controller.submit_project_link_update(s_id, link_data)
+                self.controller.source_controller.submit_master_source_update(
+                    s_id, master_data
+                )
+                self.controller.source_controller.submit_project_link_update(
+                    s_id, link_data
+                )
                 self.controller.show_success_message("Source updated successfully.")
-                self.controller.update_view() # Refresh the view to show changes
+                self.controller.update_view()  # Refresh the view to show changes
             except Exception as e:
                 self.logger.error(f"Failed to save source updates: {e}")
                 # The controller methods will show their own error messages
-                
+
         # --- Instantiate and show the dialog ---
         dialog = SourceEditorDialog(
             page=self.controller.page,
             source=source,
             link=link,
-            on_save=on_save_callback
+            on_save=on_save_callback,
         )
         dialog.show()
 

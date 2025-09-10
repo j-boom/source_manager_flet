@@ -11,7 +11,32 @@ import logging
 from pathlib import Path
 from dataclasses import dataclass, field, asdict, fields
 from typing import List, Optional, Dict, Any
+from enum import Enum
+from datetime import datetime
 
+
+# =============================================================================
+# User Profile and Role Models
+# =============================================================================
+
+class UserRole(Enum):
+    """Defines the roles a user can have within the application."""
+    USER = "user"
+    ADMIN = "admin"
+
+@dataclass
+class UserProfile:
+    """Represents a user's profile and permissions."""
+    display_name: str
+    role: UserRole
+    is_active: bool = True
+    created_date: str = field(default_factory=lambda: datetime.now().isoformat())
+    last_login: Optional[str] = None
+
+
+# =============================================================================
+# User Configuration Models
+# =============================================================================
 
 @dataclass
 class WindowConfig:

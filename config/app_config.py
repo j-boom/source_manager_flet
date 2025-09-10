@@ -106,6 +106,7 @@ SPECIAL_PAGES = {
     "recent_projects": {"view_name": "RecentProjectsView"},
     "settings": {"view_name": "SettingsView"},
     "help": {"view_name": "HelpView"},
+    "admin": {"view_name": "AdminView"}
 }
 
 

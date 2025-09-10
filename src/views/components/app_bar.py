@@ -12,7 +12,11 @@ class AppBar(ft.AppBar):
     """A custom AppBar that extends ft.AppBar."""
 
     def __init__(
-        self, greeting: str, on_settings_click: Callable, on_help_click: Callable
+        self,
+        greeting: str,
+        on_settings_click: Callable,
+        on_help_click: Callable,
+        on_admin_click: Callable,
     ):
         """
         Initializes the AppBar.
@@ -21,10 +25,35 @@ class AppBar(ft.AppBar):
             greeting: The initial greeting text to display.
             on_settings_click: Callback function for when the settings icon is clicked.
             on_help_click: Callback function for when the help icon is clicked.
+            on_admin_click: Callback function for when the admin access item is clicked
         """
         # This text control will hold the greeting message.
         self.title = ft.Text("Source Manager 2.0", size=20, weight=ft.FontWeight.BOLD)
         self.greeting_text = ft.Text(greeting, size=16)
+
+        self.user_profile_button = ft.PopupMenuButton(
+            items=[
+                ft.PopupMenuItem(
+                    text="Settings",
+                    icon=ft.icons.SETTINGS_OUTLINED,
+                    on_click=on_settings_click,
+                ),
+                ft.PopupMenuItem(),  # Divider
+                ft.PopupMenuItem(
+                    text="Admin Access",
+                    icon=ft.icons.ADMIN_PANEL_SETTINGS_OUTLINED,
+                    on_click=on_admin_click,
+                ),
+            ],
+            # Use a more descriptive icon for the user profile
+            content=ft.Row(
+                [
+                    ft.Icon(ft.icons.PERSON_OUTLINE),
+                    self.greeting_text,
+                ],
+                spacing=5,
+            ),
+        )
 
         # Call the parent constructor with all the AppBar properties.
         super().__init__(
@@ -32,14 +61,7 @@ class AppBar(ft.AppBar):
             center_title=False,
             bgcolor=ft.colors.PRIMARY_CONTAINER,  # A default color to prevent errors on init
             actions=[
-                ft.Container(
-                    content=self.greeting_text, padding=ft.padding.only(right=16)
-                ),  # Left-side greeting
-                ft.IconButton(
-                    ft.icons.SETTINGS_OUTLINED,
-                    on_click=on_settings_click,
-                    tooltip="Settings",
-                ),
+                self.user_profile_button,
                 ft.IconButton(
                     ft.icons.HELP_OUTLINE, on_click=on_help_click, tooltip="Help"
                 ),

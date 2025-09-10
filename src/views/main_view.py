@@ -77,6 +77,7 @@ class MainView(BaseView):
             greeting=(app_greeting),
             on_settings_click=lambda e: self.controller.navigate_to("settings"),
             on_help_click=lambda e: self.controller.navigate_to("help"),
+            on_admin_click=lambda e: self.controller.navigate_to("admin")
         )
 
     def _build_sidebar(self) -> Sidebar:

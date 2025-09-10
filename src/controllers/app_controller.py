@@ -6,6 +6,8 @@ from typing import Dict, Optional
 from src.services.project_service import ProjectService
 from src.services.directory_service import DirectoryService
 from src.services.source_service import SourceService
+from src.services.admin_service import AdminService
+from src.services.admin_auth_service import AdminAuthService
 
 # Import the main managers
 from src.managers.user_config_manager import UserConfigManager
@@ -27,6 +29,7 @@ from .dialog_controller import DialogController
 from .powerpoint_controller import PowerPointController
 from .navigation_controller import NavigationController
 from .settings_controller import SettingsController
+from .admin_controller import AdminController
 
 
 class AppController:
@@ -53,6 +56,8 @@ class AppController:
         self.directory_service = DirectoryService()
         self.source_service = SourceService(directory_service=self.directory_service)
         self.project_service = ProjectService(source_service=self.source_service)
+        self.admin_service = AdminService()
+        self.admin_auth_service = AdminAuthService()
 
         # Initialize managers
         self.user_config_manager = UserConfigManager()

@@ -6,8 +6,9 @@ from .recent_projects_view import RecentProjectsView
 from .reports_view import ReportsView
 from .settings_view import SettingsView
 from .sources_view import SourcesView
+from .admin_view import AdminView
 
 __all__ = [
     "HomeView", "RecentProjectsView", "NewProjectView", "ProjectView",
-    "SettingsView", "SourcesView", "ReportsView", "HelpView"
+    "SettingsView", "SourcesView", "ReportsView", "HelpView", "AdminView"
 ]

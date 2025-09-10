@@ -11,15 +11,15 @@ from typing import Optional, Dict, List
 from datetime import datetime
 
 from ..models.user_config_models import UserRole, UserProfile
-
+from config.app_config import USER_DATA_DIR
 
 class AdminAuthService:
     """Service for handling admin authentication and user role management."""
     
-    def __init__(self, data_dir: Path):
-        self.data_dir = data_dir
-        self.admin_config_file = data_dir / "admin_config.json"
-        self.users_file = data_dir / "users.json"
+    def __init__(self):
+        self.data_dir = USER_DATA_DIR
+        self.admin_config_file = USER_DATA_DIR / "admin_config.json"
+        self.users_file = USER_DATA_DIR / "users.json"
         self.logger = logging.getLogger(__name__)
         
         # Default admin password hash (password: "admin123" - should be changed!)
@@ -250,3 +250,4 @@ class AdminAuthService:
             (user for user in users if user["display_name"] == display_name),
             None
         )
+
