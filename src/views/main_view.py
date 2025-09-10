@@ -110,6 +110,7 @@ class MainView(BaseView):
             content (ft.Control): The control to display in the content area.
         """
         self.content_area.content = content
+        self.content_area.update() # Add this line
 
     def get_view_class(self, page_name: str):
         """

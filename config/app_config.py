@@ -17,13 +17,6 @@ PROJECT_ROOT = Path(__file__).parent.parent
 # Source code directory
 SRC_DIR = PROJECT_ROOT / "src"
 
-# Directory for application configuration files (source_types.json, project_types.json)
-CONFIG_DIR = PROJECT_ROOT / "data" / "config"
-# Path to the source types configuration file
-SOURCE_TYPES_PATH = CONFIG_DIR / "source_types.json"
-# Path to the project types configuration file
-PROJECT_TYPES_PATH = CONFIG_DIR / "project_types.json"
-
 # Base directory for all application data (user, project, and master sources)
 BASE_DATA_DIR = Path("/Users/jim/Documents/Source Manager")
 
