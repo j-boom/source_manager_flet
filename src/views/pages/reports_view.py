@@ -2,6 +2,7 @@
 Reports View - Modern export-focused interface for generating bibliographies and citations
 """
 
+from utils.citation_generator import generate_citation
 import flet as ft
 from typing import Optional, List, Dict, Any
 from src.views.base_view import BaseView
@@ -188,12 +189,12 @@ class ReportsView(BaseView):
         if not project or not project.sources:
             return "No sources have been added to this project yet."
 
-        # This part should ideally be in a dedicated citation service/manager
         preview_lines = []
         for i, link in enumerate(project.sources):
             source = self.controller.source_service.get_source_by_id(link.source_id)
             if source:
-                preview_lines.append(f"[{i+1}] {source.title} ({source.publication_year or 'n.d.'}).")
+                citation = generate_citation(source, self.controller)
+                preview_lines.append(f"[{i+1}] {citation}")
         return "\n".join(preview_lines)
 
     def _choose_export_location(self, export_type: str):

@@ -1,3 +1,4 @@
+from .admin_view import AdminView
 from .help_view import HelpView
 from .home_view import HomeView
 from .new_project_view import NewProjectView
@@ -6,9 +7,17 @@ from .recent_projects_view import RecentProjectsView
 from .reports_view import ReportsView
 from .settings_view import SettingsView
 from .sources_view import SourcesView
-from .admin_view import AdminView
+from .user_management_tab import UserManagementTab
 
 __all__ = [
-    "HomeView", "RecentProjectsView", "NewProjectView", "ProjectView",
-    "SettingsView", "SourcesView", "ReportsView", "HelpView", "AdminView"
+    "AdminView",
+    "HelpView",
+    "HomeView",
+    "NewProjectView",
+    "ProjectView",
+    "RecentProjectsView",
+    "ReportsView",
+    "SettingsView",
+    "SourcesView",
+    "UserManagementTab",
 ]

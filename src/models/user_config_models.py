@@ -23,15 +23,7 @@ class UserRole(Enum):
     """Defines the roles a user can have within the application."""
     USER = "user"
     ADMIN = "admin"
-
-@dataclass
-class UserProfile:
-    """Represents a user's profile and permissions."""
-    display_name: str
-    role: UserRole
-    is_active: bool = True
-    created_date: str = field(default_factory=lambda: datetime.now().isoformat())
-    last_login: Optional[str] = None
+    LOCAL_SAVER = "local_saver"
 
 
 # =============================================================================
@@ -95,6 +87,8 @@ class UserConfig:
         setup_completed (bool): Whether the initial setup has been completed.
         recent_projects (List[RecentProject]): List of recently opened projects.
         last_page (str): The last page/view visited by the user.
+    role (UserRole): The user's role for permissions.
+    is_active (bool): Whether the user account is active.
     """
     window: WindowConfig
     theme: ThemeConfig
@@ -102,6 +96,8 @@ class UserConfig:
     setup_completed: bool = False
     recent_projects: List[RecentProject] = field(default_factory=list)
     last_page: str = "home"
+    role: UserRole = UserRole.USER
+    is_active: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -109,7 +105,9 @@ class UserConfig:
         Returns:
             dict: Dictionary representation of the user config.
         """
-        return asdict(self)
+        data = asdict(self)
+        data['role'] = self.role.value
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> UserConfig:
@@ -124,6 +122,10 @@ class UserConfig:
         data['window'] = WindowConfig(**data.get('window', {}))
         data['theme'] = ThemeConfig(**data.get('theme', {}))
         data['recent_projects'] = [RecentProject(**rp) for rp in data.get('recent_projects', [])]
+        # Handle enum deserialization for role
+        if 'role' in data and isinstance(data['role'], str):
+            data['role'] = UserRole(data['role'])
+
         # Only pass valid fields to the constructor
         field_names = {f.name for f in fields(cls)}
         filtered_data = {k: v for k, v in data.items() if k in field_names}

@@ -43,12 +43,16 @@ class SourceService:
 
     def get_source_by_id(self, source_id: str) -> Optional[SourceRecord]:
         """Finds a master source by its unique ID across all countries."""
+        # First, check all cached sources for a quick lookup.
         for country_cache in self._master_source_cache.values():
             if source_id in country_cache:
                 return country_cache[source_id]
         
-        all_sources = self.get_all_master_sources()
-        return next((s for s in all_sources if s.id == source_id), None)
+        # If not in cache, load all sources and check again.
+        # This ensures that if a source's country file hasn't been loaded yet, it can still be found.
+        for f in self.master_sources_dir.glob("*_sources.json"):
+            country = f.name.replace("_sources.json", "")
+            self._load_master_sources_for_country(country) # This will populate the cache
 
     def get_available_countries(self) -> List[str]:
         return [c['name'] for c in self.directory_service.get_country_folders()]
@@ -62,13 +66,10 @@ class SourceService:
             return False, "Source type not specified.", None
 
         try:
-            # Use the factory to correctly build the object with its defined fields
-            new_source = SourceRecordFactory.create_source_record(
-                source_type=source_type_str, initial_values=form_data
-            )
-            # Set the remaining metadata attributes
+            # --- FIX: Instantiate the SourceRecord directly using its from_dict method ---
+            # The SourceRecordFactory was never implemented. This is the correct approach.
+            new_source = SourceRecord.from_dict(form_data)
             new_source.country = country
-            new_source.id = str(uuid.uuid4()) # Override the default UUID if needed
         except Exception as e:
             self.logger.error(f"Failed to create source model: {e}", exc_info=True)
             return False, f"Failed to create source model: {e}", None
@@ -108,7 +109,10 @@ class SourceService:
 
         # Update the source object's dynamic fields and metadata
         for key, value in updated_data.items():
-            if key in ["display_name", "country", "used_in"]:
+            if key in ["id", "source_type", "date_created", "last_modified"]:
+                # These are read-only or managed internally, so we skip them.
+                continue
+            elif key in ["display_name", "country", "used_in"]:
                 if getattr(source, key) != value:
                     setattr(source, key, value)
                     source.last_modified = datetime.now()
@@ -175,8 +179,3 @@ class SourceService:
         except (json.JSONDecodeError, TypeError) as e:
             self.logger.error(f"Error loading master sources for '{country}': {e}", exc_info=True)
             return {}
-            
-    def get_master_sources_for_country(self, country: str) -> List[SourceRecord]:
-        """Get all master sources for a specific country. Note: This is a duplicate of get_sources_by_country."""
-        source_map = self._load_master_sources_for_country(country)
-        return list(source_map.values())

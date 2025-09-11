@@ -61,16 +61,10 @@ class ProjectMetadataTab(BaseTab):
         project_type_code = project.project_type
         project_data = self._extract_form_data(project)
 
-        # --- NEW LOGIC ---
-        # Prioritize field definitions embedded in the project file for self-containment.
-        # Fall back to the global configuration for older projects.
-        if hasattr(project, 'fields') and project.fields:
-            self.logger.info("Using embedded field definitions from project file.")
-            all_display_fields_list = project.fields
-        else:
-            self.logger.warning(f"Project '{project.project_title}' has no embedded fields. Falling back to global config for type '{project_type_code}'.")
-            project_config = self.controller.project_controller.get_project_type_config(project_type_code)
-            all_display_fields_list = project_config.get("fields", [])
+        # --- Get field definitions from the central configuration ---
+        self.logger.info(f"Loading field definitions from global config for type '{project_type_code}'.")
+        project_config = self.controller.project_controller.get_project_type_config(project_type_code)
+        all_display_fields_list = project_config.get("fields", [])
         
         all_display_fields = {field.get("name"): field for field in all_display_fields_list}
 

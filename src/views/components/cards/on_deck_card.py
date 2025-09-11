@@ -106,7 +106,7 @@ class OnDeckCard(BaseCard):
 
     def _show_citation_dialog(self, e):
         """Shows the source citation dialog."""
-        dialog = SourceCitationDialog(self.source)
+        dialog = SourceCitationDialog(self.source, self.controller)
         self.page.overlay.append(dialog)
         dialog.open = True
         self.page.update()

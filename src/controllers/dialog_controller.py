@@ -13,6 +13,9 @@ from src.views.components.dialogs import (
     FirstTimeSetupDialog,
     FolderCreationDialog,
     AdminLoginDialog,
+    AddConfigTypeDialog,
+    UserEditorDialog,
+    DeleteConfirmationDialog,
 )
 
 if TYPE_CHECKING:
@@ -145,6 +148,62 @@ class DialogController(BaseController):
             ]
             return dialog_fields_data
         return []
+
+    def open_add_source_type_dialog(self):
+        """Opens a dialog to add a new source type."""
+        self.logger.info("Opening 'add source type' dialog.")
+
+        def on_create_callback(type_name: str):
+            self.logger.info(f"Dialog confirmed for new source type: {type_name}")
+            self.controller.admin_controller.add_new_source_type(type_name)
+
+        dialog = AddConfigTypeDialog(
+            title="Add New Source Type", on_create=on_create_callback
+        )
+        self.open_dialog(dialog)
+
+    def open_add_project_type_dialog(self):
+        """Opens a dialog to add a new project type."""
+        self.logger.info("Opening 'add project type' dialog.")
+
+        def on_create_callback(type_name: str):
+            self.logger.info(f"Dialog confirmed for new project type: {type_name}")
+            self.controller.admin_controller.add_new_project_type(type_name)
+
+        dialog = AddConfigTypeDialog(
+            title="Add New Project Type", on_create=on_create_callback
+        )
+        self.open_dialog(dialog)
+
+    def open_user_editor_dialog(self, user_data: Optional[Dict[str, Any]] = None):
+        """Opens a dialog to add or edit a user."""
+        self.logger.info(f"Opening user editor dialog. User: {user_data.get('display_name') if user_data else 'New'}")
+
+        def on_save_callback(original_name: Optional[str], updated_data: Dict[str, Any]):
+            if original_name: # Editing existing user
+                self.logger.info(f"Dialog confirmed for updating user: {original_name}")
+                self.controller.admin_controller.update_user(original_name, updated_data)
+            else: # Adding new user
+                self.logger.info(f"Dialog confirmed for new user: {updated_data['display_name']}")
+                self.controller.admin_controller.add_user(updated_data)
+
+        dialog = UserEditorDialog(on_save=on_save_callback, user_data=user_data)
+        self.open_dialog(dialog)
+
+    def open_delete_user_confirmation_dialog(self, user_name: str):
+        """Opens a confirmation dialog before deleting a user."""
+        self.logger.info(f"Opening delete confirmation for user: {user_name}")
+
+        def on_confirm_callback():
+            self.logger.info(f"Deletion confirmed for user: {user_name}")
+            self.controller.admin_controller.delete_user(user_name)
+
+        dialog = DeleteConfirmationDialog(
+            item_name=user_name,
+            item_type="user",
+            on_confirm=on_confirm_callback
+        )
+        self.open_dialog(dialog)
 
     def open_add_source_to_project_dialog(self, e):
         """

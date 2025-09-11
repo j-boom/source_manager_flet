@@ -7,6 +7,9 @@ from .source_creation_dialog import SourceCreationDialog
 from .source_editor_dialog import SourceEditorDialog
 from .add_source_to_project_dialog import AddSourceToProjectDialog
 from .admin_login_dialog import AdminLoginDialog
+from .add_config_type_dialog import AddConfigTypeDialog
+from .user_editor_dialog import UserEditorDialog
+from .delete_confirmation_dialog import DeleteConfirmationDialog
 
 __all__ = [
     "AddSourceToProjectDialog",
@@ -15,5 +18,8 @@ __all__ = [
     "FirstTimeSetupDialog",
     "SourceCreationDialog",
     "SourceEditorDialog",
-    "AdminLoginDialog"
+    "AdminLoginDialog",
+    "AddConfigTypeDialog",
+    "UserEditorDialog",
+    "DeleteConfirmationDialog",
 ]

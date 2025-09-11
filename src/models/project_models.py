@@ -9,7 +9,7 @@ relationship to sources.
 from __future__ import annotations
 import json
 from pathlib import Path
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
@@ -19,6 +19,8 @@ class FieldType(str, Enum):
     NUMBER = "number"
     CHECKBOX = "checkbox"
     DROPDOWN = "dropdown"
+    DATE = "date"
+    BOOLEAN = "boolean"
     TEXTAREA = "textarea"
 
 
@@ -51,8 +53,7 @@ class ProjectSourceLink:
     """
 
     source_id: str  # The ID of the master SourceRecord
-    notes: Optional[str] = None
-    declassify: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the dataclass to a dictionary."""
@@ -60,8 +61,22 @@ class ProjectSourceLink:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ProjectSourceLink:
-        """Deserializes a dictionary into a dataclass instance."""
-        return cls(**data)
+        """
+        Deserializes a dictionary into a dataclass instance.
+        Handles backward compatibility for old format with 'notes' and 'declassify'.
+        """
+        if 'notes' in data or 'declassify' in data:
+            metadata = data.get('metadata', {})
+            if 'notes' in data and data['notes'] is not None:
+                metadata.setdefault('usage_notes', data.get('notes'))
+            if 'declassify' in data and data['declassify'] is not None:
+                metadata.setdefault('declassify_info', data.get('declassify'))
+            
+            data['metadata'] = metadata
+            data.pop('notes', None)
+            data.pop('declassify', None)
+            
+        return cls(**{k: v for k, v in data.items() if k in [f.name for f in fields(cls)]})
 
 
 @dataclass
@@ -79,9 +94,6 @@ class Project:
     # A dictionary to hold all dynamic metadata based on the project type
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    # A list of field definitions, embedded at creation time for self-containment
-    fields: List[Dict[str, Any]] = field(default_factory=list)
-
     # The ordered list of sources used by this project
     sources: List[ProjectSourceLink] = field(default_factory=list)
 
@@ -93,7 +105,6 @@ class Project:
             "project_title": self.project_title,
             "file_path": str(self.file_path.as_posix()),
             "metadata": self.metadata,
-            "fields": self.fields,
             "sources": [s.to_dict() for s in self.sources],
         }
 
@@ -108,7 +119,6 @@ class Project:
             project_title=data.get("project_title", ""),
             file_path=Path(data.get("file_path", "")),
             metadata=data.get("metadata", {}),
-            fields=data.get("fields", []),
             sources=[ProjectSourceLink.from_dict(s) for s in data.get("sources", [])],
         )
 
@@ -131,12 +141,10 @@ class Project:
             print(f"Error loading project from {file_path}: {e}")
             return None
 
-    def add_source(self, source_id: str, notes: str = "", declassify: str = ""):
+    def add_source(self, source_id: str, metadata: Dict[str, Any] = None):
         """Adds a source to the project. Sources are ordered by their position in the list."""
         if source_id not in [s.source_id for s in self.sources]:
-            link = ProjectSourceLink(
-                source_id=source_id, notes=notes, declassify=declassify
-            )
+            link = ProjectSourceLink(source_id=source_id, metadata=metadata or {})
             self.sources.append(link)
 
     def remove_source(self, source_id: str):

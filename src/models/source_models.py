@@ -8,6 +8,13 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+class StringWithValue(str):
+    """A string subclass that also has a 'value' property for backward compatibility with some view components."""
+    @property
+    def value(self):
+        return self
+
+
 @dataclass
 class SourceFieldConfig:
     name: str
@@ -18,6 +25,10 @@ class SourceFieldConfig:
     is_title_part: bool = False
     hint_text: Optional[str] = None
     width: Optional[int] = None
+    show_in_editor: bool = True
+    validation_rules: Dict[str, Any] = field(default_factory=dict)
+    storage_scope: str = "core"  # Can be "core" or "link"
+    display_order: int = 0
 
 @dataclass
 class SourceField:
@@ -48,7 +59,22 @@ class SourceRecord:
     display_name: Optional[str] = None
     date_created: datetime = field(default_factory=datetime.now)
     last_modified: datetime = field(default_factory=datetime.now)
-    used_in: List[str] = field(default_factory=list)
+    used_in: List[Dict[str, str]] = field(default_factory=list)
+
+    def get_title(self) -> str:
+        """
+        Returns the display title for the source.
+        Prioritizes the display_name field, falls back to the dynamic 'title' field
+        for backward compatibility, and finally returns a generic title.
+        """
+        if self.display_name:
+            return self.display_name
+        
+        title_from_fields = self.get_field_value("title")
+        if title_from_fields:
+            return str(title_from_fields)
+            
+        return "Untitled Source"
 
     def get_field_value(self, field_name: str, default: Any = None) -> Any:
         """Gets the value of a dynamic field by its name."""
@@ -114,7 +140,7 @@ class SourceRecord:
 
         return cls(
             id=data.get("id", str(uuid.uuid4())),
-            source_type=source_type,
+            source_type=StringWithValue(source_type),
             country=data.get("country"),
             display_name=data.get("display_name"),
             date_created=date_created,

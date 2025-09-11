@@ -87,9 +87,7 @@ class ProjectService:
             project_type=project_type_code,
             project_title=title,
             file_path=file_path,
-            metadata=metadata,
-            # Embed the field definitions at creation time for self-contained projects.
-            fields=project_config.get("fields", []),
+            metadata=metadata
         )
 
         try:
@@ -99,10 +97,10 @@ class ProjectService:
             return False, "An error occurred while saving the project.", None
 
     def add_source_to_project(
-        self, project: Project, source_id: str, notes: str, declassify: str
+        self, project: Project, source_id: str, link_data: Dict[str, Any]
     ):
         """Adds a source link to a project and updates the master source record."""
-        project.add_source(source_id, notes, declassify)
+        project.add_source(source_id, link_data)
 
         # Update the master source's 'used_in' list
         source_record = self.source_service.get_source_by_id(source_id)
@@ -111,17 +109,11 @@ class ProjectService:
                 p.get("project_id") == project.project_id for p in source_record.used_in
             ):
                 source_record.used_in.append(
-                    {
-                        "project_id": project.project_id,
-                        "project_title": project.project_title,
-                        "notes": notes,
-                    }
+                    {"project_id": project.project_id, "project_title": project.project_title}
                 )
                 self.source_service.update_master_source(
                     source_id, source_record.to_dict()
                 )
-
-        self.save_project(project)
 
         self.save_project(project)
 
@@ -190,9 +182,9 @@ class ProjectService:
         link_found = False
         for link in project.sources:
             if link.source_id == source_id:
-                # Update the notes and declassify fields from the provided data
-                link.notes = link_data.get("notes", link.notes)
-                link.declassify = link_data.get("declassify", link.declassify)
+                # Update all fields provided in link_data into the link's metadata
+                for key, value in link_data.items():
+                    link.metadata[key] = value
                 link_found = True
                 break
 
@@ -215,11 +207,7 @@ class ProjectService:
                     for p in source_record.used_in
                 ):
                     source_record.used_in.append(
-                        {
-                            "project_id": project.project_id,
-                            "project_title": project.project_title,
-                            "notes": link.notes,  # Add the specific notes to the usage tracker
-                        }
+                        {"project_id": project.project_id, "project_title": project.project_title}
                     )
                     # Use the existing update_master_source method to save the change
                     self.source_service.update_master_source(

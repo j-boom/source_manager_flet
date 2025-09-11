@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from .components.app_bar import AppBar as SourceManagerAppBar
 from .components.sidebar import Sidebar
 from .pages import (
+    AdminView,
     HomeView,
     RecentProjectsView,
     NewProjectView,
@@ -129,6 +130,7 @@ class MainView(BaseView):
             "reports": ReportsView,
             "settings": SettingsView,
             "help": HelpView,
+            "admin": AdminView,
         }
         return view_map.get(page_name)
 

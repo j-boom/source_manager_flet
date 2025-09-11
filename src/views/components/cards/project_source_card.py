@@ -51,14 +51,14 @@ class ProjectSourceCard(BaseCard):
                     color=ft.colors.ON_SECONDARY_CONTAINER,
                 ),
                 ft.Text(
-                    f"Notes: {self.link.notes or 'N/A'}",
+                    f"Notes: {self.link.metadata.get('usage_notes') or 'N/A'}",
                     overflow=ft.TextOverflow.ELLIPSIS,
                     italic=True,
                     size=12,
                     color=ft.colors.ON_SECONDARY_CONTAINER,
                 ),
                 ft.Text(
-                    f"Declassify: {self.link.declassify or 'N/A'}",
+                    f"Declassify: {self.link.metadata.get('declassify_info') or 'N/A'}",
                     overflow=ft.TextOverflow.ELLIPSIS,
                     italic=True,
                     size=12,

@@ -20,17 +20,37 @@ class SourceController(BaseController):
         it also creates the project-specific link.
         """
         try:
-            # Step 1: Extract country from the form data and create the master record
+            # Step 1: Separate core data from link data based on the configuration
+            source_type = source_data.get("source_type")
+            source_type_config = self.controller.admin_controller.get_source_type_config(source_type)
+            all_fields_map = {f.get("name"): f for f in source_type_config.get("fields", [])}
+
+            core_data = {"source_type": source_type}
+            link_data = {}
+
+            for key, value in source_data.items():
+                # These are handled separately or are not part of the dynamic fields
+                if key in ["source_type", "country", "title"]:
+                    continue
+
+                field_config = all_fields_map.get(key)
+                if field_config and field_config.get("storage_scope") == "link":
+                    link_data[key] = value
+                else: # Belongs to core if it's in the config as core, or not in the config at all.
+                    core_data[key] = value
+            
+            # The generated title should be stored in the canonical 'display_name' field.
+            core_data['display_name'] = source_data.get('title')
+
+            # Step 2: Extract country from the form data and create the master record
             country = source_data.pop("country", None)  # Get country from dropdown
             if not country:
                 self.controller.show_error_message(
                     "Country/Region is required to create a source."
                 )
                 return
-
-            success, message, source_record = (
-                self.controller.source_service.create_new_source(country, source_data)
-            )
+            
+            success, message, source_record = self.controller.source_service.create_new_source(country, core_data)
 
             if not success or not source_record:
                 self.controller.show_error_message(
@@ -40,16 +60,10 @@ class SourceController(BaseController):
 
             self.logger.info(f"Master source record '{source_record.id}' created.")
 
-            # Step 2: If the flag is set, add the new source to the current project
+            # Step 3: If the flag is set, add the new source to the current project
             if add_to_project:
                 project = self.controller.project_controller.get_current_project()
                 if project:
-                    # You might want to get these from the dialog in the future,
-                    # but for now, we can use defaults.
-                    link_data = {
-                        "usage_notes": source_data.get("usage_notes", ""),
-                        "declassify_info": source_data.get("declassify_info", ""),
-                    }
                     self.add_source_to_project(source_record.id, link_data)
                 else:
                     self.logger.warning(
@@ -74,12 +88,8 @@ class SourceController(BaseController):
             return
 
         try:
-            usage_notes = link_data.get("usage_notes", "")
-            declassify_info = link_data.get("declassify_info", "")
             # Data service handles creating the link and updating the master record
-            self.controller.project_service.add_source_to_project(
-                project, source_id, usage_notes, declassify_info
-            )
+            self.controller.project_service.add_source_to_project(project, source_id, link_data)
 
             # If the source was on deck, remove it
             if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
@@ -106,7 +116,7 @@ class SourceController(BaseController):
         try:
             # Data service handles removing the link and updating the master record
             self.controller.project_service.remove_source_from_project(
-                project.id, source_id
+                project, source_id
             )
             self.logger.info(
                 f"Source '{source_id}' unlinked from project '{project.id}'."
@@ -180,4 +190,4 @@ class SourceController(BaseController):
 
     def get_sources_by_country(self, country: str) -> List["SourceRecord"]:
         """Gets all master source records for a specific country."""
-        return self.controller.source_service.get_master_sources_for_country(country)
+        return self.controller.source_service.get_sources_by_country(country)

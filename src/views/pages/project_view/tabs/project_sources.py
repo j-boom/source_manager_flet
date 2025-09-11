@@ -223,11 +223,19 @@ class ProjectSourcesTab(BaseTab):
         self._update_view()
 
     def _show_add_to_project_dialog(self, source_id: str):
-        def on_save(notes: str, declassify: str):
-            self.controller.source_controller.add_source_to_project(
-                source_id, {"usage_notes": notes, "declassify_info": declassify}
-            )
+        source = self.controller.source_controller.get_source_record_by_id(source_id)
+        if not source:
+            self.controller.show_error_message("Could not find source to add.")
+            return
+
+        def on_save(link_data: Dict[str, Any]):
+            self.controller.source_controller.add_source_to_project(source_id, link_data)
             self._update_view()
 
-        dialog = AddSourceToProjectDialog(page=self.page, on_save=on_save)
+        dialog = AddSourceToProjectDialog(
+            page=self.page, 
+            source_type=source.source_type,
+            dialog_controller=self.controller.dialog_controller,
+            on_save=on_save
+        )
         dialog.show()

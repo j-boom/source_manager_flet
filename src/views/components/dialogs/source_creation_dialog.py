@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
 
 from .base_dialog import BaseDialog
-from utils import create_validated_field, generate_source_title
+from utils import create_validated_field, generate_source_title, validate_field_value
 from src.models.source_models import SourceFieldConfig
 from src.models.project_models import FieldType, ValidationRule
 
@@ -25,6 +25,7 @@ class _CompatibleFieldConfig:
     hint_text: str = ""
     validation_rules: Dict[ValidationRule, Any] = field(default_factory=dict)
     width: Optional[int] = None
+    show_in_editor: bool = True
     options: Optional[List[str]] = None
 
     @classmethod
@@ -36,6 +37,7 @@ class _CompatibleFieldConfig:
             required=s_config.required,
             hint_text=s_config.hint_text,
             width=s_config.width,
+            validation_rules=s_config.validation_rules,
         )
 
 class SourceCreationDialog(BaseDialog):
@@ -70,7 +72,7 @@ class SourceCreationDialog(BaseDialog):
         self.target_country = target_country
         self.from_project_sources_tab = from_project_sources_tab
         self.form_fields: Dict[str, ft.Control] = {}
-        self.field_configs: Dict[str, Dict] = {}
+        self.field_configs: Dict[str, _CompatibleFieldConfig] = {}
         self.logger = logging.getLogger(__name__)
 
         # --- UI Components ---
@@ -80,16 +82,6 @@ class SourceCreationDialog(BaseDialog):
         # This container will hold the dynamically generated form fields.
         # The BaseDialog will make this scrollable.
         self.dynamic_fields_container = ft.Column(spacing=15)
-
-        # Conditionally visible project-specific fields
-        self.notes_field = ft.TextField(
-            label="Usage Notes (for this project)", multiline=True, min_lines=2,
-            visible=self.from_project_sources_tab
-        )
-        self.declassify_field = ft.TextField(
-            label="Declassify Information (for this project)",
-            visible=self.from_project_sources_tab
-        )
 
         # Initialize the BaseDialog superclass
         super().__init__(
@@ -112,8 +104,6 @@ class SourceCreationDialog(BaseDialog):
             ft.Row([self.source_type_dropdown, self.country_dropdown], spacing=10),
             ft.Divider(height=1, thickness=1),
             self.dynamic_fields_container,
-            self.notes_field,
-            self.declassify_field,
         ]
 
     def _build_actions(self) -> List[ft.Control]:
@@ -149,16 +139,26 @@ class SourceCreationDialog(BaseDialog):
         self.dynamic_fields_container.controls.clear()
         fields_to_create = self.dialog_controller.get_source_type_fields(source_type_value)
 
-        for s_config_dict in fields_to_create:
-            # Convert dict to a proper SourceFieldConfig object
-            s_config_obj = SourceFieldConfig(**s_config_dict)
-            # Adapt it to be compatible with the validator function
-            compatible_config = _CompatibleFieldConfig.from_source_field_config(s_config_obj)
+        # If creating from the master library (not from within a project), only show core fields.
+        if not self.from_project_sources_tab:
+            self.logger.info("Filtering for 'core' storage scope fields.")
+            fields_to_create = [f for f in fields_to_create if f.get("storage_scope", "core") == "core"]
 
-            widget = create_validated_field(compatible_config)
-            self.form_fields[compatible_config.name] = widget
-            self.field_configs[compatible_config.name] = s_config_dict
-            self.dynamic_fields_container.controls.append(widget)
+        # Sort fields based on the display_order property
+        fields_to_create.sort(key=lambda f: f.get("display_order", 0))
+
+        for s_config_dict in fields_to_create:
+            # Only display fields that are marked to be shown in the editor
+            if s_config_dict.get("show_in_editor", True):
+                # Convert dict to a proper SourceFieldConfig object
+                s_config_obj = SourceFieldConfig(**s_config_dict)
+                # Adapt it to be compatible with the validator function
+                compatible_config = _CompatibleFieldConfig.from_source_field_config(s_config_obj)
+
+                widget = create_validated_field(compatible_config)
+                self.form_fields[compatible_config.name] = widget
+                self.field_configs[compatible_config.name] = compatible_config
+                self.dynamic_fields_container.controls.append(widget)
 
         # Update the page if the dialog is already visible
         if self.dialog and self.dialog.open:
@@ -190,15 +190,15 @@ class SourceCreationDialog(BaseDialog):
 
         # --- Validate dynamic fields ---
         for name, control in self.form_fields.items():
-            config = self.field_configs.get(name, {})
-            is_required = config.get("required", False)
-            
-            if is_required and not control.value:
-                control.error_text = f"{config.get('label', name)} is required."
-                is_valid = False
-            else:
-                control.error_text = None
-            control.update()
+            field_config = self.field_configs.get(name)
+            if field_config:
+                is_valid_field, error_message = validate_field_value(field_config, control.value)
+                if not is_valid_field:
+                    control.error_text = error_message
+                    is_valid = False
+                else:
+                    control.error_text = None
+                control.update()
 
         if not is_valid:
             return
@@ -208,10 +208,6 @@ class SourceCreationDialog(BaseDialog):
         for name, control in self.form_fields.items():
             if hasattr(control, "value"):
                 form_data[name] = control.value
-
-        if self.from_project_sources_tab:
-            form_data["usage_notes"] = self.notes_field.value
-            form_data["declassify_info"] = self.declassify_field.value
 
         generated_title = generate_source_title(
             form_data["source_type"], form_data, self.dialog_controller.controller.admin_service

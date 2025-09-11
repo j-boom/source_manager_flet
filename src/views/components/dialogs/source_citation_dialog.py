@@ -8,11 +8,12 @@ class SourceCitationDialog(ft.AlertDialog):
     A dialog box that displays a formatted citation and all available metadata
     for a given source record.
     """
-    def __init__(self, source: SourceRecord):
+    def __init__(self, source: SourceRecord, controller):
         super().__init__()
         self.modal = True
         self.title = ft.Text("Source Details")
         self.source = source
+        self.controller = controller
         self.content = self._build_content()
         self.actions = [
             ft.TextButton("Close", on_click=self._close_dialog)
@@ -22,41 +23,45 @@ class SourceCitationDialog(ft.AlertDialog):
     def _build_content(self) -> ft.Container:
         """Creates the main content of the dialog."""
         
-        # --- NEW: Generate the formatted citation first ---
-        formatted_citation = generate_citation(self.source)
+        # --- Generate the formatted citation first ---
+        formatted_citation = generate_citation(self.source, self.controller)
         
         content_column = ft.Column(spacing=12, tight=True, scroll=ft.ScrollMode.ADAPTIVE)
         
-        # --- NEW: Display the formatted citation at the top ---
+        # --- Display the formatted citation at the top ---
         content_column.controls.append(
             ft.Text(
                 value=formatted_citation, 
                 weight=ft.FontWeight.BOLD, 
                 italic=True,
-                size=14
+                size=14,
+                selectable=True
             )
         )
         content_column.controls.append(ft.Divider())
         content_column.controls.append(ft.Text("Raw Data:", weight=ft.FontWeight.BOLD))
 
-        # Iterate through the raw source model attributes to display them
-        for field_name, field_value in vars(self.source).items():
-            if field_name.startswith('_') or not field_value:
+        # --- Create a two-column layout for raw data ---
+        # Sort fields by label for consistent order
+        for field in sorted(self.source.fields, key=lambda f: f.label or f.name):
+            if not field.value:
                 continue
 
-            label = field_name.replace('_', ' ').title()
-            
-            if isinstance(field_value, list):
-                value_str = ", ".join(map(str, field_value))
-            else:
-                value_str = str(field_value)
+            label = field.label or field.name.replace('_', ' ').title()
 
-            content_column.controls.append(
-                ft.Row([
-                    ft.Text(f"{label}:", weight=ft.FontWeight.BOLD, width=120),
-                    ft.Text(value_str, selectable=True, expand=True)
-                ])
+            if isinstance(field.value, list):
+                value_str = ", ".join(map(str, field.value))
+            else:
+                value_str = str(field.value)
+            # Create a row for each field: [Label] [Value]
+            field_row = ft.Row(
+                controls=[
+                    ft.Text(f"{label}:", weight=ft.FontWeight.BOLD, width=150),
+                    ft.Text(value_str, selectable=True, expand=True),
+                ],
+                vertical_alignment=ft.CrossAxisAlignment.START,
             )
+            content_column.controls.append(field_row)
             
         return ft.Container(
             content=content_column,
@@ -67,4 +72,4 @@ class SourceCitationDialog(ft.AlertDialog):
     def _close_dialog(self, e):
         """Closes the dialog."""
         self.open = False
-        e.page.update()
+        self.page.update()

@@ -1,6 +1,6 @@
 import logging
 import flet as ft
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 # Import the services that handle all data operations
 from src.services.project_service import ProjectService
@@ -97,6 +97,14 @@ class AppController:
             self.dialog_controller.show_first_time_setup()
         else:
             self.navigate_to("home")
+
+    @property
+    def source_usage_map(self) -> Dict[str, List[str]]:
+        """
+        A convenience property to get the source-to-slide usage map
+        from the PowerPointController.
+        """
+        return self.powerpoint_controller.get_source_usage_map()
 
     def navigate_to(self, page_name: str, force_refresh: bool = False):
         """Handles navigation requests from any part of the UI."""

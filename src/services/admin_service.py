@@ -23,22 +23,28 @@ class AdminService:
         # Ensure parent directories exist before loading
         self.project_types_path.parent.mkdir(parents=True, exist_ok=True)
         self.source_types_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        self.project_types_config = self._load_json(self.project_types_path)
-        self.source_types_config = self._load_json(self.source_types_path)
+
+        # Define default structures for the config files
+        default_project_config = {"PROJECT_TYPES_CONFIG": {}}
+        default_source_config = {"SOURCE_TYPES_CONFIG": {}}
+
+        # Load configs, creating them if they don't exist
+        self.project_types_config = self._load_or_create_config(self.project_types_path, default_project_config)
+        self.source_types_config = self._load_or_create_config(self.source_types_path, default_source_config)
         self.logger.info("AdminService initialized and configurations loaded.")
 
-    def _load_json(self, file_path: Path) -> Dict[str, Any]:
-        """Loads a JSON file and returns its content."""
+    def _load_or_create_config(self, file_path: Path, default_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Loads a JSON file, or creates it with default data if it doesn't exist."""
         if not file_path.exists():
-            self.logger.warning(f"Config file not found: {file_path}. Returning empty dict.")
-            return {}
+            self.logger.warning(f"Config file not found: {file_path}. Creating a new one.")
+            self._save_json(file_path, default_data)
+            return default_data
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (json.JSONDecodeError, Exception) as e:
-            self.logger.error(f"Error reading or parsing {file_path}: {e}")
-            return {}
+            self.logger.error(f"Error reading or parsing {file_path}: {e}. Returning default data.")
+            return default_data
 
     def _save_json(self, file_path: Path, data: Dict[str, Any]):
         """Saves data to a JSON file."""

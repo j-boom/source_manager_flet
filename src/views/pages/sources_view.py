@@ -1,5 +1,5 @@
 import flet as ft
-from typing import Dict, List
+from typing import Dict, List, Optional
 from ..base_view import BaseView
 from models.source_models import SourceRecord, SourceFieldConfig
 from ..components.cards.on_deck_card import OnDeckCard
@@ -18,7 +18,7 @@ class SourcesView(BaseView):
         super().__init__(page=page, controller=controller)
         self.all_sources: List[SourceRecord] = []
         self.current_sources: List[SourceRecord] = []
-        self.selected_country: str = "All"
+        self.selected_country: Optional[str] = None
 
         # UI Components
         self.project_title_header = ft.Text(
@@ -152,9 +152,15 @@ class SourcesView(BaseView):
         available_countries = (
             self.controller.source_controller.get_available_countries()
         )
-        self.country_dropdown.options = [ft.dropdown.Option("All", "All Countries")]
+        self.country_dropdown.options.clear()
         for country in sorted(available_countries):
             self.country_dropdown.options.append(ft.dropdown.Option(country, country))
+
+        # If no country is selected yet, or the selected one is no longer valid,
+        # default to the first available country.
+        if available_countries and (self.selected_country is None or self.selected_country not in available_countries):
+            self.selected_country = sorted(available_countries)[0]
+
         self.country_dropdown.value = self.selected_country
 
     def _on_country_changed(self, e):
@@ -179,23 +185,20 @@ class SourcesView(BaseView):
         if self.page:
             self.page.update()
 
-    def _load_sources_for_country(self, country: str):
+    def _load_sources_for_country(self, country: Optional[str]):
         """Loads sources for the selected country via the SourceController."""
-        if country == "All":
-            self.all_sources = (
-                self.controller.source_controller.get_all_source_records()
-            )
-        else:
+        if country:
             self.all_sources = self.controller.source_controller.get_sources_by_country(
                 country
             )
+        else:
+            # If no country is selected (e.g., no countries exist), the list is empty.
+            self.all_sources = []
         self.current_sources = self.all_sources
 
     def _on_add_source_clicked(self, e):
         """Handles the 'Add New Source' button click, delegating to the DialogController."""
-        country_to_pass = (
-            self.selected_country if self.selected_country != "All" else None
-        )
+        country_to_pass = self.selected_country
         self.controller.dialog_controller.open_new_source_dialog(
             target_country_from_view=country_to_pass
         )
