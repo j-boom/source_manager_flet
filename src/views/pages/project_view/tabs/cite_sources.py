@@ -1,8 +1,8 @@
 import flet as ft
 from .base_tab import BaseTab
 from typing import List, Optional
-from views.components import SlideCarousel
-from views.components.dialogs.create_source_group_dialog import CreateSourceGroupDialog
+from ....components import SlideCarousel
+from ....components.dialogs.create_source_group_dialog import CreateSourceGroupDialog
 import logging
 
 
@@ -37,9 +37,7 @@ class CiteSourcesTab(BaseTab):
         self.change_ppt_btn = ft.ElevatedButton(
             "Sync With PowerPoint",
             icon=ft.icons.SYNC_OUTLINED,
-            on_click=lambda e: self.controller.powerpoint_controller.sync_with_powerpoint(
-                force_reselect=True
-            ),
+            on_click=lambda e: self.controller.powerpoint_controller.pick_powerpoint_file(),
         )
         self.available_list = ft.ListView(expand=True, spacing=5)
         self.cited_list = ft.ListView(expand=True, spacing=5)
@@ -268,12 +266,11 @@ class CiteSourcesTab(BaseTab):
             self.update_view()
 
         dialog = CreateSourceGroupDialog(
+            page=self.page,
             all_sources=all_sources_checkboxes,
             on_save=on_save,
         )
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
+        dialog.show()
 
     def update_view(self):
         """

@@ -94,9 +94,12 @@ class SourceRecord:
                 field_found = True
                 break
         if not field_found:
-             logger.warning(
-                f"Attempted to set value for non-existent field '{field_name}' on source {self.id}"
+            logger.info(
+                f"Field '{field_name}' not found on source {self.id}. Creating it."
             )
+            # If the field doesn't exist, create it. This is crucial for dynamic updates.
+            self.fields.append(SourceField(name=field_name, value=value))
+            self.last_modified = datetime.now()
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the SourceRecord to a dictionary for JSON storage."""

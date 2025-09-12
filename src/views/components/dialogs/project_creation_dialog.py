@@ -11,8 +11,9 @@ from pathlib import Path
 from typing import Callable, Dict, Any, List, Optional
 
 from utils.validators import create_validated_field, validate_form_data
+from .base_dialog import BaseDialog
 
-class ProjectCreationDialog:
+class ProjectCreationDialog(BaseDialog):
     """A dialog for collecting new project information dynamically."""
 
     def __init__(
@@ -23,59 +24,33 @@ class ProjectCreationDialog:
         project_types: Dict[str, Any] = None,
         dialog_controller: "DialogController" = None,
     ):
-        """
-        Initializes the dialog.
-
-        Args:
-            page: The Flet Page object.
-            on_create: A callback to execute with the validated form_data dictionary.
-            initial_be_number: An optional initial value for the 'be_number' field.
-            project_types: A dictionary of project types.
-            dialog_controller: The dialog controller.
-        """
-        self.page = page
         self.on_create = on_create
         self.initial_be_number = initial_be_number
         self.project_types = project_types
         self.dialog_controller = dialog_controller
-        self.dialog: Optional[ft.AlertDialog] = None
         self.form_fields: Dict[str, ft.Control] = {}
-        self.logger = logging.getLogger(__name__)
 
-        # --- UI Components ---
         self.project_type_dropdown = self._build_project_type_dropdown()
         self.fields_container = ft.Column(spacing=15, scroll=ft.ScrollMode.ADAPTIVE)
 
-    def show(self):
-        """Builds and displays the dialog on the page."""
-        # Update form with initial fields before showing
+        super().__init__(page=page, title="Create New Project", width=600, height=450)
+
+        # Update form with initial fields after super().__init__ has run
         if self.project_type_dropdown.value:
             self._update_form_fields(self.project_type_dropdown.value)
 
-        self.dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Create New Project", size=20, weight=ft.FontWeight.BOLD),
-            content=ft.Column(
-                [
-                    self.project_type_dropdown,
-                    ft.Divider(height=1, thickness=1),
-                    self.fields_container,
-                ],
-                tight=True,
-                width=600,
-                height=450,
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=self._handle_close),
-                ft.FilledButton("Create Project", on_click=self._handle_create_clicked),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-            on_dismiss=lambda e: self._close(),
-        )
+    def _build_content(self) -> List[ft.Control]:
+        return [
+            self.project_type_dropdown,
+            ft.Divider(height=1, thickness=1),
+            self.fields_container,
+        ]
 
-        self.page.overlay.append(self.dialog)
-        self.dialog.open = True
-        self.page.update()
+    def _build_actions(self) -> List[ft.Control]:
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
+            ft.FilledButton("Create Project", on_click=self._handle_create_clicked),
+        ]
 
     def _build_project_type_dropdown(self) -> ft.Dropdown:
         """Builds the project type dropdown."""
@@ -192,13 +167,4 @@ class ProjectCreationDialog:
 
         self.logger.info("Validation passed. Executing on_create callback.")
         self.on_create(form_data)
-        self._close()
-
-    def _handle_close(self, e):
-        self._close()
-
-    def _close(self):
-        """Closes the dialog."""
-        if self.dialog:
-            self.dialog.open = False
-            self.page.update()
+        self._close_dialog()

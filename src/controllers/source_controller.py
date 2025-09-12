@@ -131,35 +131,39 @@ class SourceController(BaseController):
         Submits an update for a source's master record.
         """
         self.logger.info(f"Updating master record for source ID {source_id}.")
+        # The service returns a (success, message) tuple. We must check it.
         try:
-            self.controller.source_service.update_master_source(source_id, master_data)
-        except Exception as e:
-            self.controller.show_error_message(
-                f"Failed to update source master record: {e}"
+            success, message = self.controller.source_service.update_master_source(
+                source_id, master_data
             )
+            if not success:
+                # Raise an exception to be caught by the dialog's save handler
+                raise Exception(message)
+        except Exception as e:
+            # The dialog controller will show a generic error. This is more specific.
+            self.controller.show_error_message(f"Failed to update source: {e}")
             raise  # Re-raise to let the dialog know the update failed
 
     def submit_project_link_update(self, source_id: str, link_data: Dict[str, Any]):
         """
         Submits an update for a project-specific source link.
         """
-        self.logger.info(f"Updating project link for source ID {source_id}.")
         project = self.controller.project_controller.get_current_project()
         if not project:
-            self.logger.error("No active project to update source link.")
-            return
+            raise ValueError("Cannot update source link without an active project.")
 
         self.logger.info(f"Updating project link for source ID {source_id}.")
         try:
-            self.controller.project_service.update_project_source_link(
+            success, message = self.controller.project_service.update_project_source_link(
                 project=project, source_id=source_id, link_data=link_data
             )
-            self.controller.show_success_message("Source usage details updated.")
-            self.controller.update_view()
+            if not success:
+                raise Exception(message)
         except Exception as e:
             self.controller.show_error_message(
                 f"Failed to update source usage details: {e}"
             )
+            raise # Re-raise to let the dialog know the update failed
 
     def get_all_source_records(self):
         """

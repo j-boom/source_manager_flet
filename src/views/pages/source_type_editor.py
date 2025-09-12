@@ -21,12 +21,6 @@ class SourceTypeEditor(ft.Column):
 
     def _build_ui(self):
         """Constructs the editor interface."""
-        self.form_fields["display_order"] = ft.TextField(
-            label="Display Order",
-            value=str(self.type_config.get("display_order", 0)),
-            width=120,
-            tooltip="Controls the sort order in lists. Lower numbers appear first."
-        )
         self.form_fields["citation_format"] = ft.TextField(
             label="Citation Format String",
             value=self.type_config.get("citation_format", ""),
@@ -54,7 +48,6 @@ class SourceTypeEditor(ft.Column):
 
         self.controls.extend([
             ft.Text(f"Editing Source Type: {self.type_name.replace('_', ' ').title()}", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-            self.form_fields["display_order"],
             self.form_fields["citation_format"],
             ft.Divider(),
             ft.Text("Source Fields", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
@@ -84,10 +77,6 @@ class SourceTypeEditor(ft.Column):
 
     def _on_save_clicked(self, e):
         new_config = self.type_config.copy()
-        try:
-            new_config['display_order'] = int(self.form_fields['display_order'].value)
-        except (ValueError, TypeError):
-            new_config['display_order'] = 0
         new_config['citation_format'] = self.form_fields['citation_format'].value
 
         # Extract field data from each card, filtering out any empty/invalid cards

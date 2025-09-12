@@ -13,6 +13,7 @@ from src.models.project_models import FieldConfig, ValidationRule, FieldType
 from src.models.source_models import SourceRecord
 from src.models.project_models import ProjectSourceLink
 from utils.validators import create_validated_field
+from .base_dialog import BaseDialog
 
 @dataclass
 class _CompatibleFieldConfig:
@@ -38,7 +39,7 @@ class _CompatibleFieldConfig:
             validation_rules=s_config.validation_rules,
         )
 
-class SourceEditorDialog:
+class SourceEditorDialog(BaseDialog):
     """
 A dialog for viewing and editing a master source and its project-specific link data.
 """
@@ -61,43 +62,21 @@ A dialog for viewing and editing a master source and its project-specific link d
             on_save: Callback to execute with (source_id, master_data, link_data).
             admin_service: The admin service instance.
         """
-        self.page = page
         self.source = source
         self.link = link
         self.on_save = on_save
-        self.dialog: Optional[ft.AlertDialog] = None
         self.admin_service = admin_service
         self.master_form_fields: Dict[str, ft.Control] = {}
         self.link_form_fields: Dict[str, ft.Control] = {}
         self.field_configs: Dict[str, _CompatibleFieldConfig] = {}
         self.logger = logging.getLogger(__name__)
 
-    def show(self):
-        """
-Builds and displays the dialog on the page.
-"""
-        self.dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text(f"Edit: {self.source.get_title()}", size=20, weight=ft.FontWeight.BOLD),
-            content=ft.Column(
-                self._build_content(),
-                tight=True,
-                width=500,
-                height=550,
-                scroll=ft.ScrollMode.ADAPTIVE
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=self._handle_close),
-                ft.FilledButton("Save Changes", on_click=self._handle_save_clicked),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-            on_dismiss=lambda e: self._close(),
+        super().__init__(
+            page=page,
+            title=f"Edit: {source.get_title()}",
+            width=500,
+            height=550,
         )
-
-        if self.dialog not in self.page.overlay:
-            self.page.overlay.append(self.dialog)
-        self.dialog.open = True
-        self.page.update()
 
     def _build_content(self) -> List[ft.Control]:
         """
@@ -155,12 +134,23 @@ Builds the form content, pre-populated with the source's data.
             link_source_controls.append(widget)
 
         # --- Combine all controls into a single list ---
-        return [
+        content = [
             ft.Text("Master Source Details", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
             *master_source_controls,
-            ft.Divider(height=20),
-            ft.Text("Project-Specific Details", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
-            *link_source_controls,
+        ]
+        if link_source_controls:
+            content.extend([
+                ft.Divider(height=20),
+                ft.Text("Project-Specific Details", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
+                *link_source_controls,
+            ])
+        return content
+
+    def _build_actions(self) -> List[ft.Control]:
+        """Builds the action buttons for the dialog."""
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
+            ft.FilledButton("Save Changes", on_click=self._handle_save_clicked),
         ]
 
     def _handle_save_clicked(self, e):
@@ -199,15 +189,4 @@ Gathers updated data, validates it, and calls the on_save callback.
 
         # Execute the callback with all necessary data
         self.on_save(self.source.id, master_data, link_data)
-        self._close()
-
-    def _handle_close(self, e):
-        self._close()
-
-    def _close(self):
-        """
-Closes the dialog.
-"""
-        if self.dialog:
-            self.dialog.open = False
-            self.page.update()
+        self._close_dialog()

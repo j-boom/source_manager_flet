@@ -6,25 +6,23 @@ It follows a self-contained pattern, delegating logic to a callback.
 """
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 import flet as ft
+from .base_dialog import BaseDialog
 
-class FolderCreationDialog:
+class FolderCreationDialog(BaseDialog):
     """A dialog for collecting and validating a new folder's name."""
 
     def __init__(self, page: ft.Page, parent_path: Path, on_create: Callable[[str, str], None]):
         """
         Initializes the dialog.
-
         Args:
             page: The Flet Page object.
             parent_path: The directory where the new folder will be created.
             on_create: A callback to execute with (folder_name, description).
         """
-        self.page = page
         self.parent_path = parent_path
         self.on_create = on_create
-        self.dialog: ft.AlertDialog | None = None
 
         # --- UI Components with Validation ---
         self.folder_name_field = ft.TextField(
@@ -41,31 +39,19 @@ class FolderCreationDialog:
             width=400,
         )
 
-    def show(self):
-        """Builds and displays the dialog on the page."""
-        self.dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Create New Folder", size=20, weight=ft.FontWeight.BOLD),
-            content=ft.Column(
-                [
-                    self.folder_name_field,
-                    self.description_field,
-                ],
-                spacing=15,
-                tight=True,
-                width=450
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=self._handle_close),
-                ft.FilledButton("Create Folder", on_click=self._handle_create_clicked),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-            on_dismiss=lambda e: self._close(),
-        )
+        super().__init__(page=page, title="Create New Folder", width=450)
 
-        self.page.dialog = self.dialog
-        self.dialog.open = True
-        self.page.update()
+    def _build_content(self) -> List[ft.Control]:
+        return [
+            self.folder_name_field,
+            self.description_field,
+        ]
+
+    def _build_actions(self) -> List[ft.Control]:
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
+            ft.FilledButton("Create Folder", on_click=self._handle_create_clicked),
+        ]
 
     def _validate_folder_name(self, e: ft.ControlEvent):
         """Real-time validation for the folder name field."""
@@ -88,14 +74,4 @@ class FolderCreationDialog:
 
         description = self.description_field.value or ""
         self.on_create(folder_name.strip(), description.strip())
-        self._close()
-
-    def _handle_close(self, e):
-        """Handler for the cancel button."""
-        self._close()
-
-    def _close(self):
-        """Closes the dialog."""
-        if self.dialog:
-            self.dialog.open = False
-            self.page.update()
+        self._close_dialog()

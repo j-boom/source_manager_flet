@@ -1,8 +1,6 @@
 import flet as ft
 from .base_card import BaseCard
 from models.source_models import SourceRecord
-from views.components.dialogs.source_citation_dialog import SourceCitationDialog
-
 
 class OnDeckCard(BaseCard):
     """
@@ -95,7 +93,9 @@ class OnDeckCard(BaseCard):
     def _handle_add_click(self, e):
         """Calls the correct controller method based on the card's context."""
         if self.context == "project_tab":
-            self.controller.source_controller.add_source_to_project(self.source.id, {})
+            self.controller.dialog_controller.open_add_source_to_project_dialog(
+                self.source.id, str(self.source.source_type)
+            )
         else:  # Default context is "library"
             self.controller.project_controller.add_source_to_on_deck(self.source.id)
 
@@ -105,8 +105,5 @@ class OnDeckCard(BaseCard):
             self.controller.project_controller.remove_source_from_on_deck(self.source.id)
 
     def _show_citation_dialog(self, e):
-        """Shows the source citation dialog."""
-        dialog = SourceCitationDialog(self.source, self.controller)
-        self.page.overlay.append(dialog)
-        dialog.open = True
-        self.page.update()
+        """Shows the source citation dialog by calling the dialog controller."""
+        self.controller.dialog_controller.open_source_citation_dialog(self.source.id)

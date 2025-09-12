@@ -2,9 +2,8 @@ import flet as ft
 from typing import Dict, List, Optional
 from ..base_view import BaseView
 from models.source_models import SourceRecord, SourceFieldConfig
-from ..components.cards.on_deck_card import OnDeckCard
 
-# --- FIX: Import the missing function ---
+from ..components.cards.on_deck_card import OnDeckCard
 from utils.source_title_generator import get_filterable_fields
 
 
@@ -324,6 +323,7 @@ class SourcesView(BaseView):
                         source=source,
                         controller=self.controller,
                         show_add_button=bool(project),
+                        context="library",
                     )
                 )
         else:

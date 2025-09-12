@@ -4,10 +4,11 @@ from typing import Dict, Any, Callable, List, Optional
 
 from utils import create_validated_field, validate_field_value
 from src.models.source_models import SourceFieldConfig
+from .base_dialog import BaseDialog
 from .source_creation_dialog import _CompatibleFieldConfig
 
 
-class AddSourceToProjectDialog:
+class AddSourceToProjectDialog(BaseDialog):
     """A dialog to collect project-specific link data when adding an existing source to a project."""
 
     def __init__(
@@ -17,41 +18,15 @@ class AddSourceToProjectDialog:
         dialog_controller: "DialogController",
         on_save: Callable[[Dict[str, Any]], None],
     ):
-        self.page = page
         self.source_type = source_type
         self.dialog_controller = dialog_controller
         self.on_save = on_save
-        self.dialog: Optional[ft.AlertDialog] = None
         self.form_fields: Dict[str, ft.Control] = {}
         self.field_configs: Dict[str, _CompatibleFieldConfig] = {}
-        self.logger = logging.getLogger(__name__)
 
         self.fields_container = ft.Column(spacing=15, scroll=ft.ScrollMode.ADAPTIVE)
 
-    def show(self):
-        """Builds and displays the dialog on the page."""
-        content_controls = self._build_content()
-
-        self.dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Add Source to Project"),
-            content=ft.Column(
-                content_controls,
-                tight=True,
-                width=500,
-                height=400,
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=self._handle_close),
-                ft.FilledButton("Add to Project", on_click=self._handle_save_clicked),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-            on_dismiss=lambda e: self._close(),
-        )
-
-        self.page.overlay.append(self.dialog)
-        self.dialog.open = True
-        self.page.update()
+        super().__init__(page=page, title="Add Source to Project", width=500, height=400)
 
     def _build_content(self) -> List[ft.Control]:
         """Builds the form content with only project-specific fields."""
@@ -59,6 +34,16 @@ class AddSourceToProjectDialog:
         self.field_configs.clear()
         self.fields_container.controls.clear()
 
+        # This is now handled by the BaseDialog's scrollable column
+        return self._get_link_fields()
+
+    def _build_actions(self) -> List[ft.Control]:
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
+            ft.FilledButton("Add to Project", on_click=self._handle_save_clicked),
+        ]
+
+    def _get_link_fields(self) -> List[ft.Control]:
         all_fields = self.dialog_controller.get_source_type_fields(self.source_type)
 
         # Filter for link-specific fields only
@@ -78,7 +63,7 @@ class AddSourceToProjectDialog:
                 self.field_configs[compatible_config.name] = compatible_config
                 self.fields_container.controls.append(widget)
 
-        return [self.fields_container]
+        return self.fields_container.controls
 
     def _handle_save_clicked(self, e: ft.ControlEvent):
         """Gathers data, validates it, and calls the on_save callback."""
@@ -102,13 +87,4 @@ class AddSourceToProjectDialog:
 
         self.logger.info("Validation passed. Executing on_save callback for AddSourceToProjectDialog.")
         self.on_save(link_data)
-        self._close()
-
-    def _handle_close(self, e):
-        self._close()
-
-    def _close(self):
-        """Closes the dialog."""
-        if self.dialog:
-            self.dialog.open = False
-            self.page.update()
+        self._close_dialog()

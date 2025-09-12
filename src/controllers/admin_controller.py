@@ -35,49 +35,61 @@ class AdminController(BaseController):
         source_types = self.admin_service.get_source_types()
         source_types[type_name] = config
         self.admin_service.save_source_types(source_types)
-
-    def add_new_source_type(self, type_name: str):
-        """Adds a new, empty source type configuration."""
-        source_types = self.admin_service.get_source_types()
-        if type_name in source_types:
-            self.controller.show_error_message(f"Source type '{type_name}' already exists.")
+    
+    def _add_new_config_type(self, display_name: str, internal_name: str, config_category: str):
+        """
+        A generic helper to add a new source or project type.
+        
+        Args:
+            display_name: The user-facing name for the new type (e.g., 'IC Source').
+            internal_name: The internal name for the new type (e.g., 'ic_source').
+            config_category: Either 'source' or 'project'.
+        """
+        if config_category == "source":
+            configs = self.admin_service.get_source_types()
+            save_method = self.admin_service.save_source_types
+            default_config = {
+                "display_name": display_name,
+                "display_order": 99,
+                "citation_format": "",
+                "fields": [],
+            }
+        elif config_category == "project":
+            configs = self.admin_service.get_project_types()
+            save_method = self.admin_service.save_project_types
+            default_config = {
+                "display_name": display_name,
+                "description": "A new project type.",
+                "filename_pattern": "{project_title} - {current_year}",
+                "display_order": 99,
+                "fields": [],
+            }
+        else:
+            self.controller.show_error_message("Invalid configuration category.")
             return
 
-        # Create a default empty config
-        source_types[type_name] = {"display_order": 99, "citation_format": "", "fields": []}
-        self.admin_service.save_source_types(source_types)
-        self.controller.show_success_message(f"Source type '{type_name}' created.")
-        self.controller.update_view("admin")
+        if internal_name in configs:
+            self.controller.show_error_message(f"{config_category.title()} type '{internal_name}' already exists.")
+            return
 
-    def get_project_type_config(self, type_name: str):
-        """Returns the configuration for a given project type."""
-        project_types = self.admin_service.get_project_types()
-        return project_types.get(type_name, {})
+        configs[internal_name] = default_config
+        save_method(configs)
+        self.controller.show_success_message(f"{config_category.title()} type '{display_name}' created.")
+        self.controller.update_view("admin")
 
     def save_project_type_config(self, type_name: str, config: dict):
         """Saves the configuration for a given project type."""
         project_types = self.admin_service.get_project_types()
         project_types[type_name] = config
         self.admin_service.save_project_types(project_types)
+        
+    def add_new_source_type(self, display_name: str, internal_name: str):
+        """Adds a new, empty source type configuration."""
+        self._add_new_config_type(display_name, internal_name, "source")
 
-    def add_new_project_type(self, type_name: str):
+    def add_new_project_type(self, display_name: str, internal_name: str):
         """Adds a new, empty project type configuration."""
-        project_types = self.admin_service.get_project_types()
-        if type_name in project_types:
-            self.controller.show_error_message(f"Project type '{type_name}' already exists.")
-            return
-
-        # Create a default empty config
-        project_types[type_name] = {
-            "display_name": type_name.replace("_", " ").title(),
-            "description": "A new project type.",
-            "filename_pattern": "{project_title} - {current_year}",
-            "display_order": 99,
-            "fields": [],
-        }
-        self.admin_service.save_project_types(project_types)
-        self.controller.show_success_message(f"Project type '{type_name}' created.")
-        self.controller.update_view("admin")
+        self._add_new_config_type(display_name, internal_name, "project")
 
     def add_user(self, user_data: Dict[str, Any]):
         """Adds a new user."""

@@ -2,25 +2,21 @@ import flet as ft
 from models import SourceRecord
 # Import the new generator function
 from utils.citation_generator import generate_citation
+from .base_dialog import BaseDialog
+from typing import List
 
-class SourceCitationDialog(ft.AlertDialog):
+class SourceCitationDialog(BaseDialog):
     """
     A dialog box that displays a formatted citation and all available metadata
     for a given source record.
     """
-    def __init__(self, source: SourceRecord, controller):
-        super().__init__()
-        self.modal = True
-        self.title = ft.Text("Source Details")
+    def __init__(self, page: ft.Page, source: SourceRecord, controller):
         self.source = source
         self.controller = controller
-        self.content = self._build_content()
-        self.actions = [
-            ft.TextButton("Close", on_click=self._close_dialog)
-        ]
-        self.actions_alignment = ft.MainAxisAlignment.END
 
-    def _build_content(self) -> ft.Container:
+        super().__init__(page=page, title="Source Details", width=500)
+
+    def _build_content(self) -> List[ft.Control]:
         """Creates the main content of the dialog."""
         
         # --- Generate the formatted citation first ---
@@ -63,13 +59,9 @@ class SourceCitationDialog(ft.AlertDialog):
             )
             content_column.controls.append(field_row)
             
-        return ft.Container(
-            content=content_column,
-            width=500,
-            padding=ft.padding.only(top=10)
-        )
+        return [content_column]
 
-    def _close_dialog(self, e):
-        """Closes the dialog."""
-        self.open = False
-        self.page.update()
+    def _build_actions(self) -> List[ft.Control]:
+        return [
+            ft.TextButton("Close", on_click=self._close_dialog)
+        ]

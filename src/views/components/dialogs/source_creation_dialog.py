@@ -116,7 +116,10 @@ class SourceCreationDialog(BaseDialog):
     def _build_source_type_dropdown(self) -> ft.Dropdown:
         return ft.Dropdown(
             label="Source Type *",
-            options=[ft.dropdown.Option(st, st.title()) for st in self.source_types.keys()],
+            options=[
+                ft.dropdown.Option(key=code, text=config.get("display_name", code.title()))
+                for code, config in self.source_types.items()
+            ],
             on_change=self._on_source_type_change,
             autofocus=True,
             expand=True,

@@ -16,6 +16,7 @@ from src.views.components.dialogs import (
     AddConfigTypeDialog,
     UserEditorDialog,
     DeleteConfirmationDialog,
+    SourceCitationDialog,
 )
 
 if TYPE_CHECKING:
@@ -33,17 +34,6 @@ class DialogController(BaseController):
     def __init__(self, app_controller):
         super().__init__(app_controller)
         self.admin_service = self.controller.admin_service
-
-    def open_dialog(self, dialog):
-        """
-        Opens a dialog by adding it to the page overlay and displaying it.
-
-        Args:
-            dialog: The dialog instance to open (should be a Flet control).
-        """
-        self.controller.page.overlay.append(dialog)
-        dialog.open = True
-        self.controller.page.update()
 
     def open_admin_login_dialog(self, on_success: Callable):
         """
@@ -149,31 +139,31 @@ class DialogController(BaseController):
             return dialog_fields_data
         return []
 
+    def _open_add_config_type_dialog(self, config_category: str):
+        """
+        A generic helper to open a dialog for adding a new config type.
+        
+        Args:
+            config_category: Either 'source' or 'project'.
+        """
+        self.logger.info(f"Opening 'add {config_category} type' dialog.")
+        title = f"Add New {config_category.title()} Type"
+        add_method = getattr(self.controller.admin_controller, f"add_new_{config_category}_type")
+
+        def on_create_callback(display_name: str, internal_name: str):
+            self.logger.info(f"Dialog confirmed for new {config_category} type: {display_name} ({internal_name})")
+            add_method(display_name, internal_name)
+
+        dialog = AddConfigTypeDialog(page=self.controller.page, title=title, on_create=on_create_callback)
+        dialog.show()
+
     def open_add_source_type_dialog(self):
         """Opens a dialog to add a new source type."""
-        self.logger.info("Opening 'add source type' dialog.")
-
-        def on_create_callback(type_name: str):
-            self.logger.info(f"Dialog confirmed for new source type: {type_name}")
-            self.controller.admin_controller.add_new_source_type(type_name)
-
-        dialog = AddConfigTypeDialog(
-            title="Add New Source Type", on_create=on_create_callback
-        )
-        self.open_dialog(dialog)
+        self._open_add_config_type_dialog("source")
 
     def open_add_project_type_dialog(self):
         """Opens a dialog to add a new project type."""
-        self.logger.info("Opening 'add project type' dialog.")
-
-        def on_create_callback(type_name: str):
-            self.logger.info(f"Dialog confirmed for new project type: {type_name}")
-            self.controller.admin_controller.add_new_project_type(type_name)
-
-        dialog = AddConfigTypeDialog(
-            title="Add New Project Type", on_create=on_create_callback
-        )
-        self.open_dialog(dialog)
+        self._open_add_config_type_dialog("project")
 
     def open_user_editor_dialog(self, user_data: Optional[Dict[str, Any]] = None):
         """Opens a dialog to add or edit a user."""
@@ -187,8 +177,8 @@ class DialogController(BaseController):
                 self.logger.info(f"Dialog confirmed for new user: {updated_data['display_name']}")
                 self.controller.admin_controller.add_user(updated_data)
 
-        dialog = UserEditorDialog(on_save=on_save_callback, user_data=user_data)
-        self.open_dialog(dialog)
+        dialog = UserEditorDialog(page=self.controller.page, on_save=on_save_callback, user_data=user_data)
+        dialog.show()
 
     def open_delete_user_confirmation_dialog(self, user_name: str):
         """Opens a confirmation dialog before deleting a user."""
@@ -198,28 +188,30 @@ class DialogController(BaseController):
             self.logger.info(f"Deletion confirmed for user: {user_name}")
             self.controller.admin_controller.delete_user(user_name)
 
-        dialog = DeleteConfirmationDialog(
+        dialog = DeleteConfirmationDialog(page=self.controller.page,
             item_name=user_name,
             item_type="user",
             on_confirm=on_confirm_callback
         )
-        self.open_dialog(dialog)
+        dialog.show()
 
-    def open_add_source_to_project_dialog(self, e):
+    def open_add_source_to_project_dialog(self, source_id: str, source_type: str):
         """
-        Opens the dialog to add an existing source to the current project.
-
-        Args:
-            e: The triggering event (not used).
+        Opens the dialog to collect link data before adding a source to a project.
         """
+        self.logger.info(f"Opening add source to project dialog for source: {source_id}")
 
-        def on_save():
-            self.controller.show_success_message(
-                "Successfully Saved Add Source To Project"
-            )
+        def on_save_callback(link_data: Dict[str, Any]):
+            self.logger.info(f"Dialog confirmed for adding source {source_id} to project.")
+            self.controller.source_controller.add_source_to_project(source_id, link_data)
 
-        dialog = AddSourceToProjectDialog(page=self.controller.page, on_save=on_save)
-        self.open_dialog(dialog)
+        dialog = AddSourceToProjectDialog(
+            page=self.controller.page,
+            source_type=source_type,
+            dialog_controller=self,
+            on_save=on_save_callback
+        )
+        dialog.show()
 
     def open_new_source_dialog(
         self,
@@ -323,6 +315,23 @@ class DialogController(BaseController):
             link=link,
             on_save=on_save_callback,
             admin_service=self.admin_service,
+        )
+        dialog.show()
+
+    def open_source_citation_dialog(self, source_id: str):
+        """Opens the dialog to show source citation and details."""
+        self.logger.info(f"Opening source citation dialog for source: {source_id}")
+        source = self.controller.source_controller.get_source_record_by_id(source_id)
+        if not source:
+            self.controller.show_error_message(
+                f"Could not find source with ID {source_id} to show details."
+            )
+            return
+
+        dialog = SourceCitationDialog(
+            page=self.controller.page,
+            source=source,
+            controller=self.controller
         )
         dialog.show()
 

@@ -7,7 +7,6 @@ from .recent_projects_view import RecentProjectsView
 from .reports_view import ReportsView
 from .settings_view import SettingsView
 from .sources_view import SourcesView
-from .user_management_tab import UserManagementTab
 
 __all__ = [
     "AdminView",
@@ -19,5 +18,4 @@ __all__ = [
     "ReportsView",
     "SettingsView",
     "SourcesView",
-    "UserManagementTab",
 ]

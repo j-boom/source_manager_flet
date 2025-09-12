@@ -83,12 +83,16 @@ class BaseDialog(ABC):
         )
 
     def show(self):
-        """Opens the dialog on the page."""
-        self.page.open(self.dialog)
+        """Opens the dialog on the page by adding it to the overlay."""
+        if self.dialog not in self.page.overlay:
+            self.page.overlay.append(self.dialog)
+        self.dialog.open = True
+        self.page.update()
 
     def _close_dialog(self, e=None):
         """Closes the dialog and calls the on_close callback if it exists."""
-        self.page.close(self.dialog)
+        self.dialog.open = False
+        self.page.update()
         if self.on_close:
             self.on_close()
 

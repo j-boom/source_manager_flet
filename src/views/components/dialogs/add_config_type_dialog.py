@@ -1,41 +1,41 @@
 import flet as ft
-from typing import Callable
+from typing import Callable, List
+from .base_dialog import BaseDialog
 
 
-class AddConfigTypeDialog(ft.AlertDialog):
+class AddConfigTypeDialog(BaseDialog):
     """A reusable dialog for adding a new configuration type (like a source or project type)."""
 
-    def __init__(self, title: str, on_create: Callable[[str], None]):
-        super().__init__()
-        self.modal = True
-        self.title = ft.Text(title)
+    def __init__(self, page: ft.Page, title: str, on_create: Callable[[str, str], None]):
         self.on_create = on_create
 
         self.type_name_field = ft.TextField(
-            label="Type Name (e.g., 'book', 'website')",
+            label="Type Name (e.g., 'Book', 'IC Source')",
             autofocus=True,
             on_submit=self._handle_create_clicked,
         )
 
-        self.content = self.type_name_field
-        self.actions = [
-            ft.TextButton("Cancel", on_click=self._handle_close),
+        super().__init__(page=page, title=title)
+
+    def _build_content(self) -> List[ft.Control]:
+        return [self.type_name_field]
+
+    def _build_actions(self) -> List[ft.Control]:
+        return [
+            ft.TextButton("Cancel", on_click=self._close_dialog),
             ft.FilledButton("Create", on_click=self._handle_create_clicked),
         ]
-        self.actions_alignment = ft.MainAxisAlignment.END
 
     def _handle_create_clicked(self, e):
         """Sanitizes the name and calls the on_create callback."""
-        type_name = self.type_name_field.value.strip().lower().replace(" ", "_")
-        if not type_name:
+        display_name = self.type_name_field.value.strip()
+        if not display_name:
             self.type_name_field.error_text = "Name cannot be empty."
-            self.page.update()
+            self.type_name_field.update()
             return
 
-        self.on_create(type_name)
-        self.open = False
-        self.page.update()
+        # Generate the internal name for use as a key, while preserving the display name
+        internal_name = display_name.lower().replace(" ", "_")
 
-    def _handle_close(self, e):
-        self.open = False
-        self.page.update()
+        self.on_create(display_name, internal_name)
+        self._close_dialog()

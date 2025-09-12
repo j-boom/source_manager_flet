@@ -24,7 +24,6 @@ class ProjectTypeEditor(ft.Column):
         self.form_fields["display_name"] = ft.TextField(label="Display Name", value=self.project_config.get("display_name", ""), expand=True, autofocus=True)
         self.form_fields["description"] = ft.TextField(label="Description", value=self.project_config.get("description", ""), multiline=True, min_lines=3, max_lines=5, expand=True)
         self.form_fields["filename_pattern"] = ft.TextField(label="Filename Pattern", value=self.project_config.get("filename_pattern", ""), expand=True)
-        self.form_fields["display_order"] = ft.TextField(label="Display Order", value=str(self.project_config.get("display_order", 0)), width=120, tooltip="Controls the sort order in lists. Lower numbers appear first.")
 
         self.fields_list_column = ft.Column(spacing=10)
         # Sort fields by their 'tab_order' before displaying them
@@ -53,7 +52,7 @@ class ProjectTypeEditor(ft.Column):
             ft.Text(f"Editing Project Type: {self.type_name}", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
             ft.Divider(),
             ft.Text("Project Type Properties", theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
-            ft.Row([self.form_fields["display_name"], self.form_fields["display_order"]]),
+            self.form_fields["display_name"],
             self.form_fields["description"],
             self.form_fields["filename_pattern"],
             ft.Divider(height=20),
@@ -85,10 +84,6 @@ class ProjectTypeEditor(ft.Column):
             "description": self.form_fields["description"].value,
             "filename_pattern": self.form_fields["filename_pattern"].value,
         }
-        try:
-            new_config['display_order'] = int(self.form_fields["display_order"].value)
-        except (ValueError, TypeError):
-            new_config['display_order'] = 0
 
         # Extract field data from each card, filtering out any empty/invalid cards
         all_field_data = [card.get_field_data() for card in self.fields_list_column.controls if card.get_field_data().get("name")]
