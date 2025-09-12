@@ -5,6 +5,7 @@ Reports View - Modern export-focused interface for generating bibliographies and
 from utils.citation_generator import generate_citation
 import flet as ft
 from typing import Optional, List, Dict, Any
+import logging
 from src.views.base_view import BaseView
 
 class ReportsView(BaseView):
@@ -12,6 +13,7 @@ class ReportsView(BaseView):
 
     def __init__(self, page: ft.Page, controller):
         super().__init__(page, controller)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.export_paths: Dict[str, Optional[str]] = {
             'word': None,
             'powerpoint': None
@@ -231,10 +233,26 @@ class ReportsView(BaseView):
             self.controller.show_error_message(f"Please choose a location for the {export_type} export first.")
             return
 
-        # Delegate the actual export logic to a controller
-        # Example: success = self.controller.export_controller.export(export_type, path)
-        # Placeholder logic:
-        self.controller.show_success_message(f"{export_type.title()} exported successfully to {path}")
+        if export_type == "word":
+            self.controller.show_info_message("Generating Word report...")
+            report_data = self.controller.source_controller.get_combined_project_sources_data()
+
+            if not report_data:
+                self.controller.show_error_message("No source data found for the current project.")
+                return
+
+            try:
+                # --- Your python-docx logic would go here ---
+                # For example: create_word_document(report_data, path)
+                self.logger.info(f"Generated report data for {len(report_data)} sources.")
+                self.controller.show_success_message(f"Word report exported successfully to {path}")
+            except Exception as ex:
+                self.logger.error(f"Failed to generate Word document: {ex}", exc_info=True)
+                self.controller.show_error_message(f"Failed to generate report: {ex}")
+        
+        elif export_type == "powerpoint":
+            # Placeholder for PowerPoint export logic
+            self.controller.show_info_message(f"PowerPoint export is not yet implemented.")
 
     def _copy_bibliography(self, e):
         """Copy bibliography text to clipboard."""

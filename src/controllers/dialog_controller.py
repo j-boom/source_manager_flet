@@ -346,21 +346,20 @@ class DialogController(BaseController):
         self.controller.page.update()
 
     def show_first_time_setup(self):
-        """
-        Shows the initial setup dialog for new users.
-        When setup is complete, saves the display name, marks setup as complete,
-        updates the greeting, and navigates to the home page.
-        """
+        """Shows the first-time setup dialog to get the user's display name."""
+        self.logger.info("Showing first-time setup dialog.")
 
         def on_setup_complete(display_name: str):
-            """
-            Callback for when the first time setup is completed.
-            Saves the display name, marks setup as complete, updates greeting, and navigates home.
-            """
-            self.controller.settings_manager.save_display_name(display_name)
-            self.controller.user_config_manager.mark_setup_completed()
+            """Callback executed when the setup dialog is completed."""
+            self.logger.info(f"First time setup completed. Display name: '{display_name}'")
+            # Delegate user creation and setup completion to the AdminController
+            self.controller.admin_controller.create_initial_user(display_name)
+            
+            # Update UI and navigate to the home screen
             self.controller.main_view.update_greeting()
             self.controller.navigate_to("home")
 
-        dialog = FirstTimeSetupDialog(self.controller.page, on_setup_complete)
+        dialog = FirstTimeSetupDialog(
+            page=self.controller.page, on_complete=on_setup_complete
+        )
         dialog.show()

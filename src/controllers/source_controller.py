@@ -165,6 +165,43 @@ class SourceController(BaseController):
             )
             raise # Re-raise to let the dialog know the update failed
 
+    def get_combined_project_sources_data(self) -> List[Dict[str, Any]]:
+        """
+        For the current project, combines master source data with project-specific link data.
+
+        Returns:
+            A list of dictionaries, where each dictionary represents a source
+            used in the project and contains the merged data. Returns an empty
+            list if no project is loaded.
+        """
+        project = self.controller.project_controller.get_current_project()
+        if not project:
+            self.logger.warning("Attempted to generate report data with no project loaded.")
+            return []
+
+        combined_sources = []
+        for link in project.sources:
+            source_record = self.get_source_record_by_id(link.source_id)
+            if not source_record:
+                self.logger.warning(f"Could not find master source record for ID: {link.source_id}")
+                continue
+
+            # Start with the master record's data
+            master_data = source_record.to_dict()
+            
+            # Get the project-specific link data
+            link_data = link.metadata
+
+            # Merge them, with link_data overwriting master_data in case of key collision
+            combined_data = {**master_data, **link_data}
+            
+            combined_sources.append(combined_data)
+        
+        # Sort the combined data, for example by display name
+        combined_sources.sort(key=lambda s: s.get("display_name", "").lower())
+        
+        return combined_sources
+
     def get_all_source_records(self):
         """
         Retrieves all master source records from the data service.

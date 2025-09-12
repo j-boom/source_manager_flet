@@ -112,6 +112,24 @@ class AdminController(BaseController):
             self.controller.update_view("admin")
         else:
             self.controller.show_error_message(f"Failed to update user '{original_name}'.")
+    
+    def create_initial_user(self, display_name: str):
+        """Creates the first user during setup, sets them as admin and current user."""
+        if not display_name:
+            # Handle the 'skip' case by providing a default name
+            display_name = "User"
+
+        user_data = {
+            "display_name": display_name,
+            "role": "admin",
+            "is_active": True,
+        }
+        # Re-use the existing add_user logic
+        self.add_user(user_data)
+        # Set this new user as the one currently logged in
+        self.controller.user_config_manager.set_current_user(display_name)
+        # Mark the first-time setup as complete
+        self.controller.user_config_manager.mark_setup_completed()
 
     def delete_user(self, user_name: str):
         """Deletes a user and their associated config file."""

@@ -79,11 +79,11 @@ class ProjectTypeEditor(ft.Column):
         self.page.update()
 
     def _on_save_clicked(self, e):
-        new_config = {
-            "display_name": self.form_fields["display_name"].value,
-            "description": self.form_fields["description"].value,
-            "filename_pattern": self.form_fields["filename_pattern"].value,
-        }
+        # Start with a copy to preserve any unedited properties
+        new_config = self.project_config.copy()
+        new_config["display_name"] = self.form_fields["display_name"].value
+        new_config["description"] = self.form_fields["description"].value
+        new_config["filename_pattern"] = self.form_fields["filename_pattern"].value
 
         # Extract field data from each card, filtering out any empty/invalid cards
         all_field_data = [card.get_field_data() for card in self.fields_list_column.controls if card.get_field_data().get("name")]
