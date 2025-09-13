@@ -35,13 +35,14 @@ class CreateSourceGroupDialog(BaseDialog):
 
         if not group_name:
             self.group_name_field.error_text = "Group name cannot be empty."
-            self.group_name_field.update()
+            self.dialog.content.update() # Update just the dialog content
             return
             
         if not selected_ids:
             self.group_name_field.error_text = ""
-            self.page.snack_bar = ft.SnackBar(ft.Text("You must select at least one source."), open=True)
-            self.page.update()
+            # Let the controller show the message for consistency
+            self.page.snack_bar = ft.SnackBar(ft.Text("You must select at least one source."), open=True) # This is a temporary message, better to use controller
+            self.dialog.content.update()
             return
 
         self.on_save(group_name, selected_ids)

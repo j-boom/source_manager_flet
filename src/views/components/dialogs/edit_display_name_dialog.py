@@ -54,13 +54,13 @@ class EditDisplayNameDialog(BaseDialog):
         if not display_name:
             self.error_text.value = "Please enter a display name"
             self.error_text.visible = True
-            self.error_text.update()
+            self.dialog.content.update()
             return
         
         if len(display_name) > 50:
             self.error_text.value = "Display name must be 50 characters or less"
             self.error_text.visible = True
-            self.error_text.update()
+            self.dialog.content.update()
             return
         
         # If name didn't change, just close

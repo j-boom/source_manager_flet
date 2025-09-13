@@ -9,6 +9,7 @@ import re
 import uuid
 import logging
 from pathlib import Path
+from filelock import FileLock, Timeout
 from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
 from datetime import datetime
 
@@ -34,6 +35,8 @@ class ProjectService:
         try:
             project = Project.load(file_path)
             if project:
+                # After loading, check if it needs migration and perform it.
+                self._migrate_project_if_needed(project)
                 self.logger.info(
                     f"Successfully loaded project: {project.project_title}"
                 )
@@ -44,14 +47,57 @@ class ProjectService:
             )
             return None
 
+    def _migrate_project_if_needed(self, project: Project):
+        """Compares a loaded project's fields against its type config and migrates if necessary."""
+        project_configs = self.admin_service.get_project_types()
+        current_config = project_configs.get(project.project_type)
+        if not current_config:
+            self.logger.warning(f"Cannot migrate project '{project.project_title}': Project type '{project.project_type}' not found in config.")
+            return
+
+        # Get the set of field names defined in the current configuration
+        config_fields = {f['name'] for f in current_config.get('fields', [])}
+        # Get the set of field names that already exist in the project's metadata
+        project_fields = set(project.metadata.keys())
+        
+        # Determine which fields need to be added
+        added_fields = config_fields - project_fields
+
+        if not added_fields:
+            return  # No migration needed
+
+        self.logger.info(f"Migrating project '{project.project_title}' by adding new fields.")
+        modified = False
+        for field_name in added_fields:
+            # Add the new field with a default empty value
+            project.metadata[field_name] = ""
+            modified = True
+            self.logger.debug(f"Added field '{field_name}' to project '{project.project_title}'.")
+        
+        if modified:
+            self.save_project(project)
+            self.logger.info(f"Project '{project.project_title}' migration complete.")
+
     def save_project(self, project: Project):
         """Saves a project to its file path."""
+        if not project.file_path:
+            raise ValueError("Project has no file_path defined; cannot save.")
+
         self.logger.info(
             f"Saving project: {project.project_title} to {project.file_path}"
         )
+        lock_path = project.file_path.with_suffix('.lock')
+
         try:
-            project.save()
-            self.logger.info(f"Successfully saved project: {project.project_title}")
+            # Acquire an exclusive lock on the associated .lock file, with a 5-second timeout.
+            with FileLock(lock_path, timeout=5):
+                self.logger.debug(f"Acquired lock for {project.file_path}")
+                project.save()  # This is the original write operation
+                self.logger.info(f"Successfully saved project: {project.project_title}")
+        except Timeout:
+            self.logger.warning(f"Could not acquire lock for {project.file_path}. File may be in use by another user.")
+            # Raise a specific, user-friendly error that can be caught by the controller
+            raise IOError("The project file is currently in use by another user. Please try again in a moment.")
         except Exception as e:
             self.logger.error(
                 f"Error saving project {project.project_title}: {e}", exc_info=True
@@ -188,11 +234,10 @@ class ProjectService:
                 link_found = True
                 break
 
+        # If the link wasn't found, it means this is a new source being added.
         if not link_found:
-            return (
-                False,
-                f"Could not find source link with ID '{source_id}' in the project.",
-            )
+            project.add_source(source_id, link_data)
+            self.logger.info(f"No existing link found for source {source_id}. Created a new one.")
 
         try:
             # Save the entire project object, which now contains the updated link

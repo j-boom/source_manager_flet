@@ -77,12 +77,6 @@ class AdminController(BaseController):
         self.controller.show_success_message(f"{config_category.title()} type '{display_name}' created.")
         self.controller.update_view("admin")
 
-    def save_project_type_config(self, type_name: str, config: dict):
-        """Saves the configuration for a given project type."""
-        project_types = self.admin_service.get_project_types()
-        project_types[type_name] = config
-        self.admin_service.save_project_types(project_types)
-        
     def add_new_source_type(self, display_name: str, internal_name: str):
         """Adds a new, empty source type configuration."""
         self._add_new_config_type(display_name, internal_name, "source")

@@ -69,13 +69,15 @@ class SourceTypeEditor(ft.Column):
             autofocus=True
         )
         self.fields_list_column.controls.append(new_card)
-        self.page.update()
+        self.controller.update_view()
 
     def _on_delete_field_clicked(self, card_to_delete: FieldEditorCard):
         self.fields_list_column.controls.remove(card_to_delete)
-        self.page.update()
+        self.controller.update_view()
 
     def _on_save_clicked(self, e):
+        # The current state is the "old" config for migration purposes
+
         new_config = self.type_config.copy()
         new_config['citation_format'] = self.form_fields['citation_format'].value
 
@@ -87,4 +89,4 @@ class SourceTypeEditor(ft.Column):
         
         self.controller.admin_controller.save_source_type_config(self.type_name, new_config)
         self.page.overlay.append(ft.SnackBar(ft.Text(f"Successfully saved configuration for {self.type_name}."), open=True))
-        self.page.update()
+        self.controller.update_view()

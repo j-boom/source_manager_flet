@@ -39,6 +39,9 @@ class AppController:
     It holds instances of specialized controllers to delegate tasks.
     """
 
+    # --- Type Hinting for Services and Managers ---
+    source_service: SourceService
+
     def __init__(self, page: ft.Page):
         """
         Initializes the AppController.
@@ -53,9 +56,9 @@ class AppController:
         self.logger.info("Initializing AppController")
 
         # Initialize services
-        self.directory_service = DirectoryService()
-        self.source_service = SourceService(directory_service=self.directory_service)
         self.admin_service = AdminService()
+        self.directory_service = DirectoryService()
+        self.source_service = SourceService(directory_service=self.directory_service, admin_service=self.admin_service)
         self.project_service = ProjectService(source_service=self.source_service, admin_service=self.admin_service)
         self.admin_auth_service = AdminAuthService()
 
@@ -97,6 +100,11 @@ class AppController:
             self.dialog_controller.show_first_time_setup()
         else:
             self.navigate_to("home")
+
+    def shutdown(self):
+        """Performs cleanup actions before the application closes."""
+        self.logger.info("Application shutting down. Saving all pending changes...")
+        self.source_service.save_all_dirty_sources()
 
     @property
     def source_usage_map(self) -> Dict[str, List[str]]:

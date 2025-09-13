@@ -5,6 +5,7 @@ import flet as ft
 import logging
 from config.logging_config import setup_logging
 
+from typing import Optional
 
 setup_logging()
 # --- Import Application Components ---
@@ -30,10 +31,20 @@ def main(page: ft.Page):
     page.window.min_height = MIN_WINDOW_HEIGHT
     page.window.center()
 
+    # This will be assigned after the controller is initialized
+    app_controller_instance: Optional[AppController] = None
+
+    def on_window_event(e):
+        if e.data == "close":
+            if app_controller_instance:
+                app_controller_instance.shutdown()
+            page.window_destroy()
+
     # --- Initialize and Run Application ---
     try:
-        controller = AppController(page)
-        controller.run()
+        app_controller_instance = AppController(page)
+        page.on_window_event = on_window_event
+        app_controller_instance.run()
     except Exception as e:
         logger.critical(f"A critical error occurred during application startup: {e}", exc_info=True)
         # Display a simple error message

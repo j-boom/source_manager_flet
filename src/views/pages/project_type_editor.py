@@ -72,14 +72,15 @@ class ProjectTypeEditor(ft.Column):
             autofocus=True
         )
         self.fields_list_column.controls.append(new_card)
-        self.page.update()
+        self.controller.update_view()
 
     def _on_delete_field_clicked(self, card_to_delete: FieldEditorCard):
         self.fields_list_column.controls.remove(card_to_delete)
-        self.page.update()
+        self.controller.update_view()
 
     def _on_save_clicked(self, e):
-        # Start with a copy to preserve any unedited properties
+        # The current state is the "old" config for migration purposes
+
         new_config = self.project_config.copy()
         new_config["display_name"] = self.form_fields["display_name"].value
         new_config["description"] = self.form_fields["description"].value
@@ -93,4 +94,4 @@ class ProjectTypeEditor(ft.Column):
 
         self.controller.admin_controller.save_project_type_config(self.type_name, new_config)
         self.page.overlay.append(ft.SnackBar(ft.Text(f"Successfully saved configuration for {self.type_name}."), open=True))
-        self.page.update()
+        self.controller.update_view()
