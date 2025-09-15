@@ -100,45 +100,53 @@ class ProjectSourcesTab(BaseTab):
         self.on_deck_list.controls.clear()
         self.project_sources_list.controls.clear()
 
-        # Get the map of where each source is used
-        source_usage_map = self.controller.powerpoint_controller.get_source_usage_map()
-
+        # --- Data Fetching ---
         on_deck_ids = project.metadata.get("on_deck_sources", [])
         project_source_ids = {link.source_id for link in project.sources}
+        boilerplate_sources = self.controller.admin_controller.get_boilerplate_sources()
+        source_usage_map = self.controller.powerpoint_controller.get_source_usage_map()
+        
+        # Combine all IDs that are already associated with the project in some way
+        associated_ids = set(on_deck_ids) | project_source_ids
 
+        # --- Populate "On Deck" List ---
+        
+        # 1. Add boilerplate sources that are not yet on deck or in the project
+        boilerplate_added = False
+        for source in boilerplate_sources:
+            if source.id not in associated_ids:
+                card = OnDeckCard(
+                    source=source,
+                    controller=self.controller,
+                    show_add_button=True,
+                    context="library" # This context adds the source to the on-deck list
+                )
+                self.on_deck_list.controls.append(card)
+                boilerplate_added = True
+
+        # Add a divider if we showed boilerplate sources and there are also on-deck sources
+        if boilerplate_added and on_deck_ids:
+            self.on_deck_list.controls.append(ft.Divider())
+
+        # 2. Add sources that are specifically on this project's on-deck list
         for source_id in on_deck_ids:
             if source_id not in project_source_ids:
                 source = self.controller.source_service.get_source_by_id(source_id)
                 if source:
-                    # The OnDeckCard now gets a `show_remove_button` argument
                     card = OnDeckCard(
                         source=source,
                         controller=self.controller,
                         show_add_button=True,
-                        show_remove_button=True,  # This enables the remove button
-                        context="project_tab",
+                        show_remove_button=True,
+                        context="project_tab", # This context adds the source to the project
                     )
-                    add_button = next(
-                        (
-                            c
-                            for c in card.content.trailing.controls
-                            if isinstance(c, ft.IconButton)
-                            and c.icon == ft.icons.ADD_TASK_ROUNDED
-                        ),
-                        None,
-                    )
-                    if add_button:
-                        add_button.on_click = (
-                            lambda e, s_id=source_id: self._show_add_to_project_dialog(
-                                s_id
-                            )
-                        )
                     self.on_deck_list.controls.append(card)
 
+        # --- Populate "Project Sources" List ---
         for link in project.sources:
             source = self.controller.source_service.get_source_by_id(link.source_id)
             if source:
-                used_on_slides = self.controller.source_usage_map.get(link.source_id, [])
+                used_on_slides = source_usage_map.get(link.source_id, [])
                 card = ProjectSourceCard(
                     source=source, link=link, controller=self.controller, used_on_slides=used_on_slides
                 )
@@ -155,6 +163,7 @@ class ProjectSourcesTab(BaseTab):
                     )
                 )
 
+        # --- Handle Empty States ---
         if not self.project_sources_list.controls:
             self.project_sources_list.controls.append(
                 ft.Text(
@@ -164,7 +173,7 @@ class ProjectSourcesTab(BaseTab):
         if not self.on_deck_list.controls:
             self.on_deck_list.controls.append(
                 ft.Text(
-                    "Add sources from the main 'Sources' page.",
+                    "Add sources from the main 'Sources' page or use boilerplate sources.",
                     text_align=ft.TextAlign.CENTER,
                 )
             )

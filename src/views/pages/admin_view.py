@@ -2,10 +2,40 @@ import flet as ft
 from ..base_view import BaseView
 from typing import Dict, Any, List
 
-# --- Refactor: Import new editor components ---
-from .source_type_editor import SourceTypeEditor
-from .project_type_editor import ProjectTypeEditor
-from .user_management_tab import UserManagementTab
+# --- Refactor: Import tab components from the new 'admin' sub-package ---
+from .admin.source_type_editor import SourceTypeEditor
+from .admin.project_type_editor import ProjectTypeEditor
+from .admin.user_management_tab import UserManagementTab
+from .admin.legacy_migration_tab import LegacyMigrationTab
+
+
+class BoilerplateSourcesTab(ft.Column):
+    """A UI component for managing boilerplate sources in the admin panel."""
+
+    def __init__(self, controller):
+        super().__init__(expand=True, scroll=ft.ScrollMode.ADAPTIVE, spacing=10)
+        self.controller = controller
+        self.sources_list = ft.ListView(expand=True, spacing=10)
+        self._build_ui()
+        self.update_sources_list()
+
+    def _build_ui(self):
+        """Constructs the static parts of the UI."""
+        self.controls.extend([
+            ft.Text("Manage Boilerplate Sources", theme_style=ft.TextThemeStyle.TITLE_LARGE),
+            ft.Text("These sources are available to all projects and are not tied to a specific country.", color=self.controller.page.theme.color_scheme.on_surface_variant),
+            ft.Divider(),
+            self.sources_list
+        ])
+
+    def update_sources_list(self):
+        """Fetches the latest boilerplate source list and rebuilds the list view."""
+        self.sources_list.controls.clear()
+        sources = self.controller.admin_controller.get_boilerplate_sources()
+        for source in sorted(sources, key=lambda s: s.get_title()):
+            self.sources_list.controls.append(ft.Card(content=ft.ListTile(leading=ft.Icon(ft.icons.DESCRIPTION_OUTLINED),title=ft.Text(source.get_title(), weight=ft.FontWeight.BOLD),subtitle=ft.Text(f"Type: {source.source_type.replace('_', ' ').title()}"))))
+        if self.page:
+            self.page.update()
 
 class AdminView(BaseView):
     """The UI for the Admin page, focused on configuration management."""
@@ -58,6 +88,8 @@ class AdminView(BaseView):
 
         # --- NEW: Placeholder content for new tabs ---
         users_tab_content = UserManagementTab(controller=self.controller)
+        boilerplate_tab_content = BoilerplateSourcesTab(controller=self.controller)
+        migration_tab_content = LegacyMigrationTab(controller=self.controller)
 
         self.tabs_control = ft.Tabs(
             selected_index=0,
@@ -65,7 +97,9 @@ class AdminView(BaseView):
             tabs=[
                 ft.Tab(text="Source Types", content=source_types_tab_content),
                 ft.Tab(text="Project Types", content=project_types_tab_content),
+                ft.Tab(text="Boilerplate Sources", content=boilerplate_tab_content),
                 ft.Tab(text="Users", content=users_tab_content),
+                ft.Tab(text="Legacy Migration", content=migration_tab_content),
             ],
             on_change=self._on_tab_change,
             expand=True,
@@ -186,6 +220,21 @@ class AdminView(BaseView):
                 is_selected = self.selected_config_type == 'project' and control.data == self.selected_item_name
                 control.bgcolor = self.colors.primary_container if is_selected else None
 
+def _update_selection_visuals(self):
+        """Updates the background color of the selected item in the correct list."""
+        # Update source list visuals
+        for control in self.source_types_list.controls:
+            if isinstance(control, ft.ListTile):
+                is_selected = self.selected_config_type == 'source' and control.data == self.selected_item_name
+                control.bgcolor = self.colors.primary_container if is_selected else None
+        
+        # Update project list visuals
+        for control in self.project_types_list.controls:
+            if isinstance(control, ft.ListTile):
+                is_selected = self.selected_config_type == 'project' and control.data == self.selected_item_name
+                control.bgcolor = self.colors.primary_container if is_selected else None
+
+
     def _build_editor_for_selection(self):
         """Routes to the correct editor builder based on the selected type."""
         # Clear both editor columns before building
@@ -215,6 +264,8 @@ class AdminView(BaseView):
             for tab in self.tabs_control.tabs:
                 if isinstance(tab.content, UserManagementTab):
                     tab.content.update_users_list()
+                if isinstance(tab.content, BoilerplateSourcesTab):
+                    tab.content.update_sources_list()
         self.page.update()
 
     def _on_add_source_type_clicked(self, e):

@@ -14,10 +14,13 @@ class SourceController(BaseController):
 
     def create_new_source(
         self, source_data: Dict[str, Any], add_to_project: bool = False
-    ):
+    ) -> Optional["SourceRecord"]:
         """
         Creates a new master source record. If add_to_project is True,
         it also creates the project-specific link.
+
+        Returns:
+            The created SourceRecord object on success, otherwise None.
         """
         try:
             # Step 1: Separate core data from link data based on the configuration
@@ -48,7 +51,7 @@ class SourceController(BaseController):
                 self.controller.show_error_message(
                     "Country/Region is required to create a source."
                 )
-                return
+                return None
             
             success, message, source_record = self.controller.source_service.create_new_source(country, core_data)
 
@@ -56,7 +59,7 @@ class SourceController(BaseController):
                 self.controller.show_error_message(
                     f"Failed to create master source: {message}"
                 )
-                return
+                return None
 
             self.logger.info(f"Master source record '{source_record.id}' created.")
 
@@ -73,9 +76,12 @@ class SourceController(BaseController):
             self.controller.show_success_message("Source created successfully.")
             # Refresh the view to show the new source
             self.controller.update_view()
+            return source_record
 
         except Exception as e:
             self.controller.show_error_message(f"Failed to create source: {e}")
+            self.logger.error(f"Error in create_new_source: {e}", exc_info=True)
+            return None
 
     def add_source_to_project(self, source_id: str, link_data: Dict[str, Any]):
         """
@@ -104,6 +110,39 @@ class SourceController(BaseController):
         except Exception as e:
             self.logger.error(f"Failed to add source to project: {e}", exc_info=True)
             self.controller.show_error_message(f"Failed to add source to project: {e}")
+
+    def add_boilerplate_source_to_project(self, source_id: str):
+        """
+        Adds a boilerplate source to the current project without modifying the
+        master boilerplate source file.
+        """
+        project: "Project" | None = self.controller.project_state_manager.current_project
+        if not project:
+            self.controller.show_error_message("No active project to add a source to.")
+            return
+
+        try:
+            # Get the source record to show a meaningful success message
+            source_record = self.get_source_record_by_id(source_id)
+            if not source_record:
+                self.controller.show_error_message(f"Boilerplate source with ID {source_id} not found.")
+                return
+
+            # Add the source link to the project model in memory.
+            # Boilerplate sources have no project-specific "link" data.
+            project.add_source(source_id, {})
+
+            # Save the updated project file to disk.
+            self.controller.project_service.save_project(project)
+
+            self.logger.info(
+                f"Boilerplate source '{source_id}' successfully linked to project '{project.project_id}'."
+            )
+            self.controller.show_success_message(f"Added '{source_record.display_name}' to project.")
+            self.controller.update_view()
+        except Exception as e:
+            self.logger.error(f"Failed to add boilerplate source to project: {e}", exc_info=True)
+            self.controller.show_error_message(f"Failed to add boilerplate source to project: {e}")
 
     def remove_source_from_project(self, source_id: str):
         """
@@ -207,6 +246,15 @@ class SourceController(BaseController):
         Retrieves all master source records from the data service.
         """
         return self.controller.source_service.get_all_master_sources()
+
+    def get_boilerplate_sources(self) -> List["SourceRecord"]:
+        """
+        Gets all master source records from the boilerplate file.
+        Note: This requires a corresponding `get_boilerplate_sources` method
+        to be implemented in the `SourceService`, which loads sources from
+        the `boilerplate_sources.json` file.
+        """
+        return self.controller.source_service.get_boilerplate_sources()
 
     def get_source_record_by_id(self, source_id: str) -> Optional["SourceRecord"]:
         """

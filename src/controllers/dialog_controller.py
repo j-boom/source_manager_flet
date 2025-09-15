@@ -253,11 +253,11 @@ class DialogController(BaseController):
         dialog = SourceCreationDialog(
             page=self.controller.page,
             on_create=on_create_callback,
+            dialog_controller=self,
+            source_types=source_types,
             available_countries=available_countries,
             target_country=target_country,
             from_project_sources_tab=from_project_sources_tab,
-            source_types=source_types,
-            dialog_controller=self,
         )
         dialog.show()
 

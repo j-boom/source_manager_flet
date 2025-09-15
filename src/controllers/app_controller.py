@@ -31,6 +31,7 @@ from .navigation_controller import NavigationController
 from .settings_controller import SettingsController
 from .admin_controller import AdminController
 
+from .migration_controller import MigrationController
 
 class AppController:
     """
@@ -79,6 +80,7 @@ class AppController:
         self.navigation_controller = NavigationController(self)
         self.settings_controller = SettingsController(self)
         self.admin_controller = AdminController(self)
+        self.migration_controller = MigrationController(self)
 
         # Initialize views
         self.main_view = MainView(controller=self, page=page)

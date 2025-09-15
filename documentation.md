@@ -369,6 +369,7 @@ A brief overview of the primary UI components and their roles.
 -   **`SourcesView`**: A view for searching and filtering the entire master source library. Allows users to add sources to the "On Deck" list of the current project.
 -   **`AdminView`**: A tabbed interface for managing application configurations, including Source Types, Project Types, and Users.
 
+
 ### 4.2. Reusable Components (`/src/views/components`)
 
 -   **`ProjectSourceCard`**: Displays a source that has been added to the current project. Includes actions to edit or remove the source from the project.
@@ -377,6 +378,33 @@ A brief overview of the primary UI components and their roles.
 -   **`UserEditorDialog`**: A dialog for creating or editing user profiles (name, role, active status).
 
 ---
+## 5. Special Tools
+
+### 5.1. Legacy Source Migration Tool
+
+The application includes a specialized tool to assist in migrating legacy project files to the new, structured format.
+
+-   **Location**: `Admin View` -> `Legacy Migration` Tab.
+-   **Purpose**: To convert sources stored as simple string dictionaries (e.g., `{"citation": "...", "comment": "..."}`) into new, structured `SourceRecord` and `ProjectSourceLink` objects.
+
+#### Workflow
+
+1.  **Select File**: The user selects a legacy project `.json` file using the "Select Project File" button. The application automatically creates a backup (`.json.bak`) of the original file.
+2.  **Load Source**: The tool loads the first unprocessed legacy source from the file.
+3.  **Display Data**:
+    -   The **left panel** displays the raw, un-parsed `citation` and `comment` strings for review.
+    -   The **right panel** displays a dynamic form, similar to the source creation dialog.
+4.  **Automatic Parsing**: The application attempts to automatically parse the citation string and pre-populate fields in the form on the right.
+    -   **Developer Action**: The custom parsing logic must be added by the developer in `src/controllers/migration_controller.py` within the `parse_legacy_source` method. A `TODO` block clearly marks the integration point.
+5.  **Manual Correction**: The user reviews the pre-populated data, selects the correct `Country` and `Source Type`, and makes any necessary manual corrections in the form.
+6.  **Save & Next**: Clicking "Save & Next" performs several actions:
+    -   It creates a new `SourceRecord` in the appropriate master source file (e.g., `USA_sources.json`).
+    -   It replaces the old dictionary in the project file's `sources` list with a new `ProjectSourceLink` pointing to the newly created master record.
+    -   It saves the entire updated project file to disk.
+    -   It automatically loads the next legacy source in the file for processing.
+7.  **Navigation**: The user can navigate between legacy sources using the "Previous" and "Next" buttons.
+
+This semi-automated process allows for rapid and accurate migration of hundreds of sources across many project files, with the safety net of manual verification.
 
 ## 5. Development Guide
 

@@ -47,9 +47,9 @@ class SourceCreationDialog(BaseDialog):
         self,
         page: ft.Page,
         on_create: Callable[[Dict[str, Any]], None],
-        available_countries: List[str],
         dialog_controller: "DialogController",
         source_types: Dict[str, Any] = None,
+        available_countries: Optional[List[str]] = None,
         target_country: Optional[str] = None,
         from_project_sources_tab: bool = False
     ):
@@ -59,16 +59,17 @@ class SourceCreationDialog(BaseDialog):
         Args:
             page: The Flet Page object.
             on_create: A callback to execute with the validated source data.
-            available_countries: A list of countries to populate the country dropdown.
             dialog_controller: The dialog controller.
             source_types: A dictionary of source types.
+            mode: The dialog mode, either "country" or "boilerplate".
+            available_countries: A list of countries to populate the country dropdown.
             target_country: The country to pre-select in the country dropdown.
             from_project_sources_tab: Flag to show project-specific fields.
         """
         self.on_create = on_create
-        self.available_countries = available_countries
         self.dialog_controller = dialog_controller
         self.source_types = source_types
+        self.available_countries = available_countries
         self.target_country = target_country
         self.from_project_sources_tab = from_project_sources_tab
         self.form_fields: Dict[str, ft.Control] = {}
@@ -100,8 +101,10 @@ class SourceCreationDialog(BaseDialog):
         Builds the main content of the dialog, which will be placed
         inside the scrollable column of the BaseDialog.
         """
+        row_controls = [self.source_type_dropdown]
+        row_controls.append(self.country_dropdown)
         return [
-            ft.Row([self.source_type_dropdown, self.country_dropdown], spacing=10),
+            ft.Row(row_controls, spacing=10),
             ft.Divider(height=1, thickness=1),
             self.dynamic_fields_container,
         ]
@@ -127,7 +130,7 @@ class SourceCreationDialog(BaseDialog):
         )
 
     def _build_country_dropdown(self) -> ft.Dropdown:
-        options = [ft.dropdown.Option(c, c) for c in sorted(self.available_countries)]
+        options = [ft.dropdown.Option(c, c) for c in sorted(self.available_countries or [])]
         return ft.Dropdown(
             label="Country *",
             options=options,
@@ -176,7 +179,6 @@ class SourceCreationDialog(BaseDialog):
     def _handle_create_clicked(self, e: ft.ControlEvent):
         """Gathers data, validates it, and calls the on_create callback."""
         is_valid = True
-        # --- Validate dropdowns ---
         if not self.country_dropdown.value:
             self.country_dropdown.error_text = "Country is required."
             is_valid = False
@@ -207,7 +209,8 @@ class SourceCreationDialog(BaseDialog):
             return
 
         # --- Data Collection ---
-        form_data = {"source_type": self.source_type_dropdown.value, "country": self.country_dropdown.value}
+        form_data = {"source_type": self.source_type_dropdown.value}
+        form_data["country"] = self.country_dropdown.value
         for name, control in self.form_fields.items():
             if hasattr(control, "value"):
                 form_data[name] = control.value
@@ -215,7 +218,7 @@ class SourceCreationDialog(BaseDialog):
         generated_title = generate_source_title(
             form_data["source_type"], form_data, self.dialog_controller.controller.admin_service
         )
-        form_data["title"] = generated_title
+        form_data["display_name"] = generated_title
 
         self.logger.info("Validation passed. Executing on_create callback.")
         self.on_create(form_data)

@@ -32,6 +32,9 @@ PROGRAM_FILES_DIR = BASE_DATA_DIR / "program_files"
 # Directory containing master source files (used for reference or templates)
 MASTER_SOURCES_DIR = PROGRAM_FILES_DIR / "master_sources"
 
+# Path to the boilerplate sources file
+BOILERPLATE_SOURCES_PATH = MASTER_SOURCES_DIR / "boilerplate_sources.json"
+
 # Directory for application configuration files (source_types.json, project_types.json)
 CONFIG_DIR = PROGRAM_FILES_DIR / "config"
 

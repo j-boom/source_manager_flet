@@ -5,6 +5,8 @@ Reports View - Modern export-focused interface for generating bibliographies and
 from utils.citation_generator import generate_citation
 import flet as ft
 from typing import Optional, List, Dict, Any
+import asyncio
+import time # Used to simulate a long-running task
 import logging
 from src.views.base_view import BaseView
 
@@ -150,6 +152,13 @@ class ReportsView(BaseView):
             elevation=2
         )
 
+    def _blocking_word_export(self, report_data: List[Dict[str, Any]], path: str):
+        """Placeholder for the actual, slow, blocking docx creation logic."""
+        self.logger.info(f"Starting blocking export to {path}...")
+        # In a real scenario, this is where python-docx would be used.
+        time.sleep(4) # Simulate a 4-second freeze
+        self.logger.info(f"Finished blocking export to {path}.")
+
     def _create_bibliography_preview(self) -> ft.Card:
         """Create bibliography preview card"""
         bibliography_text = self._generate_bibliography_text()
@@ -226,33 +235,35 @@ class ReportsView(BaseView):
             display_control.value = path
         self.page.update()
 
-    def _perform_export(self, export_type: str):
+    async def _perform_export(self, export_type: str):
         """Ask the controller to perform the export."""
         path = self.export_paths.get(export_type)
         if not path:
-            self.controller.show_error_message(f"Please choose a location for the {export_type} export first.")
+            await self.controller.show_error_message(f"Please choose a location for the {export_type} export first.")
             return
 
         if export_type == "word":
-            self.controller.show_info_message("Generating Word report...")
+            await self.controller.show_info_message("Generating Word report... The app will remain responsive.")
             report_data = self.controller.source_controller.get_combined_project_sources_data()
 
             if not report_data:
-                self.controller.show_error_message("No source data found for the current project.")
+                await self.controller.show_error_message("No source data found for the current project.")
                 return
 
             try:
-                # --- Your python-docx logic would go here ---
-                # For example: create_word_document(report_data, path)
-                self.logger.info(f"Generated report data for {len(report_data)} sources.")
-                self.controller.show_success_message(f"Word report exported successfully to {path}")
+                # Run the blocking I/O in a separate thread to avoid freezing the UI
+                await self.page.run_in_executor(
+                    None, self._blocking_word_export, report_data, path
+                )
+                
+                await self.controller.show_success_message(f"Word report exported successfully to {path}")
             except Exception as ex:
                 self.logger.error(f"Failed to generate Word document: {ex}", exc_info=True)
-                self.controller.show_error_message(f"Failed to generate report: {ex}")
+                await self.controller.show_error_message(f"Failed to generate report: {ex}")
         
         elif export_type == "powerpoint":
             # Placeholder for PowerPoint export logic
-            self.controller.show_info_message(f"PowerPoint export is not yet implemented.")
+            await self.controller.show_info_message(f"PowerPoint export is not yet implemented.")
 
     def _copy_bibliography(self, e):
         """Copy bibliography text to clipboard."""

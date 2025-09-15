@@ -41,7 +41,10 @@ def generate_source_title(source_type: str, form_data: dict, admin_service: "Adm
     # Filter for fields that are marked as part of the title
     title_field_configs = [f for f in field_configs if f.get("is_title_part")]
 
-    for config in title_field_configs:
+    # Sort the title fields by their display_order to ensure a consistent title
+    sorted_title_fields = sorted(title_field_configs, key=lambda f: f.get('display_order', 0))
+
+    for config in sorted_title_fields:
         # Get the value from the form data, if it exists and is not empty
         value = form_data.get(config.get("name"))
         if value:

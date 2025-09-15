@@ -108,7 +108,6 @@ class MigrationService:
         return {
             "project_id": project_id,
             "project_type": file_info["project_type"],
-            "title": project_title,
             "project_title": project_title,  # Add project_title field
             "file_path": file_path,
             "requestor": "",

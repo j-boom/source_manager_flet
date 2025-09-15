@@ -1,6 +1,7 @@
 from .base_controller import BaseController
 from typing import List, Dict, Any
 from src.models.user_config_models import UserRole
+from src.models.source_models import SourceRecord
 
 class AdminController(BaseController):
     """Controller for handling admin-related operations."""
@@ -25,6 +26,11 @@ class AdminController(BaseController):
         """Returns the configuration for a given source type."""
         source_types = self.admin_service.get_source_types()
         return source_types.get(type_name, {})
+
+    def get_boilerplate_sources(self) -> List[SourceRecord]:
+        """Returns a list of all boilerplate source records."""
+        # Using a special key to identify boilerplate sources
+        return self.controller.source_service.get_sources_by_country("__BOILERPLATE__")
 
     def get_field_types(self):
         """Returns a list of all field types."""

@@ -67,7 +67,7 @@ class SourcesView(BaseView):
                                 "Clear", on_click=self._clear_all_filters, expand=True
                             ),
                             ft.FilledButton(
-                                "Apply", on_click=self._apply_all_filters, expand=True
+                                "Apply", on_click=lambda e: self._apply_all_filters(e), expand=True
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
