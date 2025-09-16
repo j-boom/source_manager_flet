@@ -244,7 +244,6 @@ class AdminView(BaseView):
                     tab.content.update_users_list()
                 if isinstance(tab.content, BoilerplateSourcesTab):
                     tab.content.update_sources_list()
-        self.page.update()
 
     def _on_add_source_type_clicked(self, e):
         """Opens the dialog to add a new source type."""

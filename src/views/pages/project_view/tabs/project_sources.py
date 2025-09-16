@@ -10,6 +10,7 @@ class ProjectSourcesTab(BaseTab):
 
     def __init__(self, controller):
         super().__init__(controller)
+        self.dragged_source_id: str | None = None
         # --- UI Components ---
         self.on_deck_list = ft.ListView(
             expand=True, spacing=5, padding=ft.padding.only(top=10)
@@ -159,7 +160,10 @@ class ProjectSourcesTab(BaseTab):
                     ft.DragTarget(
                         group="project_sources",
                         content=ft.Draggable(
-                            group="project_sources", content=card, data=link.source_id
+                            group="project_sources",
+                            content=card,
+                            data=link.source_id,
+                            on_drag_start=self._on_drag_start,
                         ),
                         data=link.source_id,
                         on_will_accept=self._drag_will_accept,
@@ -215,6 +219,10 @@ class ProjectSourcesTab(BaseTab):
             self.boilerplate_dropdown.value = None
             self.add_boilerplate_button.disabled = True
 
+    def _on_drag_start(self, e: ft.DragStartEvent):
+        """Stores the ID of the source being dragged."""
+        self.dragged_source_id = e.control.data
+
     def _drag_will_accept(self, e: ft.DragTargetAcceptEvent):
         """Provides visual feedback by modifying the target control's appearance."""
         e.control.content.content.opacity = 0.5
@@ -234,7 +242,7 @@ class ProjectSourcesTab(BaseTab):
             e.control.update()
             return
 
-        src_id_being_dragged = self.page.get_control(e.src_id).data
+        src_id_being_dragged = self.dragged_source_id
         target_id = e.control.data
 
         if src_id_being_dragged == target_id:
@@ -257,7 +265,7 @@ class ProjectSourcesTab(BaseTab):
             source_links.remove(dragged_link)
             source_links.insert(target_index, dragged_link)
             self.controller.project_service.save_project(project)
-            self._update_view()
+            self.controller.update_view()
         else:
             e.control.update()
 

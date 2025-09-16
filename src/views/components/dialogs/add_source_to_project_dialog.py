@@ -23,6 +23,7 @@ class AddSourceToProjectDialog(BaseDialog):
         self.on_save = on_save
         self.form_fields: Dict[str, ft.Control] = {}
         self.field_configs: Dict[str, _CompatibleFieldConfig] = {}
+        self.logger = logging.getLogger(__name__)
 
         self.fields_container = ft.Column(spacing=15, scroll=ft.ScrollMode.ADAPTIVE)
 
