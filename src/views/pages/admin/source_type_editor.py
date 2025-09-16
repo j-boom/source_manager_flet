@@ -1,6 +1,6 @@
 import flet as ft
 from typing import Dict, Any
-from .field_editor_card import FieldEditorCard
+from ...components.cards.field_editor_card import FieldEditorCard
 
 class SourceTypeEditor(ft.Column):
     """A self-contained component for editing a single source type's configuration."""

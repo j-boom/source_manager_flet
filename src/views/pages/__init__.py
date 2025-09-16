@@ -1,4 +1,4 @@
-from .admin_view import AdminView
+from .admin.admin_view import AdminView
 from .help_view import HelpView
 from .home_view import HomeView
 from .new_project_view import NewProjectView

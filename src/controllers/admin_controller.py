@@ -28,9 +28,8 @@ class AdminController(BaseController):
         return source_types.get(type_name, {})
 
     def get_boilerplate_sources(self) -> List[SourceRecord]:
-        """Returns a list of all boilerplate source records."""
-        # Using a special key to identify boilerplate sources
-        return self.controller.source_service.get_sources_by_country("__BOILERPLATE__")
+        """Pass-through method to get boilerplate sources from the SourceController."""
+        return self.controller.source_controller.get_boilerplate_sources()
 
     def get_field_types(self):
         """Returns a list of all field types."""

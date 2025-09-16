@@ -1,12 +1,12 @@
 import flet as ft
-from ..base_view import BaseView
+from ...base_view import BaseView
 from typing import Dict, Any, List
 
 # --- Refactor: Import tab components from the new 'admin' sub-package ---
-from .admin.source_type_editor import SourceTypeEditor
-from .admin.project_type_editor import ProjectTypeEditor
-from .admin.user_management_tab import UserManagementTab
-from .admin.legacy_migration_tab import LegacyMigrationTab
+from .source_type_editor import SourceTypeEditor
+from .project_type_editor import ProjectTypeEditor
+from .user_management_tab import UserManagementTab
+from .legacy_migration_tab import LegacyMigrationTab
 
 
 class BoilerplateSourcesTab(ft.Column):

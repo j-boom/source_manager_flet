@@ -1,6 +1,6 @@
 import flet as ft
 from typing import Dict, Any
-from .field_editor_card import FieldEditorCard
+from ...components.cards.field_editor_card import FieldEditorCard
 
 class ProjectTypeEditor(ft.Column):
     """A self-contained component for editing a single project type's configuration."""

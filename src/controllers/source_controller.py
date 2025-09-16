@@ -33,7 +33,7 @@ class SourceController(BaseController):
 
             for key, value in source_data.items():
                 # These are handled separately or are not part of the dynamic fields
-                if key in ["source_type", "country", "title"]:
+                if key in ["source_type", "country", "display_name"]:
                     continue
 
                 field_config = all_fields_map.get(key)
@@ -43,7 +43,7 @@ class SourceController(BaseController):
                     core_data[key] = value
             
             # The generated title should be stored in the canonical 'display_name' field.
-            core_data['display_name'] = source_data.get('title')
+            core_data['display_name'] = source_data.get('display_name')
 
             # Step 2: Extract country from the form data and create the master record
             country = source_data.pop("country", None)  # Get country from dropdown

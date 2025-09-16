@@ -10,12 +10,30 @@ class ProjectSourcesTab(BaseTab):
 
     def __init__(self, controller):
         super().__init__(controller)
+        # --- UI Components ---
         self.on_deck_list = ft.ListView(
             expand=True, spacing=5, padding=ft.padding.only(top=10)
         )
         self.project_sources_list = ft.Column(
             expand=True, spacing=5, scroll=ft.ScrollMode.ADAPTIVE
         )
+        # --- Boilerplate Components ---
+        self.boilerplate_dropdown = ft.Dropdown(
+            label="Add Boilerplate Source",
+            hint_text="Select a source...",
+            options=[],
+            width=350,
+            visible=False,
+            on_change=self._on_boilerplate_selection_change
+        )
+        self.add_boilerplate_button = ft.ElevatedButton(
+            "Add to Project",
+            icon=ft.icons.ADD_CIRCLE_OUTLINE,
+            on_click=self._on_add_boilerplate_clicked,
+            disabled=True,
+            visible=False
+        )
+        self._load_boilerplate_sources()
 
     def build(self) -> ft.Control:
         """Builds the UI for the project sources tab."""
@@ -88,8 +106,18 @@ class ProjectSourcesTab(BaseTab):
             expand=True,
             spacing=20,
         )
+        
+        boilerplate_tool = ft.Row(
+            [self.boilerplate_dropdown, self.add_boilerplate_button],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10
+        )
 
-        return main_content
+        return ft.Column(
+            [boilerplate_tool, ft.Divider(height=15), main_content],
+            expand=True,
+            spacing=10,
+        )
 
     def _update_view(self):
         """Refreshes both lists based on the current project's state."""
@@ -103,32 +131,9 @@ class ProjectSourcesTab(BaseTab):
         # --- Data Fetching ---
         on_deck_ids = project.metadata.get("on_deck_sources", [])
         project_source_ids = {link.source_id for link in project.sources}
-        boilerplate_sources = self.controller.admin_controller.get_boilerplate_sources()
         source_usage_map = self.controller.powerpoint_controller.get_source_usage_map()
-        
-        # Combine all IDs that are already associated with the project in some way
-        associated_ids = set(on_deck_ids) | project_source_ids
 
         # --- Populate "On Deck" List ---
-        
-        # 1. Add boilerplate sources that are not yet on deck or in the project
-        boilerplate_added = False
-        for source in boilerplate_sources:
-            if source.id not in associated_ids:
-                card = OnDeckCard(
-                    source=source,
-                    controller=self.controller,
-                    show_add_button=True,
-                    context="library" # This context adds the source to the on-deck list
-                )
-                self.on_deck_list.controls.append(card)
-                boilerplate_added = True
-
-        # Add a divider if we showed boilerplate sources and there are also on-deck sources
-        if boilerplate_added and on_deck_ids:
-            self.on_deck_list.controls.append(ft.Divider())
-
-        # 2. Add sources that are specifically on this project's on-deck list
         for source_id in on_deck_ids:
             if source_id not in project_source_ids:
                 source = self.controller.source_service.get_source_by_id(source_id)
@@ -178,8 +183,37 @@ class ProjectSourcesTab(BaseTab):
                 )
             )
 
-        if self.page:
-            self.page.update()
+    # --- Boilerplate Source Methods ---
+
+    def _load_boilerplate_sources(self):
+        """Fetches boilerplate sources and populates the dropdown."""
+        boilerplate_sources = self.controller.source_controller.get_boilerplate_sources()
+        if boilerplate_sources:
+            self.boilerplate_dropdown.options = [
+                ft.dropdown.Option(key=source.id, text=source.display_name)
+                for source in sorted(boilerplate_sources, key=lambda s: s.display_name)
+            ]
+            self.boilerplate_dropdown.visible = True
+            self.add_boilerplate_button.visible = True
+        else:
+            self.boilerplate_dropdown.visible = False
+            self.add_boilerplate_button.visible = False
+
+        self.controller.update_view()
+
+    def _on_boilerplate_selection_change(self, e: ft.ControlEvent):
+        """Enables or disables the add button based on dropdown selection."""
+        self.add_boilerplate_button.disabled = not e.control.value
+        self.controller.update_view()
+
+    def _on_add_boilerplate_clicked(self, e: ft.ControlEvent):
+        """Handles the click event for adding a boilerplate source."""
+        source_id = self.boilerplate_dropdown.value
+        if source_id:
+            # The controller method will trigger a view update, so no direct update is needed here.
+            self.controller.source_controller.add_boilerplate_source_to_project(source_id)
+            self.boilerplate_dropdown.value = None
+            self.add_boilerplate_button.disabled = True
 
     def _drag_will_accept(self, e: ft.DragTargetAcceptEvent):
         """Provides visual feedback by modifying the target control's appearance."""

@@ -7,10 +7,11 @@ CRUD operations and caching.
 
 import json
 import uuid
+import re
 import logging
 from pathlib import Path
 from filelock import FileLock, Timeout
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional, Tuple, Any, TYPE_CHECKING
 from datetime import datetime
 
 from config import MASTER_SOURCES_DIR, get_source_file_for_country
@@ -107,6 +108,36 @@ class SourceService:
         source_type_str = form_data.get("source_type")
         if not source_type_str:
             return False, "Source type not specified.", None
+
+        # --- Configurable Duplicate Check ---
+        source_configs = self.admin_service.get_source_types()
+        source_type_config = source_configs.get(source_type_str, {})
+
+        # Identify fields that are part of the title format string to use as a unique key
+        citation_format = source_type_config.get("citation_format", "")
+        unique_key_fields = re.findall(r'\{(\w+)\}', citation_format)
+
+        if unique_key_fields:
+            self.logger.info(f"Performing duplicate check for source type '{source_type_str}' using title parts: {unique_key_fields}")
+            
+            # Get values from the new source data, normalized for comparison
+            new_source_values = {
+                key: str(form_data.get(key, "")).strip().lower() for key in unique_key_fields
+            }
+
+            # Check against existing sources
+            existing_sources = self.get_sources_by_country(country)
+            for existing_source in existing_sources:
+                if existing_source.source_type != source_type_str:
+                    continue
+                # Check if all key fields in the existing source match the new source's values
+                if all(str(existing_source.get_field_value(key, "")).strip().lower() == new_source_values[key] for key in unique_key_fields):
+                    message = f"A source with the same title parts already exists for {country} (Title: '{existing_source.display_name}')."
+                    self.logger.warning(f"Duplicate source creation blocked for country '{country}'. New data: {form_data}")
+                    return False, message, None
+        else:
+            self.logger.warning(f"No citation format defined for source type '{source_type_str}'. Skipping duplicate check.")
+        # --- End Configurable Duplicate Check ---
 
         try:
             new_source = SourceRecord.from_dict(form_data)
@@ -236,3 +267,22 @@ class SourceService:
         except (json.JSONDecodeError, TypeError) as e:
             self.logger.error(f"Error loading master sources for '{country}': {e}", exc_info=True)
             return {}
+
+    def get_boilerplate_sources(self) -> List["SourceRecord"]:
+        """Loads and returns all source records from the boilerplate JSON file."""
+        from config.app_config import BOILERPLATE_SOURCES_PATH
+
+        if not BOILERPLATE_SOURCES_PATH.exists():
+            self.logger.warning(f"Boilerplate sources file not found at: {BOILERPLATE_SOURCES_PATH}")
+            return []
+
+        try:
+            data = json.loads(BOILERPLATE_SOURCES_PATH.read_text(encoding="utf-8"))
+            sources_data = data.get("sources", [])
+
+            source_records = [SourceRecord.from_dict(s_data) for s_data in sources_data]
+            self.logger.info(f"Loaded {len(source_records)} boilerplate sources.")
+            return source_records
+        except Exception as e:
+            self.logger.error(f"Failed to load or parse boilerplate sources: {e}", exc_info=True)
+            return []
