@@ -27,6 +27,11 @@ class AdminController(BaseController):
         source_types = self.admin_service.get_source_types()
         return source_types.get(type_name, {})
 
+    def get_project_type_config(self, type_name: str):
+        """Returns the configuration for a given project type."""
+        project_types = self.admin_service.get_project_types()
+        return project_types.get(type_name, {})
+
     def get_boilerplate_sources(self) -> List[SourceRecord]:
         """Pass-through method to get boilerplate sources from the SourceController."""
         return self.controller.source_controller.get_boilerplate_sources()
@@ -40,6 +45,12 @@ class AdminController(BaseController):
         source_types = self.admin_service.get_source_types()
         source_types[type_name] = config
         self.admin_service.save_source_types(source_types)
+
+    def save_project_type_config(self, type_name: str, config: dict):
+        """Saves the configuration for a given project type."""
+        project_types = self.admin_service.get_project_types()
+        project_types[type_name] = config
+        self.admin_service.save_project_types(project_types)
     
     def _add_new_config_type(self, display_name: str, internal_name: str, config_category: str):
         """

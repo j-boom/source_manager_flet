@@ -30,7 +30,7 @@ class CiteSourcesTab(BaseTab):
         self.slide_carousel = SlideCarousel(on_slide_selected=self._on_slide_selected)
         self.current_slide_title = ft.Text(
             "",
-            style=ft.TextThemeStyle.HEADLINE_MEDIUM,
+            theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM,
             no_wrap=True,
             overflow=ft.TextOverflow.ELLIPSIS,
         )

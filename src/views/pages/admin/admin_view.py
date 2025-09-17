@@ -21,12 +21,26 @@ class BoilerplateSourcesTab(ft.Column):
 
     def _build_ui(self):
         """Constructs the static parts of the UI."""
+        add_button = ft.ElevatedButton(
+            "Add Boilerplate Source",
+            icon=ft.icons.ADD,
+            on_click=self._on_add_clicked,
+            tooltip="Create a new source available to all projects."
+        )
         self.controls.extend([
-            ft.Text("Manage Boilerplate Sources", theme_style=ft.TextThemeStyle.TITLE_LARGE),
+            ft.Row([
+                ft.Text("Manage Boilerplate Sources", theme_style=ft.TextThemeStyle.TITLE_LARGE),
+                ft.Container(expand=True),
+                add_button
+            ]),
             ft.Text("These sources are available to all projects and are not tied to a specific country.", color=ft.colors.ON_SURFACE_VARIANT),
             ft.Divider(),
             self.sources_list
         ])
+
+    def _on_add_clicked(self, e):
+        """Opens a dialog to create a new boilerplate source."""
+        self.controller.dialog_controller.open_new_source_dialog(is_boilerplate=True)
 
     def update_sources_list(self):
         """Fetches the latest boilerplate source list and rebuilds the list view."""
@@ -69,6 +83,9 @@ class AdminView(BaseView):
         # Populate the lists for both tabs initially
         self._populate_source_types()
         self._populate_project_types()
+
+        # Show placeholder text in the editor pane on initial load
+        self._build_editor_for_selection()
 
         # Create the content for each tab using the helper layout
         source_types_tab_content = self._build_config_editor_layout(
@@ -198,7 +215,7 @@ class AdminView(BaseView):
         self.selected_item_name = e.control.data
         self._update_selection_visuals()
         self._build_editor_for_selection()
-        self.controller.update_view()
+        self.page.update()
 
     def _update_selection_visuals(self):
         """Updates the background color of the selected item in the correct list."""
@@ -224,7 +241,10 @@ class AdminView(BaseView):
                 editor = SourceTypeEditor(self.selected_item_name, self.controller)
                 self.source_editor_column.controls.append(editor)
             elif self.selected_config_type == 'project':
-                editor = ProjectTypeEditor(self.selected_item_name, self.controller)
+                # Pass the required 'colors' argument to the editor
+                editor = ProjectTypeEditor(
+                    self.selected_item_name, self.controller
+                )
                 self.project_editor_column.controls.append(editor)
         else: # No item selected
             # Add placeholder text to both columns for the initial state

@@ -113,9 +113,23 @@ class SourceService:
         source_configs = self.admin_service.get_source_types()
         source_type_config = source_configs.get(source_type_str, {})
 
-        # Identify fields that are part of the title format string to use as a unique key
-        citation_format = source_type_config.get("citation_format", "")
-        unique_key_fields = re.findall(r'\{(\w+)\}', citation_format)
+        # Identify fields that are part of the title based on the 'is_title_part' flag
+        title_part_fields_config = [
+            f for f in source_type_config.get("fields", []) if f.get("is_title_part")
+        ]
+        # Sort them by their defined display order
+        title_part_fields_config.sort(key=lambda f: f.get("display_order", 0))
+        unique_key_fields = [f["name"] for f in title_part_fields_config]
+
+        # Generate the display_name from the form data
+        title_parts = [
+            str(form_data.get(key, "")).strip() for key in unique_key_fields
+        ]
+        # Filter out any empty parts before joining
+        display_name = " - ".join(filter(None, title_parts))
+
+        # Add the generated display name to the form data so it gets saved
+        form_data["display_name"] = display_name
 
         if unique_key_fields:
             self.logger.info(f"Performing duplicate check for source type '{source_type_str}' using title parts: {unique_key_fields}")
@@ -132,11 +146,11 @@ class SourceService:
                     continue
                 # Check if all key fields in the existing source match the new source's values
                 if all(str(existing_source.get_field_value(key, "")).strip().lower() == new_source_values[key] for key in unique_key_fields):
-                    message = f"A source with the same title parts already exists for {country} (Title: '{existing_source.display_name}')."
+                    message = f"A source with the same title parts already exists for {country} (Title: '{display_name}')."
                     self.logger.warning(f"Duplicate source creation blocked for country '{country}'. New data: {form_data}")
                     return False, message, None
         else:
-            self.logger.warning(f"No citation format defined for source type '{source_type_str}'. Skipping duplicate check.")
+            self.logger.warning(f"No title parts defined for source type '{source_type_str}'. Skipping duplicate check and automatic title generation.")
         # --- End Configurable Duplicate Check ---
 
         try:
@@ -178,6 +192,63 @@ class SourceService:
         except Exception as e:
             self.logger.error(f"Failed to save master source file: {e}", exc_info=True)
             return False, f"Failed to save master source file: {e}", None
+
+    def create_boilerplate_source(
+        self, form_data: Dict[str, Any]
+    ) -> Tuple[bool, str, Optional[SourceRecord]]:
+        """Create a new boilerplate source."""
+        source_type_str = form_data.get("source_type")
+        if not source_type_str:
+            return False, "Source type not specified.", None
+
+        # --- Duplicate Check for Boilerplate ---
+        source_configs = self.admin_service.get_source_types()
+        source_type_config = source_configs.get(source_type_str, {})
+
+        title_part_fields_config = [
+            f for f in source_type_config.get("fields", []) if f.get("is_title_part")
+        ]
+        title_part_fields_config.sort(key=lambda f: f.get("display_order", 0))
+        unique_key_fields = [f["name"] for f in title_part_fields_config]
+
+        title_parts = [str(form_data.get(key, "")).strip() for key in unique_key_fields]
+        display_name = " - ".join(filter(None, title_parts))
+        form_data["display_name"] = display_name
+
+        if unique_key_fields:
+            self.logger.info(f"Performing duplicate check for boilerplate source using title parts: {unique_key_fields}")
+            new_source_values = {key: str(form_data.get(key, "")).strip().lower() for key in unique_key_fields}
+            existing_sources = self.get_boilerplate_sources()
+            for existing_source in existing_sources:
+                if existing_source.source_type != source_type_str:
+                    continue
+                if all(str(existing_source.get_field_value(key, "")).strip().lower() == new_source_values[key] for key in unique_key_fields):
+                    message = f"A boilerplate source with the same title parts already exists (Title: '{display_name}')."
+                    self.logger.warning(f"Duplicate boilerplate source creation blocked. New data: {form_data}")
+                    return False, message, None
+        else:
+            self.logger.warning(f"No title parts defined for source type '{source_type_str}'. Skipping duplicate check.")
+        
+        try:
+            form_data["country"] = "boilerplate"
+            new_source = SourceRecord.from_dict(form_data)
+        except Exception as e:
+            self.logger.error(f"Failed to create boilerplate source model: {e}", exc_info=True)
+            return False, f"Failed to create source model: {e}", None
+
+        from config.app_config import BOILERPLATE_SOURCES_PATH
+        lock_path = BOILERPLATE_SOURCES_PATH.with_suffix('.lock')
+
+        try:
+            with FileLock(lock_path, timeout=5):
+                master_data = {"sources": [s.to_dict() for s in self.get_boilerplate_sources()]}
+                master_data["sources"].append(new_source.to_dict())
+                BOILERPLATE_SOURCES_PATH.write_text(json.dumps(master_data, indent=4), encoding="utf-8")
+            return True, "Boilerplate source created successfully.", new_source
+        except Timeout:
+            return False, "The boilerplate source file is currently in use. Please try again.", None
+        except Exception as e:
+            return False, f"Failed to save boilerplate source file: {e}", None
 
     def update_master_source(
         self, source_id: str, updated_data: Dict[str, Any]
@@ -269,12 +340,22 @@ class SourceService:
             return {}
 
     def get_boilerplate_sources(self) -> List["SourceRecord"]:
-        """Loads and returns all source records from the boilerplate JSON file."""
+        """
+        Loads and returns all source records from the boilerplate JSON file.
+        If the file does not exist, it will be created with a default structure.
+        """
         from config.app_config import BOILERPLATE_SOURCES_PATH
 
         if not BOILERPLATE_SOURCES_PATH.exists():
-            self.logger.warning(f"Boilerplate sources file not found at: {BOILERPLATE_SOURCES_PATH}")
-            return []
+            self.logger.warning(f"Boilerplate sources file not found at: {BOILERPLATE_SOURCES_PATH}. Creating a new one.")
+            try:
+                default_data = {"sources": []}
+                BOILERPLATE_SOURCES_PATH.write_text(json.dumps(default_data, indent=4), encoding="utf-8")
+                self.logger.info(f"Successfully created boilerplate sources file at {BOILERPLATE_SOURCES_PATH}.")
+                return []
+            except Exception as e:
+                self.logger.error(f"Failed to create boilerplate sources file: {e}", exc_info=True)
+                return []
 
         try:
             data = json.loads(BOILERPLATE_SOURCES_PATH.read_text(encoding="utf-8"))

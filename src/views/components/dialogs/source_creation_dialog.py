@@ -51,7 +51,8 @@ class SourceCreationDialog(BaseDialog):
         source_types: Dict[str, Any] = None,
         available_countries: Optional[List[str]] = None,
         target_country: Optional[str] = None,
-        from_project_sources_tab: bool = False
+        from_project_sources_tab: bool = False,
+        is_boilerplate: bool = False,
     ):
         """
         Initializes the dialog.
@@ -65,12 +66,14 @@ class SourceCreationDialog(BaseDialog):
             available_countries: A list of countries to populate the country dropdown.
             target_country: The country to pre-select in the country dropdown.
             from_project_sources_tab: Flag to show project-specific fields.
+            is_boilerplate: Flag to configure the dialog for boilerplate source creation.
         """
         self.on_create = on_create
         self.dialog_controller = dialog_controller
         self.source_types = source_types
         self.available_countries = available_countries
         self.target_country = target_country
+        self.is_boilerplate = is_boilerplate
         self.from_project_sources_tab = from_project_sources_tab
         self.form_fields: Dict[str, ft.Control] = {}
         self.field_configs: Dict[str, _CompatibleFieldConfig] = {}
@@ -102,7 +105,8 @@ class SourceCreationDialog(BaseDialog):
         inside the scrollable column of the BaseDialog.
         """
         row_controls = [self.source_type_dropdown]
-        row_controls.append(self.country_dropdown)
+        if not self.is_boilerplate:
+            row_controls.append(self.country_dropdown)
         return [
             ft.Row(row_controls, spacing=10),
             ft.Divider(height=1, thickness=1),
@@ -135,7 +139,8 @@ class SourceCreationDialog(BaseDialog):
             label="Country *",
             options=options,
             value=self.target_country if self.target_country else None,
-            expand=True
+            expand=True,
+            visible=not self.is_boilerplate,
         )
 
     def _populate_dynamic_fields(self, source_type_value: str):
@@ -145,8 +150,8 @@ class SourceCreationDialog(BaseDialog):
         self.dynamic_fields_container.controls.clear()
         fields_to_create = self.dialog_controller.get_source_type_fields(source_type_value)
 
-        # If creating from the master library (not from within a project), only show core fields.
-        if not self.from_project_sources_tab:
+        # If creating from the master library (not from within a project) AND it's not boilerplate, only show core fields.
+        if not self.from_project_sources_tab and not self.is_boilerplate:
             self.logger.info("Filtering for 'core' storage scope fields.")
             fields_to_create = [f for f in fields_to_create if f.get("storage_scope", "core") == "core"]
 
@@ -179,12 +184,13 @@ class SourceCreationDialog(BaseDialog):
     def _handle_create_clicked(self, e: ft.ControlEvent):
         """Gathers data, validates it, and calls the on_create callback."""
         is_valid = True
-        if not self.country_dropdown.value:
-            self.country_dropdown.error_text = "Country is required."
-            is_valid = False
-        else:
-            self.country_dropdown.error_text = None
-        self.country_dropdown.update()
+        if not self.is_boilerplate:
+            if not self.country_dropdown.value:
+                self.country_dropdown.error_text = "Country is required."
+                is_valid = False
+            else:
+                self.country_dropdown.error_text = None
+            self.country_dropdown.update()
 
         if not self.source_type_dropdown.value:
             self.source_type_dropdown.error_text = "Source type is required."
@@ -210,7 +216,8 @@ class SourceCreationDialog(BaseDialog):
 
         # --- Data Collection ---
         form_data = {"source_type": self.source_type_dropdown.value}
-        form_data["country"] = self.country_dropdown.value
+        if not self.is_boilerplate:
+            form_data["country"] = self.country_dropdown.value
         for name, control in self.form_fields.items():
             if hasattr(control, "value"):
                 form_data[name] = control.value

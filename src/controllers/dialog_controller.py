@@ -217,6 +217,7 @@ class DialogController(BaseController):
         self,
         from_project_sources_tab: bool = False,
         target_country_from_view: Optional[str] = None,
+        is_boilerplate: bool = False,
     ):
         """
         Opens the refactored source creation dialog.
@@ -230,7 +231,9 @@ class DialogController(BaseController):
             )
             # Delegate the actual creation logic to the SourceController
             self.controller.source_controller.create_new_source(
-                source_data=form_data, add_to_project=from_project_sources_tab
+                source_data=form_data,
+                add_to_project=from_project_sources_tab,
+                is_boilerplate=is_boilerplate,
             )
 
         # --- Get data needed by the dialog ---
@@ -258,6 +261,7 @@ class DialogController(BaseController):
             available_countries=available_countries,
             target_country=target_country,
             from_project_sources_tab=from_project_sources_tab,
+            is_boilerplate=is_boilerplate,
         )
         dialog.show()
 

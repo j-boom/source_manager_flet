@@ -13,7 +13,10 @@ class SourceController(BaseController):
     """
 
     def create_new_source(
-        self, source_data: Dict[str, Any], add_to_project: bool = False
+        self,
+        source_data: Dict[str, Any],
+        add_to_project: bool = False,
+        is_boilerplate: bool = False,
     ) -> Optional["SourceRecord"]:
         """
         Creates a new master source record. If add_to_project is True,
@@ -22,6 +25,22 @@ class SourceController(BaseController):
         Returns:
             The created SourceRecord object on success, otherwise None.
         """
+        if is_boilerplate:
+            # Handle boilerplate source creation separately
+            success, message, source_record = (
+                self.controller.source_service.create_boilerplate_source(source_data)
+            )
+            if not success:
+                self.controller.show_error_message(
+                    f"Failed to create boilerplate source: {message}"
+                )
+                return None
+            self.controller.show_success_message(
+                "Boilerplate source created successfully."
+            )
+            self.controller.update_view()
+            return source_record
+
         try:
             # Step 1: Separate core data from link data based on the configuration
             source_type = source_data.get("source_type")

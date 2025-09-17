@@ -18,6 +18,17 @@ class ProjectSourcesTab(BaseTab):
         self.project_sources_list = ft.Column(
             expand=True, spacing=5, scroll=ft.ScrollMode.ADAPTIVE
         )
+        self.project_actions_menu = ft.PopupMenuButton(
+            icon=ft.icons.MORE_VERT,
+            tooltip="Project Actions",
+            items=[
+                ft.PopupMenuItem(
+                    text="Import sources from another project",
+                    icon=ft.icons.CONTENT_COPY,
+                    # on_click will be implemented in a future step
+                ),
+            ],
+        )
         # --- Boilerplate Components ---
         self.boilerplate_dropdown = ft.Dropdown(
             label="Add Boilerplate Source",
@@ -73,6 +84,7 @@ class ProjectSourcesTab(BaseTab):
                     ),
                     tooltip="Add a new source to the master list",
                 ),
+                self.project_actions_menu,
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -80,7 +92,7 @@ class ProjectSourcesTab(BaseTab):
 
         project_sources_column = ft.Column(
             [
-                project_sources_header,
+                ft.Container(project_sources_header, padding=ft.padding.only(right=5)),
                 ft.Text(
                     "Sources currently included in this project. (Drag to Reorder)",
                     italic=True,
@@ -191,11 +203,29 @@ class ProjectSourcesTab(BaseTab):
 
     def _load_boilerplate_sources(self):
         """Fetches boilerplate sources and populates the dropdown."""
-        boilerplate_sources = self.controller.source_controller.get_boilerplate_sources()
-        if boilerplate_sources:
+        all_boilerplate_sources = self.controller.source_controller.get_boilerplate_sources()
+
+        # --- Filter out sources that require project-specific link data ---
+        # This prevents adding sources that need more info directly from this simple dropdown.
+        filtered_sources = []
+        for source in all_boilerplate_sources:
+            # Get the configuration for the source's type
+            source_type_config = self.controller.admin_controller.get_source_type_config(source.source_type)
+            
+            # Check if any field in the config has 'storage_scope' set to 'link'
+            has_link_fields = any(
+                field.get("storage_scope") == "link"
+                for field in source_type_config.get("fields", [])
+            )
+            
+            # Only include sources that do NOT have link-specific fields
+            if not has_link_fields:
+                filtered_sources.append(source)
+
+        if filtered_sources:
             self.boilerplate_dropdown.options = [
                 ft.dropdown.Option(key=source.id, text=source.display_name)
-                for source in sorted(boilerplate_sources, key=lambda s: s.display_name)
+                for source in sorted(filtered_sources, key=lambda s: s.display_name)
             ]
             self.boilerplate_dropdown.visible = True
             self.add_boilerplate_button.visible = True

@@ -115,12 +115,33 @@ class ProjectService:
         if not project_config:
             return False, f"Invalid project type: {project_type_code}", None
 
+        # --- Apply calculation rules ---
+        self.logger.info("Applying calculation rules for new project...")
         metadata = form_data.copy()
-        metadata["current_year"] = str(datetime.now().year)
+        for field_config in project_config.get("fields", []):
+            rule = field_config.get("calculation")
+            field_name = field_config.get("name")
+            if not rule or not field_name:
+                continue
+
+            if rule == "current_year":
+                metadata[field_name] = str(datetime.now().year)
+                self.logger.info(f"Calculated '{field_name}' as current year: {metadata[field_name]}")
+            elif rule == "be_number_from_path":
+                # This reuses the logic from DirectoryService
+                be_number = self.source_service.directory_service.derive_project_number_from_path(parent_dir)
+                metadata[field_name] = be_number
+                self.logger.info(f"Calculated '{field_name}' from path: {be_number}")
+
+        # Create a context for filename formatting that includes calculated values
+        # and other useful placeholders like 'current_year'.
+        filename_context = metadata.copy()
+        filename_context["current_year"] = str(datetime.now().year)
+
         title = metadata.get("project_title") or "Untitled Project"
 
         try:
-            filename = project_config['filename_pattern'].format(**metadata) + ".json"
+            filename = project_config['filename_pattern'].format(**filename_context) + ".json"
         except KeyError as e:
             return False, f"Missing required field for filename: {e}", None
 
