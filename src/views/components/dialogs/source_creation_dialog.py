@@ -150,9 +150,10 @@ class SourceCreationDialog(BaseDialog):
         self.dynamic_fields_container.controls.clear()
         fields_to_create = self.dialog_controller.get_source_type_fields(source_type_value)
 
-        # If creating from the master library (not from within a project) AND it's not boilerplate, only show core fields.
-        if not self.from_project_sources_tab and not self.is_boilerplate:
-            self.logger.info("Filtering for 'core' storage scope fields.")
+        # If creating a source outside of a project context (e.g., master library or boilerplate),
+        # only show the core fields. Link-specific fields are only relevant when adding to a project.
+        if not self.from_project_sources_tab:
+            self.logger.info("Not in project context. Filtering for 'core' storage scope fields.")
             fields_to_create = [f for f in fields_to_create if f.get("storage_scope", "core") == "core"]
 
         # Sort fields based on the display_order property

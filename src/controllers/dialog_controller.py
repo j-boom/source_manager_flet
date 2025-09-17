@@ -17,6 +17,7 @@ from src.views.components.dialogs import (
     UserEditorDialog,
     DeleteConfirmationDialog,
     SourceCitationDialog,
+    AddBoilerplateSourcesDialog,
 )
 
 if TYPE_CHECKING:
@@ -210,6 +211,39 @@ class DialogController(BaseController):
             source_type=source_type,
             dialog_controller=self,
             on_save=on_save_callback
+        )
+        dialog.show()
+
+    def open_add_boilerplate_sources_dialog(self):
+        """Opens a dialog to select and add multiple boilerplate sources."""
+        self.logger.info("Opening add boilerplate sources dialog.")
+
+        sources = self.controller.source_controller.get_boilerplate_sources()
+
+        def on_add_callback(source_ids: List[str]):
+            self.logger.info(f"Dialog confirmed for adding {len(source_ids)} boilerplate sources.")
+            for source_id in source_ids:
+                # For each source, determine if it needs a dialog for link data
+                source = self.controller.source_controller.get_source_record_by_id(source_id)
+                if not source:
+                    continue
+
+                source_type_config = self.controller.admin_controller.get_source_type_config(source.source_type)
+                has_link_fields = any(
+                    field.get("storage_scope") == "link" for field in source_type_config.get("fields", [])
+                )
+
+                if has_link_fields:
+                    # This source requires project-specific data, so open the dialog.
+                    self.open_add_source_to_project_dialog(source_id, source.source_type)
+                else:
+                    # This is a simple source, add it directly.
+                    self.controller.source_controller.add_boilerplate_source_to_project(source_id)
+        
+        dialog = AddBoilerplateSourcesDialog(
+            page=self.controller.page,
+            sources=sources,
+            on_add=on_add_callback
         )
         dialog.show()
 

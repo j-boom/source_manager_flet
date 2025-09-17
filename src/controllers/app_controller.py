@@ -105,8 +105,7 @@ class AppController:
 
     def shutdown(self):
         """Performs cleanup actions before the application closes."""
-        self.logger.info("Application shutting down. Saving all pending changes...")
-        self.source_service.save_all_dirty_sources()
+        self.logger.info("Application shutting down. All file writes are saved immediately, so no final save is needed.")
 
     @property
     def source_usage_map(self) -> Dict[str, List[str]]:

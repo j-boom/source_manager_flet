@@ -1,8 +1,8 @@
 import flet as ft
 from typing import Dict, Any
 from .base_tab import BaseTab
-from views.components import ProjectSourceCard, OnDeckCard
-from views.components.dialogs import AddSourceToProjectDialog
+from src.views.components import ProjectSourceCard, OnDeckCard
+from src.views.components.dialogs import AddSourceToProjectDialog
 
 
 class ProjectSourcesTab(BaseTab):
@@ -28,22 +28,6 @@ class ProjectSourcesTab(BaseTab):
                     # on_click will be implemented in a future step
                 ),
             ],
-        )
-        # --- Boilerplate Components ---
-        self.boilerplate_dropdown = ft.Dropdown(
-            label="Add Boilerplate Source",
-            hint_text="Select a source...",
-            options=[],
-            width=350,
-            visible=False,
-            on_change=self._on_boilerplate_selection_change
-        )
-        self.add_boilerplate_button = ft.ElevatedButton(
-            "Add to Project",
-            icon=ft.icons.ADD_CIRCLE_OUTLINE,
-            on_click=self._on_add_boilerplate_clicked,
-            disabled=True,
-            visible=False
         )
         self._load_boilerplate_sources()
 
@@ -86,8 +70,9 @@ class ProjectSourcesTab(BaseTab):
                 ),
                 self.project_actions_menu,
             ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            alignment=ft.MainAxisAlignment.END,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10,
         )
 
         project_sources_column = ft.Column(
@@ -119,17 +104,10 @@ class ProjectSourcesTab(BaseTab):
             expand=True,
             spacing=20,
         )
-        
-        boilerplate_tool = ft.Row(
-            [self.boilerplate_dropdown, self.add_boilerplate_button],
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=10
-        )
 
         return ft.Column(
-            [boilerplate_tool, ft.Divider(height=15), main_content],
+            [main_content],
             expand=True,
-            spacing=10,
         )
 
     def _update_view(self):
@@ -202,52 +180,39 @@ class ProjectSourcesTab(BaseTab):
     # --- Boilerplate Source Methods ---
 
     def _load_boilerplate_sources(self):
-        """Fetches boilerplate sources and populates the dropdown."""
+        """Fetches boilerplate sources and populates them into the project actions menu."""
         all_boilerplate_sources = self.controller.source_controller.get_boilerplate_sources()
 
-        # --- Filter out sources that require project-specific link data ---
-        # This prevents adding sources that need more info directly from this simple dropdown.
-        filtered_sources = []
-        for source in all_boilerplate_sources:
-            # Get the configuration for the source's type
-            source_type_config = self.controller.admin_controller.get_source_type_config(source.source_type)
-            
-            # Check if any field in the config has 'storage_scope' set to 'link'
-            has_link_fields = any(
-                field.get("storage_scope") == "link"
-                for field in source_type_config.get("fields", [])
+        # Start with the static menu items that are always present
+        menu_items = [
+            ft.PopupMenuItem(
+                text="Import sources from another project",
+                icon=ft.icons.CONTENT_COPY,
+                # on_click will be implemented in a future step
+            ),
+        ]
+
+        if all_boilerplate_sources:
+            # Add a divider if there are other items before the boilerplate section
+            if menu_items:
+                divider_item = ft.PopupMenuItem()
+                divider_item.divider = True
+                menu_items.append(divider_item)
+
+            # Add the "Add Boilerplate Source" item which opens the new dialog
+            menu_items.append(
+                ft.PopupMenuItem(
+                    text="Add Boilerplate Source",
+                    icon=ft.icons.ADD_CIRCLE_OUTLINE,
+                    on_click=self._on_add_boilerplate_clicked,
+                )
             )
-            
-            # Only include sources that do NOT have link-specific fields
-            if not has_link_fields:
-                filtered_sources.append(source)
-
-        if filtered_sources:
-            self.boilerplate_dropdown.options = [
-                ft.dropdown.Option(key=source.id, text=source.display_name)
-                for source in sorted(filtered_sources, key=lambda s: s.display_name)
-            ]
-            self.boilerplate_dropdown.visible = True
-            self.add_boilerplate_button.visible = True
-        else:
-            self.boilerplate_dropdown.visible = False
-            self.add_boilerplate_button.visible = False
-
-        self.controller.update_view()
-
-    def _on_boilerplate_selection_change(self, e: ft.ControlEvent):
-        """Enables or disables the add button based on dropdown selection."""
-        self.add_boilerplate_button.disabled = not e.control.value
-        self.controller.update_view()
+        
+        self.project_actions_menu.items = menu_items
 
     def _on_add_boilerplate_clicked(self, e: ft.ControlEvent):
-        """Handles the click event for adding a boilerplate source."""
-        source_id = self.boilerplate_dropdown.value
-        if source_id:
-            # The controller method will trigger a view update, so no direct update is needed here.
-            self.controller.source_controller.add_boilerplate_source_to_project(source_id)
-            self.boilerplate_dropdown.value = None
-            self.add_boilerplate_button.disabled = True
+        """Opens the dialog to select multiple boilerplate sources."""
+        self.controller.dialog_controller.open_add_boilerplate_sources_dialog()
 
     def _on_drag_start(self, e: ft.DragStartEvent):
         """Stores the ID of the source being dragged."""

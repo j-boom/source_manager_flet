@@ -29,7 +29,6 @@ class SourceService:
         self.master_sources_dir = Path(MASTER_SOURCES_DIR)
         self.master_sources_dir.mkdir(parents=True, exist_ok=True)
         self._master_source_cache: Dict[str, Dict[str, SourceRecord]] = {}
-        self._dirty_countries: set[str] = set()
         self.directory_service = directory_service
         self.admin_service = admin_service
         self.logger.info("SourceService initialized")
@@ -161,42 +160,29 @@ class SourceService:
             return False, f"Failed to create source model: {e}", None
 
         source_file_path = self.master_sources_dir / get_source_file_for_country(country)
-        lock_path = source_file_path.with_suffix('.lock')
 
-        try:
-            with FileLock(lock_path, timeout=5):
-                self.logger.debug(f"Acquired lock for {source_file_path}")
-                # --- CRITICAL SECTION: Read, Modify, Write ---
-                sources_list = []
-                master_data = {"sources": sources_list}
-                if source_file_path.exists():
-                    with open(source_file_path, "r", encoding="utf-8") as f:
-                        master_data = json.load(f)
-                        sources_list = master_data.get("sources", [])
+        # Load the country into cache if it's not already there.
+        # This ensures we're adding to the existing set of sources in memory.
+        self._load_master_sources_for_country(country)
+        
+        # Add the new source to the in-memory cache.
+        self._master_source_cache[country][new_source.id] = new_source
 
-                sources_list.append(new_source.to_dict())
-                master_data["sources"] = sources_list
+        # Now, save the entire updated cache for that country to disk.
+        success, message = self._save_sources_for_country(country)
 
-                with open(source_file_path, "w", encoding="utf-8") as f:
-                    json.dump(master_data, f, indent=4)
-                # --- END CRITICAL SECTION ---
-
-            # Invalidate the cache for the country where the source was added
-            if country in self._master_source_cache:
-                del self._master_source_cache[country]
-
+        if success:
             return True, "Source created successfully.", new_source
-        except Timeout:
-            self.logger.warning(f"Could not acquire lock for {source_file_path}. File may be in use.")
-            return False, "The source file is currently in use. Please try again.", None
-        except Exception as e:
-            self.logger.error(f"Failed to save master source file: {e}", exc_info=True)
-            return False, f"Failed to save master source file: {e}", None
+        else:
+            # If saving failed, roll back the in-memory change to maintain consistency.
+            del self._master_source_cache[country][new_source.id]
+            return False, message, None
 
     def create_boilerplate_source(
         self, form_data: Dict[str, Any]
     ) -> Tuple[bool, str, Optional[SourceRecord]]:
         """Create a new boilerplate source."""
+        # ... (This method's logic remains the same as it doesn't use the main cache)
         source_type_str = form_data.get("source_type")
         if not source_type_str:
             return False, "Source type not specified.", None
@@ -250,6 +236,37 @@ class SourceService:
         except Exception as e:
             return False, f"Failed to save boilerplate source file: {e}", None
 
+    def _save_sources_for_country(self, country: str) -> Tuple[bool, str]:
+        """
+        Writes all cached sources for a given country back to its JSON file.
+        This is the single, authoritative method for saving country-specific source data.
+        """
+        source_file_path = self.master_sources_dir / get_source_file_for_country(country)
+        lock_path = source_file_path.with_suffix('.lock')
+
+        country_cache = self._master_source_cache.get(country)
+        if country_cache is None:
+            self.logger.warning(f"No cache found for country '{country}'. Assuming new country and creating file.")
+            country_cache = {}
+
+        sources_list = [source.to_dict() for source in country_cache.values()]
+        master_data = {"sources": sources_list}
+
+        try:
+            with FileLock(lock_path, timeout=5):
+                self.logger.debug(f"Acquired lock for {source_file_path} to save.")
+                source_file_path.write_text(json.dumps(master_data, indent=4), encoding="utf-8")
+                self.logger.info(f"Successfully saved sources for '{country}'.")
+                return True, "Saved successfully."
+        except Timeout:
+            msg = f"Could not acquire lock for {source_file_path}. The file may be in use."
+            self.logger.error(msg)
+            return False, msg
+        except Exception as e:
+            msg = f"An unexpected error occurred while saving sources for '{country}': {e}"
+            self.logger.error(msg, exc_info=True)
+            return False, msg
+
     def update_master_source(
         self, source_id: str, updated_data: Dict[str, Any]
     ) -> Tuple[bool, str]:
@@ -271,48 +288,12 @@ class SourceService:
                 # Use the dedicated method for updating dynamic fields
                 source.set_field_value(key, value)
 
-        # Mark the country as dirty to be saved later
         if source.country:
-            self._dirty_countries.add(source.country)
-            self.logger.debug(f"Marked country '{source.country}' as dirty after updating source {source_id}.")
+            success, message = self._save_sources_for_country(source.country)
+            if not success:
+                return False, message # Propagate the error message
         
-        return True, "Source updated in memory."
-
-    def save_all_dirty_sources(self):
-        """Writes all cached sources for 'dirty' countries back to disk."""
-        if not self._dirty_countries:
-            self.logger.info("No dirty sources to save. Shutdown clean.")
-            return
-
-        self.logger.info(f"Saving dirty sources for countries: {self._dirty_countries}")
-        for country in list(self._dirty_countries): # Iterate over a copy
-            source_file_path = self.master_sources_dir / get_source_file_for_country(country)
-            lock_path = source_file_path.with_suffix('.lock')
-
-            # Get all sources for the country from the cache
-            country_cache = self._master_source_cache.get(country, {})
-            if not country_cache:
-                self.logger.warning(f"No cache found for dirty country '{country}'. Skipping save.")
-                continue
-
-            sources_list = [source.to_dict() for source in country_cache.values()]
-            master_data = {"sources": sources_list}
-
-            try:
-                # Acquire a lock on the file, with a timeout.
-                with FileLock(lock_path, timeout=10): # Longer timeout for shutdown
-                    self.logger.debug(f"Acquired lock for {source_file_path} during shutdown save.")
-                    with open(source_file_path, "w", encoding="utf-8") as f:
-                        json.dump(master_data, f, indent=4)
-                    
-                    # If save is successful, remove from dirty set
-                    self._dirty_countries.remove(country)
-                    self.logger.info(f"Successfully saved sources for '{country}'.")
-
-            except Timeout:
-                self.logger.error(f"Could not acquire lock for {source_file_path} during shutdown. Changes for '{country}' may be lost.")
-            except Exception as e:
-                self.logger.error(f"Failed to save sources for '{country}' during shutdown: {e}", exc_info=True)
+        return True, "Source updated successfully."
 
     def _load_master_sources_for_country(self, country: str) -> Dict[str, SourceRecord]:
         """Loads master sources for a specific country, with caching."""

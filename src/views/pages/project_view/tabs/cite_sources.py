@@ -1,8 +1,8 @@
 import flet as ft
 from .base_tab import BaseTab
 from typing import List, Optional
-from ....components import SlideCarousel
-from ....components.dialogs.create_source_group_dialog import CreateSourceGroupDialog
+from src.views.components import SlideCarousel
+from src.views.components.dialogs.create_source_group_dialog import CreateSourceGroupDialog
 import logging
 
 
