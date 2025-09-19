@@ -6,9 +6,10 @@ from utils.citation_generator import generate_citation
 import flet as ft
 from typing import Optional, List, Dict, Any
 import asyncio
-import time # Used to simulate a long-running task
+import time  # Used to simulate a long-running task
 import logging
 from src.views.base_view import BaseView
+
 
 class ReportsView(BaseView):
     """Modern export-focused view for generating reports and managing citations"""
@@ -16,10 +17,8 @@ class ReportsView(BaseView):
     def __init__(self, page: ft.Page, controller):
         super().__init__(page, controller)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.export_paths: Dict[str, Optional[str]] = {
-            'word': None,
-            'powerpoint': None
-        }
+        self.export_paths: Dict[str, Optional[str]] = {"word": None, "powerpoint": None}
+        self.controller = controller
 
         # UI Components that need to be accessed later
         self.word_export_card: Optional[ft.Card] = None
@@ -46,42 +45,74 @@ class ReportsView(BaseView):
             [
                 # Header
                 ft.Container(
-                    content=ft.Row([
-                        ft.Column([
-                            ft.Text("Reports & Export", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM),
-                            ft.Text("Generate and export your project's bibliography and slide citations.",
-                                   color=self.colors.on_surface_variant)
-                        ], spacing=4, expand=True),
-                    ]),
+                    content=ft.Row(
+                        [
+                            ft.Column(
+                                [
+                                    ft.Text(
+                                        "Reports & Export",
+                                        theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM,
+                                    ),
+                                    ft.Text(
+                                        "Generate and export your project's bibliography and slide citations.",
+                                        color=self.colors.on_surface_variant,
+                                    ),
+                                ],
+                                spacing=4,
+                                expand=True,
+                            ),
+                        ]
+                    ),
                     padding=ft.padding.symmetric(horizontal=20, vertical=15),
-                    border=ft.border.only(bottom=ft.BorderSide(1, self.colors.outline_variant))
+                    border=ft.border.only(
+                        bottom=ft.BorderSide(1, self.colors.outline_variant)
+                    ),
                 ),
-
                 # Main content
                 ft.Container(
-                    content=ft.Column([
-                        # Export options grid
-                        ft.ResponsiveRow([
-                            ft.Column([self.word_export_card], col={"md": 6}),
-                            ft.Column([self.powerpoint_export_card], col={"md": 6})
-                        ]),
-                        ft.Container(height=20),
-                        # Bibliography preview
-                        self.bibliography_preview
-                    ], spacing=20, scroll=ft.ScrollMode.ADAPTIVE),
+                    content=ft.Column(
+                        [
+                            # Export options grid
+                            ft.ResponsiveRow(
+                                [
+                                    ft.Column([self.word_export_card], col={"md": 6}),
+                                    ft.Column(
+                                        [self.powerpoint_export_card], col={"md": 6}
+                                    ),
+                                ]
+                            ),
+                            ft.Container(height=20),
+                            # Bibliography preview
+                            self.bibliography_preview,
+                        ],
+                        spacing=20,
+                        scroll=ft.ScrollMode.ADAPTIVE,
+                    ),
                     padding=20,
-                    expand=True
-                )
+                    expand=True,
+                ),
             ],
             expand=True,
-            spacing=0
+            spacing=0,
         )
 
     def _init_components(self):
         """Initialize modern UI components"""
         # File path displays
-        self.word_path_display = ft.Text("No location selected", size=12, color=self.colors.on_surface_variant, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-        self.ppt_path_display = ft.Text("No location selected", size=12, color=self.colors.on_surface_variant, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+        self.word_path_display = ft.Text(
+            "No location selected",
+            size=12,
+            color=self.colors.on_surface_variant,
+            overflow=ft.TextOverflow.ELLIPSIS,
+            expand=True,
+        )
+        self.ppt_path_display = ft.Text(
+            "No location selected",
+            size=12,
+            color=self.colors.on_surface_variant,
+            overflow=ft.TextOverflow.ELLIPSIS,
+            expand=True,
+        )
 
         # Export cards
         self.word_export_card = self._create_export_card(
@@ -90,7 +121,7 @@ class ReportsView(BaseView):
             icon=ft.icons.DESCRIPTION_ROUNDED,
             color=ft.colors.BLUE_700,
             export_type="word",
-            path_display_control=self.word_path_display
+            path_display_control=self.word_path_display,
         )
 
         self.powerpoint_export_card = self._create_export_card(
@@ -99,65 +130,95 @@ class ReportsView(BaseView):
             icon=ft.icons.SLIDESHOW_ROUNDED,
             color=ft.colors.ORANGE_700,
             export_type="powerpoint",
-            path_display_control=self.ppt_path_display
+            path_display_control=self.ppt_path_display,
         )
 
         # Bibliography preview
         self.bibliography_preview = self._create_bibliography_preview()
 
-    def _create_export_card(self, title: str, subtitle: str, icon: str, color: str, export_type: str, path_display_control: ft.Text) -> ft.Card:
+    def _create_export_card(
+        self,
+        title: str,
+        subtitle: str,
+        icon: str,
+        color: str,
+        export_type: str,
+        path_display_control: ft.Text,
+    ) -> ft.Card:
         """Create modern export option card"""
         path_container = ft.Container(
-            content=ft.Row([
-                ft.Icon(ft.icons.FOLDER_OUTLINED, size=16, color=self.colors.on_surface_variant),
-                path_display_control
-            ], spacing=8),
+            content=ft.Row(
+                [
+                    ft.Icon(
+                        ft.icons.FOLDER_OUTLINED,
+                        size=16,
+                        color=self.colors.on_surface_variant,
+                    ),
+                    path_display_control,
+                ],
+                spacing=8,
+            ),
             bgcolor=self.colors.surface_variant,
             border_radius=8,
             padding=ft.padding.symmetric(horizontal=12, vertical=8),
-            margin=ft.margin.only(bottom=15)
+            margin=ft.margin.only(bottom=15),
         )
 
         return ft.Card(
             content=ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Container(
-                            content=ft.Icon(icon, size=24, color=ft.colors.WHITE),
-                            bgcolor=color,
-                            border_radius=8,
-                            padding=12
+                content=ft.Column(
+                    [
+                        ft.Row(
+                            [
+                                ft.Container(
+                                    content=ft.Icon(
+                                        icon, size=24, color=ft.colors.WHITE
+                                    ),
+                                    bgcolor=color,
+                                    border_radius=8,
+                                    padding=12,
+                                ),
+                                ft.Column(
+                                    [
+                                        ft.Text(title, weight=ft.FontWeight.BOLD),
+                                        ft.Text(
+                                            subtitle,
+                                            size=12,
+                                            color=self.colors.on_surface_variant,
+                                        ),
+                                    ],
+                                    spacing=2,
+                                    expand=True,
+                                ),
+                            ],
+                            spacing=15,
                         ),
-                        ft.Column([
-                            ft.Text(title, weight=ft.FontWeight.BOLD),
-                            ft.Text(subtitle, size=12, color=self.colors.on_surface_variant)
-                        ], spacing=2, expand=True)
-                    ], spacing=15),
-                    path_container,
-                    ft.Row([
-                        ft.OutlinedButton(
-                            "Choose Location",
-                            icon=ft.icons.FOLDER_OPEN_OUTLINED,
-                            on_click=lambda e, t=export_type: self._choose_export_location(t)
+                        path_container,
+                        ft.Row(
+                            [
+                                ft.OutlinedButton(
+                                    "Choose Location",
+                                    icon=ft.icons.FOLDER_OPEN_OUTLINED,
+                                    on_click=lambda e, t=export_type: self._choose_export_location(
+                                        t
+                                    ),
+                                ),
+                                ft.FilledButton(
+                                    "Export",
+                                    icon=ft.icons.FILE_DOWNLOAD_ROUNDED,
+                                    on_click=lambda e, t=export_type: self._handle_export_click(t),
+                                ),
+                            ],
+                            spacing=10,
+                            alignment=ft.MainAxisAlignment.END,
                         ),
-                        ft.FilledButton(
-                            "Export",
-                            icon=ft.icons.FILE_DOWNLOAD_ROUNDED,
-                            on_click=lambda e, t=export_type: self._perform_export(t)
-                        )
-                    ], spacing=10, alignment=ft.MainAxisAlignment.END)
-                ], spacing=15),
-                padding=20
+                    ],
+                    spacing=15,
+                ),
+                padding=20,
             ),
-            elevation=2
+            elevation=2,
         )
-
-    def _blocking_word_export(self, report_data: List[Dict[str, Any]], path: str):
-        """Placeholder for the actual, slow, blocking docx creation logic."""
-        self.logger.info(f"Starting blocking export to {path}...")
-        # In a real scenario, this is where python-docx would be used.
-        time.sleep(4) # Simulate a 4-second freeze
-        self.logger.info(f"Finished blocking export to {path}.")
 
     def _create_bibliography_preview(self) -> ft.Card:
         """Create bibliography preview card"""
@@ -165,30 +226,47 @@ class ReportsView(BaseView):
 
         return ft.Card(
             content=ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Icon(ft.icons.LIBRARY_BOOKS_ROUNDED, size=24, color=self.colors.primary),
-                        ft.Text("Bibliography Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE),
-                        ft.Container(expand=True),
-                        ft.IconButton(
-                            icon=ft.icons.COPY_ALL_OUTLINED,
-                            tooltip="Copy to clipboard",
-                            on_click=self._copy_bibliography
-                        )
-                    ]),
-                    ft.Divider(),
-                    ft.Container(
-                        content=ft.Text(bibliography_text, size=12, selectable=True, font_family="monospace"),
-                        height=300,
-                        bgcolor=self.colors.surface_variant,
-                        border_radius=8,
-                        padding=15,
-                        expand=True,
-                    )
-                ], spacing=15),
-                padding=20
+                content=ft.Column(
+                    [
+                        ft.Row(
+                            [
+                                ft.Icon(
+                                    ft.icons.LIBRARY_BOOKS_ROUNDED,
+                                    size=24,
+                                    color=self.colors.primary,
+                                ),
+                                ft.Text(
+                                    "Bibliography Preview",
+                                    theme_style=ft.TextThemeStyle.TITLE_LARGE,
+                                ),
+                                ft.Container(expand=True),
+                                ft.IconButton(
+                                    icon=ft.icons.COPY_ALL_OUTLINED,
+                                    tooltip="Copy to clipboard",
+                                    on_click=self._copy_bibliography,
+                                ),
+                            ]
+                        ),
+                        ft.Divider(),
+                        ft.Container(
+                            content=ft.Text(
+                                bibliography_text,
+                                size=12,
+                                selectable=True,
+                                font_family="monospace",
+                            ),
+                            height=300,
+                            bgcolor=self.colors.surface_variant,
+                            border_radius=8,
+                            padding=15,
+                            expand=True,
+                        ),
+                    ],
+                    spacing=15,
+                ),
+                padding=20,
             ),
-            elevation=2
+            elevation=2,
         )
 
     def _generate_bibliography_text(self) -> str:
@@ -210,6 +288,7 @@ class ReportsView(BaseView):
 
     def _choose_export_location(self, export_type: str):
         """Ask the controller to open a file picker for the export location."""
+
         # The controller will handle the FilePicker logic and call back to update the path
         # Example: self.controller.export_controller.pick_export_path(export_type, self.update_export_path)
         def on_path_selected(path: Optional[str]):
@@ -217,53 +296,72 @@ class ReportsView(BaseView):
                 self.update_export_path(export_type, path)
 
         # This is a simplified stand-in for the controller's file picker logic
-        file_picker = ft.FilePicker(on_result=lambda e: on_path_selected(e.path if e.path else None))
+        file_picker = ft.FilePicker(
+            on_result=lambda e: on_path_selected(e.path if e.path else None)
+        )
         self.page.overlay.append(file_picker)
         self.page.update()
         ext = "docx" if export_type == "word" else "pptx"
         file_picker.save_file(
             dialog_title=f"Choose {export_type.title()} export location",
             file_name=f"bibliography.{ext}",
-            allowed_extensions=[ext]
+            allowed_extensions=[ext],
         )
 
     def update_export_path(self, export_type: str, path: str):
         """Callback for the controller to update the UI with the selected path."""
         self.export_paths[export_type] = path
-        display_control = self.word_path_display if export_type == 'word' else self.ppt_path_display
+        display_control = (
+            self.word_path_display if export_type == "word" else self.ppt_path_display
+        )
         if display_control:
             display_control.value = path
         self.page.update()
 
-    async def _perform_export(self, export_type: str):
-        """Ask the controller to perform the export."""
+    def _handle_export_click(self, export_type: str):
+        """
+        Handles the export button click by directly calling the report generation.
+        """
         path = self.export_paths.get(export_type)
         if not path:
-            await self.controller.show_error_message(f"Please choose a location for the {export_type} export first.")
+            self.controller.show_error_message(
+                f"Please choose a location for the {export_type} export first."
+            )
             return
 
+        self.controller.show_info_message(
+            f"Generating {export_type} report..."
+        )
+
         if export_type == "word":
-            await self.controller.show_info_message("Generating Word report... The app will remain responsive.")
-            report_data = self.controller.source_controller.get_combined_project_sources_data()
-
-            if not report_data:
-                await self.controller.show_error_message("No source data found for the current project.")
-                return
-
             try:
-                # Run the blocking I/O in a separate thread to avoid freezing the UI
-                await self.page.run_in_executor(
-                    None, self._blocking_word_export, report_data, path
+                success, message = self.controller.report_controller.export_word_report(
+                    path
                 )
-                
-                await self.controller.show_success_message(f"Word report exported successfully to {path}")
+                if success:
+                    self.controller.show_success_message(message)
+                else:
+                    self.controller.show_error_message(message)
             except Exception as ex:
-                self.logger.error(f"Failed to generate Word document: {ex}", exc_info=True)
-                await self.controller.show_error_message(f"Failed to generate report: {ex}")
-        
+                self.logger.error(
+                    f"Failed to generate Word document: {ex}", exc_info=True
+                )
+                self.controller.show_error_message(f"Failed to generate report: {ex}")
+
         elif export_type == "powerpoint":
-            # Placeholder for PowerPoint export logic
-            await self.controller.show_info_message(f"PowerPoint export is not yet implemented.")
+            try:
+                success, message = self.controller.report_controller.export_powerpoint_report(
+                    path
+                )
+                if success:
+                    self.controller.show_success_message(message)
+                else:
+                    self.controller.show_error_message(message)
+            except Exception as ex:
+                self.logger.error(
+                    f"Failed to generate PowerPoint document: {ex}", exc_info=True
+                )
+                self.controller.show_error_message(f"Failed to generate report: {ex}")
 
     def _copy_bibliography(self, e):
         """Copy bibliography text to clipboard."""
@@ -277,4 +375,4 @@ class ReportsView(BaseView):
         self._init_components()
         # Re-build the entire view content
         self.controls[0] = self.build()
-        self.page.update()
+        self.controller.update_view()

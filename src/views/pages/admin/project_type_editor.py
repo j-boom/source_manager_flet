@@ -14,6 +14,15 @@ class ProjectTypeEditor(ft.Column):
             self.controller.admin_controller.get_project_type_config(type_name)
         )
         self.form_fields: Dict[str, ft.Control] = {}
+        self.placeholder_chips_row = ft.Row(wrap=True, spacing=5)
+
+        # Add a file picker for the word template path
+        self.word_template_path_picker = ft.FilePicker(on_result=self._on_word_template_picked)
+        self.controller.page.overlay.append(self.word_template_path_picker)
+
+        # Add a file picker for the powerpoint template path
+        self.ppt_template_path_picker = ft.FilePicker(on_result=self._on_ppt_template_picked)
+        self.controller.page.overlay.append(self.ppt_template_path_picker)
 
         if not self.project_config:
             self.controls.append(
@@ -46,6 +55,34 @@ class ProjectTypeEditor(ft.Column):
             value=self.project_config.get("filename_pattern", ""),
             expand=True,
         )
+        self.form_fields["word_template_path"] = ft.TextField(
+            label="Word Report Template Path (.docx)",
+            value=self.project_config.get("word_template_path", ""),
+            expand=True,
+            read_only=True,
+        )
+        browse_word_template_button = ft.IconButton(
+            icon=ft.icons.FOLDER_OPEN,
+            tooltip="Browse for Word template file",
+            on_click=lambda _: self.word_template_path_picker.pick_files(
+                dialog_title="Select Word Template",
+                allowed_extensions=["docx"],
+            ),
+        )
+        self.form_fields["powerpoint_template_path"] = ft.TextField(
+            label="PowerPoint Report Template Path (.pptx)",
+            value=self.project_config.get("powerpoint_template_path", ""),
+            expand=True,
+            read_only=True,
+        )
+        browse_ppt_template_button = ft.IconButton(
+            icon=ft.icons.FOLDER_OPEN,
+            tooltip="Browse for PowerPoint template file",
+            on_click=lambda _: self.ppt_template_path_picker.pick_files(
+                dialog_title="Select PowerPoint Template",
+                allowed_extensions=["pptx"],
+            ),
+        )
 
         self.fields_list_column = ft.Column(spacing=10)
         # Sort fields by their 'display_order' before displaying them
@@ -63,6 +100,8 @@ class ProjectTypeEditor(ft.Column):
                     autofocus=is_first,
                 )
             )
+
+        self._update_placeholder_display()
 
         field_editor_section = ft.Column(
             [
@@ -99,6 +138,24 @@ class ProjectTypeEditor(ft.Column):
                 self.form_fields["display_name"],
                 self.form_fields["description"],
                 self.form_fields["filename_pattern"],
+                ft.Row([self.form_fields["word_template_path"], browse_word_template_button]),
+                ft.Row([self.form_fields["powerpoint_template_path"], browse_ppt_template_button]),
+                ft.Divider(height=10),
+                ft.Row([
+                    ft.Text("Available Template Placeholders", theme_style=ft.TextThemeStyle.TITLE_SMALL),
+                    ft.Container(expand=True),
+                    ft.IconButton(
+                        icon=ft.icons.REFRESH,
+                        on_click=self._update_placeholder_display,
+                        tooltip="Refresh list from fields below"
+                    )
+                ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Container(
+                    content=self.placeholder_chips_row,
+                    padding=ft.padding.all(8),
+                    border=ft.border.all(1, ft.colors.OUTLINE_VARIANT),
+                    border_radius=8,
+                ),
                 ft.Divider(height=20),
                 field_editor_section,
                 ft.Row(
@@ -114,6 +171,49 @@ class ProjectTypeEditor(ft.Column):
             ]
         )
 
+    def _on_word_template_picked(self, e: ft.FilePickerResultEvent):
+        if e.files:
+            self.form_fields["word_template_path"].value = e.files[0].path
+            self.form_fields["word_template_path"].update()
+
+    def _on_ppt_template_picked(self, e: ft.FilePickerResultEvent):
+        if e.files:
+            self.form_fields["powerpoint_template_path"].value = e.files[0].path
+            self.form_fields["powerpoint_template_path"].update()
+
+    def _update_placeholder_display(self, e=None):
+        """Updates the list of placeholder chips based on the current field editor cards."""
+        self.placeholder_chips_row.controls.clear()
+        
+        field_names = [
+            card.get_field_data().get("name")
+            for card in self.fields_list_column.controls
+            if isinstance(card, FieldEditorCard) and card.get_field_data().get("name")
+        ]
+        
+        if not field_names:
+            self.placeholder_chips_row.controls.append(
+                ft.Text("Add fields below and click Refresh to see available placeholders.", italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT)
+            )
+        else:
+            for name in sorted(field_names):
+                self.placeholder_chips_row.controls.append(
+                    ft.Chip(
+                        label=ft.Text(f"{{{name}}}"),
+                        tooltip=f"Click to copy '{{{name}}}'",
+                        on_click=self._on_placeholder_chip_clicked,
+                        data=f"{{{name}}}",
+                    )
+                )
+        if self.page:
+            self.update()
+
+    def _on_placeholder_chip_clicked(self, e: ft.ControlEvent):
+        """Copies the placeholder text to the clipboard."""
+        placeholder = e.control.data
+        self.page.set_clipboard(placeholder)
+        self.controller.show_success_message(f"Copied '{placeholder}' to clipboard.")
+
     def _on_add_field_clicked(self, e):
         new_card = FieldEditorCard(
             field_data={},
@@ -128,6 +228,7 @@ class ProjectTypeEditor(ft.Column):
     def _on_delete_field_clicked(self, card_to_delete: FieldEditorCard):
         self.fields_list_column.controls.remove(card_to_delete)
         self.update()
+        self._update_placeholder_display()
 
     def _on_save_clicked(self, e):
         # The current state is the "old" config for migration purposes
@@ -136,6 +237,8 @@ class ProjectTypeEditor(ft.Column):
         new_config["display_name"] = self.form_fields["display_name"].value
         new_config["description"] = self.form_fields["description"].value
         new_config["filename_pattern"] = self.form_fields["filename_pattern"].value
+        new_config["word_template_path"] = self.form_fields["word_template_path"].value
+        new_config["powerpoint_template_path"] = self.form_fields["powerpoint_template_path"].value
 
         # Extract field data from each card, filtering out any empty/invalid cards
         all_field_data = [

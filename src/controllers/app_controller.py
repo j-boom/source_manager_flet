@@ -7,6 +7,7 @@ from src.services.project_service import ProjectService
 from src.services.directory_service import DirectoryService
 from src.services.source_service import SourceService
 from src.services.admin_service import AdminService
+from src.services.report_service import ReportService
 from src.services.admin_auth_service import AdminAuthService
 
 # Import the main managers
@@ -27,6 +28,7 @@ from .project_controller import ProjectController
 from .source_controller import SourceController
 from .dialog_controller import DialogController
 from .powerpoint_controller import PowerPointController
+from .report_controller import ReportController
 from .navigation_controller import NavigationController
 from .settings_controller import SettingsController
 from .admin_controller import AdminController
@@ -61,6 +63,7 @@ class AppController:
         self.directory_service = DirectoryService()
         self.source_service = SourceService(directory_service=self.directory_service, admin_service=self.admin_service)
         self.project_service = ProjectService(source_service=self.source_service, admin_service=self.admin_service)
+        self.report_service = ReportService()
         self.admin_auth_service = AdminAuthService()
 
         # Initialize managers
@@ -77,6 +80,7 @@ class AppController:
         self.source_controller = SourceController(self)
         self.dialog_controller = DialogController(self)
         self.powerpoint_controller = PowerPointController(self)
+        self.report_controller = ReportController(self)
         self.navigation_controller = NavigationController(self)
         self.settings_controller = SettingsController(self)
         self.admin_controller = AdminController(self)
@@ -157,6 +161,14 @@ class AppController:
         """Displays an error message to the user using a SnackBar."""
         logging.error(message)
         snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.RED)
+        self.page.overlay.append(snack_bar)
+        snack_bar.open = True
+        self.page.update()
+
+    def show_info_message(self, message):
+        """Displays an informational message to the user using a SnackBar."""
+        logging.info(message)
+        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.BLUE_GREY)
         self.page.overlay.append(snack_bar)
         snack_bar.open = True
         self.page.update()
