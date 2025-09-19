@@ -2,7 +2,7 @@ from typing import Dict, Any, TYPE_CHECKING, Optional, List
 from .base_controller import BaseController
 
 if TYPE_CHECKING:
-    from src.models.source_models import SourceRecord, ProjectSourceLink
+    from src.models.source_models import SourceRecord
     from src.models.project_models import Project
 
 
@@ -80,7 +80,7 @@ class SourceController(BaseController):
                 )
                 return None
 
-            self.logger.info(f"Master source record '{source_record.id}' created.")
+            self.logger.info("Master source record '%s' created.", source_record.id)
 
             # Step 3: If the flag is set, add the new source to the current project
             if add_to_project:
@@ -99,7 +99,7 @@ class SourceController(BaseController):
 
         except Exception as e:
             self.controller.show_error_message(f"Failed to create source: {e}")
-            self.logger.error(f"Error in create_new_source: {e}", exc_info=True)
+            self.logger.error("Error in create_new_source: %s", e, exc_info=True)
             return None
 
     def add_source_to_project(self, source_id: str, link_data: Dict[str, Any]):
@@ -116,52 +116,48 @@ class SourceController(BaseController):
             # Data service handles creating the link and updating the master record
             self.controller.project_service.add_source_to_project(project, source_id, link_data)
 
-            # If the source was on deck, remove it
-            if "on_deck_sources" in project.metadata and source_id in project.metadata["on_deck_sources"]:
-                project.metadata["on_deck_sources"].remove(source_id)
-                self.controller.project_service.save_project(project)
-
-
             self.logger.info(
-                f"Source '{source_id}' successfully linked to project '{project.project_id}'."
+                "Source '%s' successfully linked to project '%s'.",
+                source_id,
+                project.project_id,
             )
             self.controller.update_view()  # Refresh to show the new source in the project list
         except Exception as e:
-            self.logger.error(f"Failed to add source to project: {e}", exc_info=True)
+            self.logger.error("Failed to add source to project: %s", e, exc_info=True)
             self.controller.show_error_message(f"Failed to add source to project: {e}")
 
-    def add_boilerplate_source_to_project(self, source_id: str):
+    def add_simple_boilerplate_sources_to_project(self, source_ids: List[str]):
         """
         Adds a boilerplate source to the current project without modifying the
         master boilerplate source file.
         """
         project: "Project" | None = self.controller.project_state_manager.current_project
         if not project:
-            self.controller.show_error_message("No active project to add a source to.")
+            self.controller.show_error_message("No active project to add sources to.")
             return
 
+        # Prepare the data structure for the bulk service method.
+        # Simple boilerplate sources have no project-specific link data, so metadata is {}.
+        sources_to_add = [(source_id, {}) for source_id in source_ids]
+
         try:
-            # Get the source record to show a meaningful success message
-            source_record = self.get_source_record_by_id(source_id)
-            if not source_record:
-                self.controller.show_error_message(f"Boilerplate source with ID {source_id} not found.")
-                return
-
-            # Add the source link to the project model in memory.
-            # Boilerplate sources have no project-specific "link" data.
-            project.add_source(source_id, {})
-
-            # Save the updated project file to disk.
-            self.controller.project_service.save_project(project)
+            # Delegate to the new bulk method in the service
+            self.controller.project_service.add_sources_to_project(
+                project, sources_to_add
+            )
 
             self.logger.info(
-                f"Boilerplate source '{source_id}' successfully linked to project '{project.project_id}'."
+                "%s boilerplate sources successfully linked to project '%s'.",
+                len(source_ids),
+                project.project_id,
             )
-            self.controller.show_success_message(f"Added '{source_record.display_name}' to project.")
+            self.controller.show_success_message(f"Added {len(source_ids)} sources to project.")
             self.controller.update_view()
         except Exception as e:
-            self.logger.error(f"Failed to add boilerplate source to project: {e}", exc_info=True)
-            self.controller.show_error_message(f"Failed to add boilerplate source to project: {e}")
+            self.logger.error(
+                "Failed to add boilerplate sources to project: %s", e, exc_info=True
+            )
+            self.controller.show_error_message(f"Failed to add boilerplate sources to project: {e}")
 
     def remove_source_from_project(self, source_id: str):
         """
@@ -177,7 +173,7 @@ class SourceController(BaseController):
                 project, source_id
             )
             self.logger.info(
-                f"Source '{source_id}' unlinked from project '{project.id}'."
+                "Source '%s' unlinked from project '%s'.", source_id, project.id
             )
             self.controller.show_success_message("Source removed from project.")
             self.controller.update_view()
@@ -188,7 +184,7 @@ class SourceController(BaseController):
         """
         Submits an update for a source's master record.
         """
-        self.logger.info(f"Updating master record for source ID {source_id}.")
+        self.logger.info("Updating master record for source ID %s.", source_id)
         # The service returns a (success, message) tuple. We must check it.
         try:
             success, message = self.controller.source_service.update_master_source(
@@ -210,7 +206,7 @@ class SourceController(BaseController):
         if not project:
             raise ValueError("Cannot update source link without an active project.")
 
-        self.logger.info(f"Updating project link for source ID {source_id}.")
+        self.logger.info("Updating project link for source ID %s.", source_id)
         try:
             success, message = self.controller.project_service.update_project_source_link(
                 project=project, source_id=source_id, link_data=link_data
@@ -241,7 +237,9 @@ class SourceController(BaseController):
         for link in project.sources:
             source_record = self.get_source_record_by_id(link.source_id)
             if not source_record:
-                self.logger.warning(f"Could not find master source record for ID: {link.source_id}")
+                self.logger.warning(
+                    "Could not find master source record for ID: %s", link.source_id
+                )
                 continue
 
             # Start with the master record's data

@@ -207,6 +207,27 @@ class ProjectController(BaseController):
             )
             self.controller.show_error_message("Failed to remove source.")
 
+    def add_sources_to_on_deck_from_project(self, source_project_path: Path):
+        """Orchestrates adding all sources from another project to the current project's On Deck list."""
+        self.logger.info("Requesting to add sources to On Deck from %s", source_project_path)
+        target_project = self.get_current_project()
+        if not target_project:
+            self.controller.show_error_message("No project is open to import sources into.")
+            return
+
+        if str(source_project_path) == str(target_project.file_path):
+            self.controller.show_error_message("Cannot import sources from the currently open project.")
+            return
+
+        success, message = self.controller.project_service.add_sources_to_on_deck_from_project(
+            target_project, source_project_path
+        )
+        if success:
+            self.controller.show_success_message(message)
+            self.controller.update_view()
+        else:
+            self.controller.show_error_message(message)
+
     def get_current_project(self):
         """
         Returns the currently loaded project object.

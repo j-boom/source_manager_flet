@@ -105,7 +105,28 @@ class AppController:
 
     def shutdown(self):
         """Performs cleanup actions before the application closes."""
-        self.logger.info("Application shutting down. All file writes are saved immediately, so no final save is needed.")
+        self.logger.info("Application shutting down...")
+        self._cleanup_lock_files()
+
+    def _cleanup_lock_files(self):
+        """
+        Scans data directories and removes any stale .lock files that may have
+        been left behind by an unclean shutdown.
+        """
+        self.logger.info("Cleaning up any stale lock files...")
+        paths_to_scan = [
+            self.source_service.master_sources_dir,
+            self.directory_service.project_data_dir,
+        ]
+
+        for path in paths_to_scan:
+            if path and path.exists():
+                for lock_file in path.rglob("*.lock"):
+                    try:
+                        lock_file.unlink()
+                        self.logger.debug("Removed stale lock file: %s", lock_file)
+                    except OSError as e:
+                        self.logger.error("Failed to remove lock file %s: %s", lock_file, e)
 
     @property
     def source_usage_map(self) -> Dict[str, List[str]]:

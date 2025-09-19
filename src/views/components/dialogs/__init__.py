@@ -13,6 +13,7 @@ from .user_editor_dialog import UserEditorDialog
 from .delete_confirmation_dialog import DeleteConfirmationDialog
 from .source_citation_dialog import SourceCitationDialog
 from .add_boilerplate_sources_dialog import AddBoilerplateSourcesDialog
+from .import_sources_dialog import ImportSourcesDialog
 
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "DeleteConfirmationDialog",
     "SourceCitationDialog",
     "AddBoilerplateSourcesDialog",
+    "ImportSourcesDialog",
 ]

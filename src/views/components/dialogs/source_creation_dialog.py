@@ -121,16 +121,22 @@ class SourceCreationDialog(BaseDialog):
         ]
 
     def _build_source_type_dropdown(self) -> ft.Dropdown:
+        # Sort source types by display_order, then by name, for consistent UI.
+        sorted_source_types = sorted(
+            self.source_types.items(),
+            key=lambda item: (item[1].get("display_order", 99), item[0]),
+        )
+
         return ft.Dropdown(
             label="Source Type *",
             options=[
                 ft.dropdown.Option(key=code, text=config.get("display_name", code.title()))
-                for code, config in self.source_types.items()
+                for code, config in sorted_source_types
             ],
             on_change=self._on_source_type_change,
             autofocus=True,
             expand=True,
-            value=list(self.source_types.keys())[0] if self.source_types else None
+            value=sorted_source_types[0][0] if sorted_source_types else None,
         )
 
     def _build_country_dropdown(self) -> ft.Dropdown:

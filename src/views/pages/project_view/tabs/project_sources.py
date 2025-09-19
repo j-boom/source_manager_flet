@@ -21,13 +21,7 @@ class ProjectSourcesTab(BaseTab):
         self.project_actions_menu = ft.PopupMenuButton(
             icon=ft.icons.MORE_VERT,
             tooltip="Project Actions",
-            items=[
-                ft.PopupMenuItem(
-                    text="Import sources from another project",
-                    icon=ft.icons.CONTENT_COPY,
-                    # on_click will be implemented in a future step
-                ),
-            ],
+            items=[],  # Items will be populated by _load_boilerplate_sources
         )
         self._load_boilerplate_sources()
 
@@ -188,7 +182,7 @@ class ProjectSourcesTab(BaseTab):
             ft.PopupMenuItem(
                 text="Import sources from another project",
                 icon=ft.icons.CONTENT_COPY,
-                # on_click will be implemented in a future step
+                on_click=lambda e: self.controller.dialog_controller.open_import_sources_dialog(),
             ),
         ]
 
