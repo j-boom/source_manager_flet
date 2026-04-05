@@ -34,7 +34,7 @@ class HelpView(BaseView):
             ),
             padding=20,
             expand=True,
-            bgcolor=ft.colors.SURFACE,
+            bgcolor=ft.Colors.SURFACE,
         )
 
     def _build_header(self) -> ft.Control:
@@ -45,12 +45,12 @@ class HelpView(BaseView):
                     "Help & Documentation",
                     size=28,
                     weight=ft.FontWeight.BOLD,
-                    color=ft.colors.PRIMARY,
+                    color=ft.Colors.PRIMARY,
                 ),
                 ft.Text(
                     "Everything you need to know about Source Manager",
                     size=16,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
             ]),
             padding=ft.padding.only(bottom=20)
@@ -90,11 +90,11 @@ class HelpView(BaseView):
                 ft.Container(
                     content=ft.ElevatedButton(
                         "Back to Home",
-                        icon=ft.icons.HOME,
+                        icon=ft.Icons.HOME,
                         on_click=lambda e: self.controller.navigate_to("home"),
                         style=ft.ButtonStyle(
-                            color=ft.colors.ON_PRIMARY,
-                            bgcolor=ft.colors.PRIMARY,
+                            color=ft.Colors.ON_PRIMARY,
+                            bgcolor=ft.Colors.PRIMARY,
                         )
                     ),
                     padding=ft.padding.only(top=30),
@@ -113,7 +113,7 @@ class HelpView(BaseView):
                     title,
                     size=20,
                     weight=ft.FontWeight.BOLD,
-                    color=ft.colors.ON_SURFACE,
+                    color=ft.Colors.ON_SURFACE,
                 ),
                 ft.Container(height=10),
                 *[
@@ -121,7 +121,7 @@ class HelpView(BaseView):
                         content=ft.Text(
                             item,
                             size=14,
-                            color=ft.colors.ON_SURFACE_VARIANT
+                            color=ft.Colors.ON_SURFACE_VARIANT
                         ),
                         padding=ft.padding.only(left=10, bottom=5)
                     ) for item in items

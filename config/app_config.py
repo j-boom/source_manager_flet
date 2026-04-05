@@ -81,29 +81,29 @@ PAGES = [
     {
         "name": "home",
         "label": "Home",
-        "icon": ft.icons.HOME_OUTLINED,
-        "selected_icon": ft.icons.HOME,
+        "icon": ft.Icons.HOME_OUTLINED,
+        "selected_icon": ft.Icons.HOME,
         "view_name": "HomeView",
     },
     {
         "name": "project_view",  # Route for project view (dynamic)
         "label": "Project",
-        "icon": ft.icons.FOLDER_OUTLINED,
-        "selected_icon": ft.icons.FOLDER,
+        "icon": ft.Icons.FOLDER_OUTLINED,
+        "selected_icon": ft.Icons.FOLDER,
         "view_name": "NewProjectView",  # Default project view
     },
     {
         "name": "sources",
         "label": "Sources",
-        "icon": ft.icons.SOURCE_OUTLINED,
-        "selected_icon": ft.icons.SOURCE,
+        "icon": ft.Icons.SOURCE_OUTLINED,
+        "selected_icon": ft.Icons.SOURCE,
         "view_name": "SourcesView",
     },
     {
         "name": "reports",
         "label": "Reports",
-        "icon": ft.icons.ANALYTICS_OUTLINED,
-        "selected_icon": ft.icons.ANALYTICS,
+        "icon": ft.Icons.ANALYTICS_OUTLINED,
+        "selected_icon": ft.Icons.ANALYTICS,
         "view_name": "ReportsView",
     },
 ]

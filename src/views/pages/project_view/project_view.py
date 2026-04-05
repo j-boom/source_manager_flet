@@ -93,17 +93,17 @@ class ProjectView(BaseView):
                 content=ft.Row([
                     ft.Row([
                         ft.IconButton(
-                            icon=ft.icons.ARROW_BACK,
+                            icon=ft.Icons.ARROW_BACK,
                             on_click=lambda e: self.controller.navigate_to("new_project"),
                             tooltip="Back to Project Browser"
                         ),
                         ft.Text(project_info, size=20, weight=ft.FontWeight.BOLD),
                     ]),
                     ft.Container(expand=True),
-                    ft.Text(project_type_display, size=20, color=ft.colors.ON_SURFACE_VARIANT),
+                    ft.Text(project_type_display, size=20, color=ft.Colors.ON_SURFACE_VARIANT),
                 ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=ft.padding.all(20),
-                border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.OUTLINE))
+                border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.OUTLINE))
             ),
             tabs_content # Use the built tabs control
         ])
@@ -119,17 +119,17 @@ class ProjectView(BaseView):
             tabs=[
                 ft.Tab(
                     text="Project Metadata",
-                    icon=ft.icons.INFO_OUTLINE,
+                    icon=ft.Icons.INFO_OUTLINE,
                     content=self.metadata_tab.build() 
                 ),
                 ft.Tab(
                     text="Manage Sources",
-                    icon=ft.icons.SOURCE,
+                    icon=ft.Icons.SOURCE,
                     content=self.sources_tab.build()
                 ),
                 ft.Tab(
                     text="Cite Slides",
-                    icon=ft.icons.COMPARE_ARROWS,
+                    icon=ft.Icons.COMPARE_ARROWS,
                     content=self.cite_sources_tab.build()
                 ),
             ],

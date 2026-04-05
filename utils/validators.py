@@ -117,7 +117,7 @@ def create_validated_field(field_config: [FieldConfig, Dict], initial_value: str
         is_valid, error_message = validate_field_value(field_config, widget.value)
         if not is_valid and widget.value: # Show error only if there's content
             widget.error_text = error_message
-            widget.border_color = ft.colors.ERROR
+            widget.border_color = ft.Colors.ERROR
         else:
             widget.error_text = None
             widget.border_color = None # Reset to default

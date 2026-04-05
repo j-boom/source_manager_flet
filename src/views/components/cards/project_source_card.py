@@ -31,14 +31,14 @@ class ProjectSourceCard(BaseCard):
         usage_section = ft.Column(spacing=2, visible=bool(self.used_on_slides))
         if self.used_on_slides:
             usage_section.controls.append(
-                ft.Text("Used on:", weight=ft.FontWeight.BOLD, size=11, color=ft.colors.ON_SECONDARY_CONTAINER)
+                ft.Text("Used on:", weight=ft.FontWeight.BOLD, size=11, color=ft.Colors.ON_SECONDARY_CONTAINER)
             )
             for slide_title in self.used_on_slides:
                 usage_section.controls.append(
                     ft.Row(
                         [
-                            ft.Icon(ft.icons.SLIDESHOW_OUTLINED, size=12, opacity=0.7),
-                            ft.Text(f"{slide_title}", size=11, italic=True, color=ft.colors.ON_SECONDARY_CONTAINER),
+                            ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, size=12, opacity=0.7),
+                            ft.Text(f"{slide_title}", size=11, italic=True, color=ft.Colors.ON_SECONDARY_CONTAINER),
                         ],
                         spacing=5,
                     )
@@ -48,21 +48,21 @@ class ProjectSourceCard(BaseCard):
                 ft.Text(
                     self.source.get_title(),
                     weight=ft.FontWeight.BOLD,
-                    color=ft.colors.ON_SECONDARY_CONTAINER,
+                    color=ft.Colors.ON_SECONDARY_CONTAINER,
                 ),
                 ft.Text(
                     f"Notes: {self.link.metadata.get('usage_notes') or 'N/A'}",
                     overflow=ft.TextOverflow.ELLIPSIS,
                     italic=True,
                     size=12,
-                    color=ft.colors.ON_SECONDARY_CONTAINER,
+                    color=ft.Colors.ON_SECONDARY_CONTAINER,
                 ),
                 ft.Text(
                     f"Declassify: {self.link.metadata.get('declassify_info') or 'N/A'}",
                     overflow=ft.TextOverflow.ELLIPSIS,
                     italic=True,
                     size=12,
-                    color=ft.colors.ON_SECONDARY_CONTAINER,
+                    color=ft.Colors.ON_SECONDARY_CONTAINER,
                 ),
             ],
             spacing=2,
@@ -73,13 +73,13 @@ class ProjectSourceCard(BaseCard):
         action_buttons = ft.Row(
             [
                 ft.IconButton(
-                    icon=ft.icons.EDIT_DOCUMENT,
+                    icon=ft.Icons.EDIT_DOCUMENT,
                     tooltip="View / Edit Source Details",
                     on_click=self._handle_view_edit_source,
                 ),
                 ft.IconButton(
-                    icon=ft.icons.DELETE_OUTLINE,
-                    icon_color=ft.colors.ERROR,
+                    icon=ft.Icons.DELETE_OUTLINE,
+                    icon_color=ft.Colors.ERROR,
                     tooltip="Remove from project",
                     on_click=self._handle_remove_from_project,
                 ),
@@ -88,7 +88,7 @@ class ProjectSourceCard(BaseCard):
 
         content_row = ft.Row(
             [
-                ft.Icon(ft.icons.DRAG_HANDLE, color=ft.colors.PRIMARY, size=28),
+                ft.Icon(ft.Icons.DRAG_HANDLE, color=ft.Colors.PRIMARY, size=28),
                 text_content,
                 action_buttons,
             ],
@@ -99,7 +99,7 @@ class ProjectSourceCard(BaseCard):
         return ft.Container(
             content=content_row,
             padding=ft.padding.symmetric(horizontal=15, vertical=10),
-            bgcolor=ft.colors.SECONDARY_CONTAINER,
+            bgcolor=ft.Colors.SECONDARY_CONTAINER,
         )
 
     def _handle_view_edit_source(self, e):

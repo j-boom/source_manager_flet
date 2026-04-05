@@ -110,12 +110,12 @@ class SettingsView(BaseView):
             max_length=50,
             autofocus=False,
             on_submit=lambda e: save_display_name(),
-            bgcolor=ft.colors.SURFACE_VARIANT,
-            focused_bgcolor=ft.colors.SURFACE,
-            color=ft.colors.ON_SURFACE_VARIANT,
+            bgcolor=ft.Colors.ON_SURFACE_VARIANT,
+            focused_bgcolor=ft.Colors.SURFACE,
+            color=ft.Colors.ON_SURFACE_VARIANT,
         )
         # Feedback text for validation and success messages
-        feedback_text = ft.Text("", color=ft.colors.GREEN, visible=False)
+        feedback_text = ft.Text("", color=ft.Colors.GREEN, visible=False)
 
         def save_display_name():
             """
@@ -124,17 +124,17 @@ class SettingsView(BaseView):
             new_name = display_name_field.value
             if not new_name:
                 feedback_text.value = "Display name cannot be empty."
-                feedback_text.color = ft.colors.ERROR
+                feedback_text.color = ft.Colors.ERROR
                 feedback_text.visible = True
             elif len(new_name) > 50:
                 feedback_text.value = "Display name cannot exceed 50 characters."
-                feedback_text.color = ft.colors.ERROR
+                feedback_text.color = ft.Colors.ERROR
                 feedback_text.visible = True
             else:
                 new_name = new_name.strip()
                 self.controller.settings_controller.save_display_name(new_name)
                 feedback_text.value = "Display name updated successfully."
-                feedback_text.color = ft.colors.GREEN
+                feedback_text.color = ft.Colors.GREEN
                 feedback_text.visible = True
                 self.page.update()
 
@@ -142,7 +142,7 @@ class SettingsView(BaseView):
         save_button = ft.ElevatedButton(
             text="Save",
             on_click=lambda e: save_display_name(),
-            style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY),
+            style=ft.ButtonStyle(bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY),
         )
         # Build the display name section column
         return ft.Column(
@@ -190,7 +190,7 @@ class SettingsView(BaseView):
                                     (
                                         colors.primary
                                         if is_selected
-                                        else ft.colors.TRANSPARENT
+                                        else ft.Colors.TRANSPARENT
                                     ),
                                 ),
                             ),
@@ -232,4 +232,4 @@ class SettingsView(BaseView):
             str: The icon name for the current theme mode.
         """
         theme_mode = self.controller.theme_manager.mode
-        return ft.icons.DARK_MODE if theme_mode == "dark" else ft.icons.LIGHT_MODE
+        return ft.Icons.DARK_MODE if theme_mode == "dark" else ft.Icons.LIGHT_MODE

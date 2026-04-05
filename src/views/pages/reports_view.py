@@ -33,7 +33,7 @@ class ReportsView(BaseView):
         if not self.controller.project_state_manager.has_loaded_project():
             return self.show_empty_state(
                 message="Please load a project to access the Reports & Export features.",
-                icon=ft.icons.FOLDER_OFF_OUTLINED,
+                icon=ft.Icons.FOLDER_OFF_OUTLINED,
                 action_text="Browse for a Project",
                 on_action=lambda e: self.controller.navigate_to("new_project"),
             )
@@ -118,8 +118,8 @@ class ReportsView(BaseView):
         self.word_export_card = self._create_export_card(
             title="Word Bibliography",
             subtitle="Export a formatted bibliography (.docx).",
-            icon=ft.icons.DESCRIPTION_ROUNDED,
-            color=ft.colors.BLUE_700,
+            icon=ft.Icons.DESCRIPTION_ROUNDED,
+            color=ft.Colors.BLUE_700,
             export_type="word",
             path_display_control=self.word_path_display,
         )
@@ -127,8 +127,8 @@ class ReportsView(BaseView):
         self.powerpoint_export_card = self._create_export_card(
             title="PowerPoint Citations",
             subtitle="Attach citations directly to slides.",
-            icon=ft.icons.SLIDESHOW_ROUNDED,
-            color=ft.colors.ORANGE_700,
+            icon=ft.Icons.SLIDESHOW_ROUNDED,
+            color=ft.Colors.ORANGE_700,
             export_type="powerpoint",
             path_display_control=self.ppt_path_display,
         )
@@ -150,7 +150,7 @@ class ReportsView(BaseView):
             content=ft.Row(
                 [
                     ft.Icon(
-                        ft.icons.FOLDER_OUTLINED,
+                        ft.Icons.FOLDER_OUTLINED,
                         size=16,
                         color=self.colors.on_surface_variant,
                     ),
@@ -172,7 +172,7 @@ class ReportsView(BaseView):
                             [
                                 ft.Container(
                                     content=ft.Icon(
-                                        icon, size=24, color=ft.colors.WHITE
+                                        icon, size=24, color=ft.Colors.WHITE
                                     ),
                                     bgcolor=color,
                                     border_radius=8,
@@ -198,14 +198,14 @@ class ReportsView(BaseView):
                             [
                                 ft.OutlinedButton(
                                     "Choose Location",
-                                    icon=ft.icons.FOLDER_OPEN_OUTLINED,
+                                    icon=ft.Icons.FOLDER_OPEN_OUTLINED,
                                     on_click=lambda e, t=export_type: self._choose_export_location(
                                         t
                                     ),
                                 ),
                                 ft.FilledButton(
                                     "Export",
-                                    icon=ft.icons.FILE_DOWNLOAD_ROUNDED,
+                                    icon=ft.Icons.FILE_DOWNLOAD_ROUNDED,
                                     on_click=lambda e, t=export_type: self._handle_export_click(t),
                                 ),
                             ],
@@ -231,7 +231,7 @@ class ReportsView(BaseView):
                         ft.Row(
                             [
                                 ft.Icon(
-                                    ft.icons.LIBRARY_BOOKS_ROUNDED,
+                                    ft.Icons.LIBRARY_BOOKS_ROUNDED,
                                     size=24,
                                     color=self.colors.primary,
                                 ),
@@ -241,7 +241,7 @@ class ReportsView(BaseView):
                                 ),
                                 ft.Container(expand=True),
                                 ft.IconButton(
-                                    icon=ft.icons.COPY_ALL_OUTLINED,
+                                    icon=ft.Icons.COPY_ALL_OUTLINED,
                                     tooltip="Copy to clipboard",
                                     on_click=self._copy_bibliography,
                                 ),

@@ -35,20 +35,20 @@ class AppBar(ft.AppBar):
             items=[
                 ft.PopupMenuItem(
                     text="Settings",
-                    icon=ft.icons.SETTINGS_OUTLINED,
+                    icon=ft.Icons.SETTINGS_OUTLINED,
                     on_click=on_settings_click,
                 ),
                 ft.PopupMenuItem(),  # Divider
                 ft.PopupMenuItem(
                     text="Admin Access",
-                    icon=ft.icons.ADMIN_PANEL_SETTINGS_OUTLINED,
+                    icon=ft.Icons.ADMIN_PANEL_SETTINGS_OUTLINED,
                     on_click=on_admin_click,
                 ),
             ],
             # Use a more descriptive icon for the user profile
             content=ft.Row(
                 [
-                    ft.Icon(ft.icons.PERSON_OUTLINE),
+                    ft.Icon(ft.Icons.PERSON_OUTLINE),
                     self.greeting_text,
                 ],
                 spacing=5,
@@ -59,11 +59,11 @@ class AppBar(ft.AppBar):
         super().__init__(
             title=self.title,
             center_title=False,
-            bgcolor=ft.colors.PRIMARY_CONTAINER,  # A default color to prevent errors on init
+            bgcolor=ft.Colors.PRIMARY_CONTAINER,  # A default color to prevent errors on init
             actions=[
                 self.user_profile_button,
                 ft.IconButton(
-                    ft.icons.HELP_OUTLINE, on_click=on_help_click, tooltip="Help"
+                    ft.Icons.HELP_OUTLINE, on_click=on_help_click, tooltip="Help"
                 ),
                 ft.Container(width=10),  # Right-side padding
             ],

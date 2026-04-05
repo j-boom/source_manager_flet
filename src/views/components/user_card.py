@@ -15,8 +15,8 @@ class UserCard(ft.Card):
 
         # Determine icon and color based on active status
         active_status = user_data.get("is_active", False)
-        status_icon = ft.icons.CHECK_CIRCLE if active_status else ft.icons.CANCEL
-        status_color = ft.colors.GREEN if active_status else ft.colors.RED
+        status_icon = ft.Icons.CHECK_CIRCLE if active_status else ft.Icons.CANCEL
+        status_color = ft.Colors.GREEN if active_status else ft.Colors.RED
         status_text = "Active" if active_status else "Inactive"
 
         # Manually build the layout with Row and Column for better control, as ListTile
@@ -32,14 +32,14 @@ class UserCard(ft.Card):
         actions_row = ft.Row([
                 ft.Icon(name=status_icon, color=status_color, tooltip=status_text),
                 ft.IconButton(
-                    icon=ft.icons.EDIT_OUTLINED,
+                    icon=ft.Icons.EDIT_OUTLINED,
                     tooltip="Edit User",
                     on_click=self._on_edit_clicked,
                 ),
                 ft.IconButton(
-                    icon=ft.icons.DELETE_OUTLINE,
+                    icon=ft.Icons.DELETE_OUTLINE,
                     tooltip="Delete User",
-                    icon_color=ft.colors.RED,
+                    icon_color=ft.Colors.RED,
                     on_click=self._on_delete_clicked,
                 ),
             ], spacing=5, vertical_alignment=ft.CrossAxisAlignment.CENTER
@@ -48,7 +48,7 @@ class UserCard(ft.Card):
         self.content = ft.Container(
             content=ft.Row(
                 [
-                    ft.Icon(ft.icons.PERSON_OUTLINE, size=32, color=ft.colors.ON_SURFACE_VARIANT),
+                    ft.Icon(ft.Icons.PERSON_OUTLINE, size=32, color=ft.Colors.ON_SURFACE_VARIANT),
                     info_column,
                     ft.Container(expand=True),  # Spacer to push actions to the right
                     actions_row,

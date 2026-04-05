@@ -39,13 +39,13 @@ class BaseView:
         colors = self.colors # This is now guaranteed to be a valid ColorScheme
         
         content = [
-            ft.Icon(ft.icons.ERROR, color=colors.error, size=48),
+            ft.Icon(ft.Icons.ERROR, color=colors.error, size=48),
             ft.Text("Error", size=20, weight=ft.FontWeight.BOLD, color=colors.error),
-            ft.Text(message, size=16, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text(message, size=16, color=ft.Colors.ON_SURFACE_VARIANT),
         ]
         
         if details:
-            content.append(ft.Text(details, size=12, color=ft.colors.ON_SURFACE_VARIANT))
+            content.append(ft.Text(details, size=12, color=ft.Colors.ON_SURFACE_VARIANT))
         
         return ft.Container(
             content=ft.Column(content, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
@@ -56,13 +56,13 @@ class BaseView:
             border_radius=8
         )
     
-    def show_empty_state(self, message: str, icon: str = ft.icons.INBOX, action_text: str = "", on_action=None) -> ft.Control:
+    def show_empty_state(self, message: str, icon: str = ft.Icons.INBOX, action_text: str = "", on_action=None) -> ft.Control:
         """Returns a standardized empty state control using the safe colors property."""
         colors = self.colors # This is now guaranteed to be a valid ColorScheme
 
         content = [
-            ft.Icon(icon, color=ft.colors.ON_SURFACE_VARIANT, size=64),
-            ft.Text(message, size=18, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Icon(icon, color=ft.Colors.ON_SURFACE_VARIANT, size=64),
+            ft.Text(message, size=18, color=ft.Colors.ON_SURFACE_VARIANT),
         ]
         
         if action_text and on_action:

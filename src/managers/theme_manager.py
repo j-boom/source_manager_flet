@@ -16,17 +16,17 @@ class ThemeManager:
 
     # Predefined color seeds for Material 3 color scheme generation.
     COLOR_SEEDS: Dict[str, str] = {
-        "blue": ft.colors.BLUE,
-        "orange": ft.colors.ORANGE,
-        "green": ft.colors.GREEN,
-        "yellow": ft.colors.YELLOW,
-        "purple": ft.colors.PURPLE,
-        "indigo": ft.colors.INDIGO,
-        "pink": ft.colors.PINK,
-        "teal": ft.colors.TEAL,
-        "cyan": ft.colors.CYAN,
-        "amber": ft.colors.AMBER,
-        "lime": ft.colors.LIME,
+        "blue": ft.Colors.BLUE,
+        "orange": ft.Colors.ORANGE,
+        "green": ft.Colors.GREEN,
+        "yellow": ft.Colors.YELLOW,
+        "purple": ft.Colors.PURPLE,
+        "indigo": ft.Colors.INDIGO,
+        "pink": ft.Colors.PINK,
+        "teal": ft.Colors.TEAL,
+        "cyan": ft.Colors.CYAN,
+        "amber": ft.Colors.AMBER,
+        "lime": ft.Colors.LIME,
     }
 
     def __init__(self, initial_mode: str = "light", initial_color: str = "blue"):
@@ -76,8 +76,8 @@ class ThemeManager:
             color_scheme_seed=self.get_seed_color(),
             font_family="Segoe UI",
             appbar_theme=ft.AppBarTheme(
-                color=ft.colors.ON_PRIMARY_CONTAINER,
-                bgcolor=ft.colors.PRIMARY_CONTAINER,
+                color=ft.Colors.ON_PRIMARY_CONTAINER,
+                bgcolor=ft.Colors.PRIMARY_CONTAINER,
             ),
             # Add other theme customizations as needed
         )
@@ -93,13 +93,13 @@ class ThemeManager:
             ft.ColorScheme: A default color scheme for safe UI rendering.
         """
         return ft.ColorScheme(
-            primary=ft.colors.BLUE_700,
-            on_primary=ft.colors.WHITE,
-            on_surface_variant=ft.colors.GREY_700,
-            surface_variant=ft.colors.with_opacity(0.05, ft.colors.BLACK),
-            error=ft.colors.RED_400,
-            error_container=ft.colors.with_opacity(0.1, ft.colors.RED),
+            primary=ft.Colors.BLUE_700,
+            on_primary=ft.Colors.WHITE,
+            on_surface_variant=ft.Colors.GREY_700,
+            surface_variant=ft.Colors.with_opacity(0.05, ft.Colors.BLACK),
+            error=ft.Colors.RED_400,
+            error_container=ft.Colors.with_opacity(0.1, ft.Colors.RED),
             # Add any other colors your UI might need by default
-            background=ft.colors.WHITE,
-            surface=ft.colors.GREY_50,
+            background=ft.Colors.WHITE,
+            surface=ft.Colors.GREY_50,
         )

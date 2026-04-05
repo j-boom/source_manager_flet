@@ -17,7 +17,7 @@ class SourcesView(BaseView):
 
         # --- UI Components ---
         self.project_title_header = ft.Text(
-            visible=False, weight=ft.FontWeight.BOLD, color=ft.colors.PRIMARY
+            visible=False, weight=ft.FontWeight.BOLD, color=ft.Colors.PRIMARY
         )
         self.country_dropdown = ft.Dropdown(
             label="Country",
@@ -63,7 +63,7 @@ class SourcesView(BaseView):
                                 "Apply",
                                 on_click=self._apply_all_filters,
                                 expand=True,
-                                icon=ft.icons.SEARCH,
+                                icon=ft.Icons.SEARCH,
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
@@ -72,7 +72,7 @@ class SourcesView(BaseView):
             ),
             width=280,
             padding=15,
-            bgcolor=ft.colors.SURFACE_VARIANT,
+            bgcolor=ft.Colors.ON_SURFACE_VARIANT,
             border_radius=8,
         )
 
@@ -80,7 +80,7 @@ class SourcesView(BaseView):
         """Builds the main content panel for displaying source results."""
         add_source_button = ft.ElevatedButton(
             text="Add New Source",
-            icon=ft.icons.ADD,
+            icon=ft.Icons.ADD,
             on_click=self._on_add_source_clicked,
         )
 
@@ -102,7 +102,7 @@ class SourcesView(BaseView):
                 ),
                 ft.Text(
                     self.directions_prompt,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 ft.Divider(),
                 self.active_filter_chips,

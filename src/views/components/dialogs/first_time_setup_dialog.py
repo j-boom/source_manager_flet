@@ -21,7 +21,7 @@ class FirstTimeSetupDialog(BaseDialog):
             on_submit=self._on_continue,
         )
 
-        self.error_text = ft.Text(color=ft.colors.RED_400, size=14, visible=False)
+        self.error_text = ft.Text(color=ft.Colors.RED_400, size=14, visible=False)
 
         super().__init__(
             page=page,
@@ -31,18 +31,18 @@ class FirstTimeSetupDialog(BaseDialog):
 
     def _build_content(self) -> List[ft.Control]:
         return [
-            ft.Text("Welcome! Let's get you set up with a personalized experience.", size=16, color=ft.colors.GREY_600),
+            ft.Text("Welcome! Let's get you set up with a personalized experience.", size=16, color=ft.Colors.GREY_600),
             ft.Container(height=20),
             self.display_name_field,
             self.error_text,
             ft.Container(height=10),
-            ft.Text("This will be used for personalization throughout the app.  You can change it later in settings.", size=12, color=ft.colors.GREY_500),
+            ft.Text("This will be used for personalization throughout the app.  You can change it later in settings.", size=12, color=ft.Colors.GREY_500),
         ]
 
     def _build_actions(self) -> List[ft.Control]:
         return [
             ft.TextButton("Skip for now", on_click=self._on_skip),
-            ft.ElevatedButton("Continue", on_click=self._on_continue, style=ft.ButtonStyle(color=ft.colors.WHITE, bgcolor=ft.colors.BLUE_700)),
+            ft.ElevatedButton("Continue", on_click=self._on_continue, style=ft.ButtonStyle(color=ft.Colors.WHITE, bgcolor=ft.Colors.BLUE_700)),
         ]
 
     def _on_continue(self, e=None):

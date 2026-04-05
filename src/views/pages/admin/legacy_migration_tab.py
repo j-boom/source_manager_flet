@@ -23,16 +23,16 @@ class LegacyMigrationTab(ft.Column):
         self.controller.page.overlay.append(self.file_picker)
 
         self.pick_file_button = ft.ElevatedButton(
-            "Select Project File", icon=ft.icons.FOLDER_OPEN, on_click=lambda _: self.file_picker.pick_files(
+            "Select Project File", icon=ft.Icons.FOLDER_OPEN, on_click=lambda _: self.file_picker.pick_files(
                 dialog_title="Select Project JSON to Migrate",
                 allowed_extensions=["json"],
                 allow_multiple=False
             )
         )
         self.status_text = ft.Text("Select a project file to begin migration.", italic=True)
-        self.prev_button = ft.IconButton(icon=ft.icons.NAVIGATE_BEFORE, on_click=self._on_prev, disabled=True)
-        self.next_button = ft.IconButton(icon=ft.icons.NAVIGATE_NEXT, on_click=self._on_next, disabled=True)
-        self.save_button = ft.FilledButton("Save & Next", icon=ft.icons.SAVE, on_click=self._on_save, disabled=True)
+        self.prev_button = ft.IconButton(icon=ft.Icons.NAVIGATE_BEFORE, on_click=self._on_prev, disabled=True)
+        self.next_button = ft.IconButton(icon=ft.Icons.NAVIGATE_NEXT, on_click=self._on_next, disabled=True)
+        self.save_button = ft.FilledButton("Save & Next", icon=ft.Icons.SAVE, on_click=self._on_save, disabled=True)
 
         # Left side: Raw data display
         self.citation_text = ft.Text(selectable=True)
@@ -40,9 +40,9 @@ class LegacyMigrationTab(ft.Column):
         self.raw_data_container = ft.Container(
             content=ft.Column([
                 ft.Text("Legacy Citation String", weight=ft.FontWeight.BOLD),
-                ft.Container(self.citation_text, padding=10, border=ft.border.all(1, ft.colors.OUTLINE), border_radius=4),
+                ft.Container(self.citation_text, padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=4),
                 ft.Text("Legacy Comment", weight=ft.FontWeight.BOLD),
-                ft.Container(self.comment_text, padding=10, border=ft.border.all(1, ft.colors.OUTLINE), border_radius=4),
+                ft.Container(self.comment_text, padding=10, border=ft.border.all(1, ft.Colors.OUTLINE), border_radius=4),
             ]),
             padding=10,
         )
@@ -78,14 +78,14 @@ class LegacyMigrationTab(ft.Column):
         ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
         main_content = ft.Row([
-            ft.Container(self.raw_data_container, expand=2, border_radius=8, bgcolor=ft.colors.SURFACE_VARIANT, padding=15),
+            ft.Container(self.raw_data_container, expand=2, border_radius=8, bgcolor=ft.Colors.ON_SURFACE_VARIANT, padding=15),
             ft.VerticalDivider(),
             ft.Container(self.form_container, expand=3, border_radius=8, padding=15),
         ], expand=True, spacing=10)
 
         self.controls.extend([
             ft.Text("Legacy Source Migration Tool", theme_style=ft.TextThemeStyle.TITLE_LARGE),
-            ft.Text("Load a project JSON file, review the parsed source data, and save it to the new format.", color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text("Load a project JSON file, review the parsed source data, and save it to the new format.", color=ft.Colors.ON_SURFACE_VARIANT),
             ft.Divider(),
             header,
             main_content

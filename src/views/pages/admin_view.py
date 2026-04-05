@@ -23,7 +23,7 @@ class BoilerplateSourcesTab(ft.Column):
         """Constructs the static parts of the UI."""
         self.controls.extend([
             ft.Text("Manage Boilerplate Sources", theme_style=ft.TextThemeStyle.TITLE_LARGE),
-            ft.Text("These sources are available to all projects and are not tied to a specific country.", color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text("These sources are available to all projects and are not tied to a specific country.", color=ft.Colors.ON_SURFACE_VARIANT),
             ft.Divider(),
             self.sources_list
         ])
@@ -33,7 +33,7 @@ class BoilerplateSourcesTab(ft.Column):
         self.sources_list.controls.clear()
         sources = self.controller.admin_controller.get_boilerplate_sources()
         for source in sorted(sources, key=lambda s: s.display_name):
-            self.sources_list.controls.append(ft.Card(content=ft.ListTile(leading=ft.Icon(ft.icons.DESCRIPTION_OUTLINED),title=ft.Text(source.display_name, weight=ft.FontWeight.BOLD),subtitle=ft.Text(f"Type: {source.source_type.replace('_', ' ').title()}"))))
+            self.sources_list.controls.append(ft.Card(content=ft.ListTile(leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED),title=ft.Text(source.display_name, weight=ft.FontWeight.BOLD),subtitle=ft.Text(f"Type: {source.source_type.replace('_', ' ').title()}"))))
 
 class AdminView(BaseView):
     """The UI for the Admin page, focused on configuration management."""
@@ -123,14 +123,14 @@ class AdminView(BaseView):
             content=ft.Column([
                 ft.Row([
                     ft.Text(title, theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
-                    ft.IconButton(icon=ft.icons.ADD, on_click=on_add_callback, tooltip=f"Add New {title.replace('s', '')}")
+                    ft.IconButton(icon=ft.Icons.ADD, on_click=on_add_callback, tooltip=f"Add New {title.replace('s', '')}")
                 ]),
                 ft.Divider(),
                 list_view, # This is the ft.ListView
             ]),
             padding=15,
             border_radius=8,
-            bgcolor=ft.colors.SURFACE_VARIANT,
+            bgcolor=ft.Colors.ON_SURFACE_VARIANT,
             expand=1, # Use a ratio for the flex layout
         )
 
@@ -206,13 +206,13 @@ class AdminView(BaseView):
         for control in self.source_types_list.controls:
             if isinstance(control, ft.ListTile):
                 is_selected = self.selected_config_type == 'source' and control.data == self.selected_item_name
-                control.bgcolor = ft.colors.PRIMARY_CONTAINER if is_selected else None
+                control.bgcolor = ft.Colors.PRIMARY_CONTAINER if is_selected else None
         
         # Update project list visuals
         for control in self.project_types_list.controls:
             if isinstance(control, ft.ListTile):
                 is_selected = self.selected_config_type == 'project' and control.data == self.selected_item_name
-                control.bgcolor = ft.colors.PRIMARY_CONTAINER if is_selected else None
+                control.bgcolor = ft.Colors.PRIMARY_CONTAINER if is_selected else None
     def _build_editor_for_selection(self):
         """Routes to the correct editor builder based on the selected type."""
         # Clear both editor columns before building

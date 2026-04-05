@@ -52,7 +52,7 @@ class NewProjectView(BaseView):
                     content=self.file_list_view,
                     expand=True,
                     padding=ft.padding.symmetric(horizontal=20),
-                    bgcolor=ft.colors.SURFACE_VARIANT,
+                    bgcolor=ft.Colors.ON_SURFACE_VARIANT,
                 ),
             ],
             expand=True,
@@ -70,10 +70,10 @@ class NewProjectView(BaseView):
                 [
                     ft.ElevatedButton(
                         "Back",
-                        icon=ft.icons.ARROW_BACK,
+                        icon=ft.Icons.ARROW_BACK,
                         on_click=self._on_back_clicked,
                         style=ft.ButtonStyle(
-                            bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY
+                            bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY
                         ),
                     ),
                     ft.Container(expand=True),
@@ -81,18 +81,18 @@ class NewProjectView(BaseView):
                     ft.Container(expand=True),
                     ft.ElevatedButton(
                         "Recent Projects",
-                        icon=ft.icons.HISTORY,
+                        icon=ft.Icons.HISTORY,
                         on_click=self._on_recent_projects_clicked,
                         style=ft.ButtonStyle(
-                            bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY
+                            bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY
                         ),
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
             padding=ft.padding.all(20),
-            bgcolor=ft.colors.SURFACE_VARIANT,
-            border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.OUTLINE)),
+            bgcolor=ft.Colors.SECONDARY_CONTAINER,
+            border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.OUTLINE)),
         )
 
         return self.header_container
@@ -114,13 +114,13 @@ class NewProjectView(BaseView):
         )
 
         self.search_field = ft.TextField(
-            label="Search Benjamin Numbers",
-            hint_text="Enter 4-digit year or 10-digit Benjamin number",
+            label="Search BE Numbers",
+            hint_text="Enter 4-digit year or 10-digit BE number",
             width=300,
             height=40,
-            prefix_icon=ft.icons.SEARCH,
+            prefix_icon=ft.Icons.SEARCH,
             border_radius=8,
-            border_color=ft.colors.OUTLINE,
+            border_color=ft.Colors.OUTLINE,
             content_padding=10,
             on_change=self._on_search_change,
             on_submit=self._on_search_change,
@@ -133,7 +133,7 @@ class NewProjectView(BaseView):
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
             padding=ft.padding.all(20),
-            bgcolor=ft.colors.SURFACE_VARIANT,
+            bgcolor=ft.Colors.PRIMARY,
         )
         return self.directory_selection_container
 
@@ -142,10 +142,10 @@ class NewProjectView(BaseView):
         self.breadcrumb = self._build_breadcrumb()
         self.action_button = ft.ElevatedButton(
             text="Add Project",
-            icon=ft.icons.POST_ADD,
+            icon=ft.Icons.POST_ADD,
             on_click=self._on_add_project_clicked,
-            bgcolor=ft.colors.TERTIARY_CONTAINER,
-            color=ft.colors.ON_TERTIARY_CONTAINER,
+            bgcolor=ft.Colors.TERTIARY_CONTAINER,
+            color=ft.Colors.ON_TERTIARY_CONTAINER,
             visible=False,  # Initially hidden, updated later
         )
 
@@ -325,9 +325,9 @@ class NewProjectView(BaseView):
                 else "Select a country to begin."
             )
             icon = (
-                ft.icons.SEARCH_OFF
+                ft.Icons.SEARCH_OFF
                 if self.browser_manager.search_term
-                else ft.icons.FOLDER_OPEN_OUTLINED
+                else ft.Icons.FOLDER_OPEN_OUTLINED
             )
             self.file_list_view.controls.append(
                 self.show_empty_state(message, icon=icon)
@@ -335,17 +335,17 @@ class NewProjectView(BaseView):
         else:
             for item in items:
                 icon = (
-                    ft.icons.FOLDER_OUTLINED
+                    ft.Icons.FOLDER_OUTLINED
                     if item["is_directory"]
-                    else ft.icons.INSERT_DRIVE_FILE_OUTLINED
+                    else ft.Icons.INSERT_DRIVE_FILE_OUTLINED
                 )
                 self.file_list_view.controls.append(
                     ft.ListTile(
-                        leading=ft.Icon(icon, color=ft.colors.TERTIARY),
+                        leading=ft.Icon(icon, color=ft.Colors.TERTIARY),
                         title=ft.Text(item["name"]),
                         on_click=self._on_item_clicked,
                         data=item,
-                        bgcolor=ft.colors.TERTIARY_CONTAINER,
+                        bgcolor=ft.Colors.TERTIARY_CONTAINER,
                     )
                 )
 

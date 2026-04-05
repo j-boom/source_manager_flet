@@ -18,7 +18,7 @@ class DeleteConfirmationDialog(BaseDialog):
     def _build_actions(self) -> List[ft.Control]:
         return [
             ft.TextButton("Cancel", on_click=self._close_dialog),
-            ft.TextButton("Delete", on_click=self._handle_confirm, style=ft.ButtonStyle(color=ft.colors.ERROR)),
+            ft.TextButton("Delete", on_click=self._handle_confirm, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
         ]
 
     def _handle_confirm(self, e):

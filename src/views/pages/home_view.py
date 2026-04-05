@@ -42,12 +42,12 @@ class HomeView(BaseView):
                                     "Welcome to Source Manager",
                                     theme_style=ft.TextThemeStyle.DISPLAY_SMALL,
                                     weight=ft.FontWeight.BOLD,
-                                    color=ft.colors.PRIMARY,
+                                    color=ft.Colors.PRIMARY,
                                 ),
                                 ft.Text(
                                     "Manage your source code projects efficiently",
                                     theme_style=ft.TextThemeStyle.TITLE_LARGE,
-                                    color=ft.colors.INVERSE_PRIMARY,
+                                    color=ft.Colors.INVERSE_PRIMARY,
                                     italic=True,
                                 ),
                             ],
@@ -66,13 +66,13 @@ class HomeView(BaseView):
                             self._create_action_card(
                                 "New Project",
                                 "Create a new project or folder.",
-                                ft.icons.ADD_CIRCLE_OUTLINE,
+                                ft.Icons.ADD_CIRCLE_OUTLINE,
                                 lambda e: self.controller.navigate_to("new_project"),
                             ),
                             self._create_action_card(
                                 "Recent Projects",
                                 "View and open recent projects.",
-                                ft.icons.HISTORY,
+                                ft.Icons.HISTORY,
                                 lambda e: self.controller.navigate_to(
                                     "recent_projects"
                                 ),
@@ -80,7 +80,7 @@ class HomeView(BaseView):
                             self._create_action_card(
                                 "Sources",
                                 "Search for Sources to add, or create a new one.",
-                                ft.icons.SOURCE_OUTLINED,
+                                ft.Icons.SOURCE_OUTLINED,
                                 lambda e: self.controller.navigate_to("sources"),
                             ),
                         ],
@@ -105,12 +105,12 @@ class HomeView(BaseView):
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Icon(icon, size=40, color=ft.colors.INVERSE_PRIMARY),
-                    ft.Text(title, size=16, weight=ft.FontWeight.BOLD, color=ft.colors.ON_SECONDARY_CONTAINER),
+                    ft.Icon(icon, size=40, color=ft.Colors.INVERSE_PRIMARY),
+                    ft.Text(title, size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SECONDARY_CONTAINER),
                     ft.Text(
                         description,
                         size=12,
-                        color=ft.colors.ON_SECONDARY_CONTAINER,
+                        color=ft.Colors.ON_SECONDARY_CONTAINER,
                         text_align=ft.TextAlign.CENTER,
                     ),
                 ],
@@ -120,7 +120,7 @@ class HomeView(BaseView):
             width=220,
             height=180,
             padding=20,
-            bgcolor=ft.colors.SECONDARY_CONTAINER,
+            bgcolor=ft.Colors.SECONDARY_CONTAINER,
             border_radius=ft.border_radius.all(12),
             ink=True,
             on_click=on_click,

@@ -28,13 +28,13 @@ class SlideCarousel(ft.Container):
         self.content = ft.Row(
             [
                 ft.IconButton(
-                    icon=ft.icons.ARROW_BACK_IOS_NEW_ROUNDED,
+                    icon=ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
                     on_click=self._scroll_left,
                     tooltip="Scroll Left"
                 ),
                 self.list_view,
                 ft.IconButton(
-                    icon=ft.icons.ARROW_FORWARD_IOS_ROUNDED,
+                    icon=ft.Icons.ARROW_FORWARD_IOS_ROUNDED,
                     on_click=self._scroll_right,
                     tooltip="Scroll Right"
                 ),
@@ -69,8 +69,8 @@ class SlideCarousel(ft.Container):
                 width=52,
                 height=52,
                 alignment=ft.alignment.center,
-                bgcolor=ft.colors.PRIMARY_CONTAINER if is_selected else ft.colors.SURFACE_VARIANT,
-                border=ft.border.all(2, ft.colors.PRIMARY if is_selected else ft.colors.TRANSPARENT),
+                bgcolor=ft.Colors.PRIMARY_CONTAINER if is_selected else ft.Colors.ON_SURFACE_VARIANT,
+                border=ft.border.all(2, ft.Colors.PRIMARY if is_selected else ft.Colors.TRANSPARENT),
                 border_radius=26,
                 tooltip=title,
                 on_click=self._handle_click,
@@ -78,7 +78,7 @@ class SlideCarousel(ft.Container):
                 shadow=ft.BoxShadow(
                     spread_radius=1,
                     blur_radius=4,
-                    color=ft.colors.with_opacity(0.2, ft.colors.BLACK),
+                    color=ft.Colors.with_opacity(0.2, ft.Colors.BLACK),
                     offset=ft.Offset(1, 2),
                 )
             )

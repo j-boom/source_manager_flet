@@ -17,7 +17,7 @@ class UserManagementTab(ft.Column):
         """Constructs the static layout of the tab."""
         add_user_button = ft.ElevatedButton(
             "Add New User",
-            icon=ft.icons.ADD,
+            icon=ft.Icons.ADD,
             on_click=self._on_add_user_clicked
         )
 
@@ -27,7 +27,7 @@ class UserManagementTab(ft.Column):
                 ft.Container(expand=True),
                 add_user_button
             ]),
-            ft.Text("Add, edit, or remove users and their permissions.", color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text("Add, edit, or remove users and their permissions.", color=ft.Colors.ON_SURFACE_VARIANT),
             ft.Divider(),
             self.users_list
         ])

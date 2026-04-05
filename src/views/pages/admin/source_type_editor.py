@@ -18,7 +18,7 @@ class SourceTypeEditor(ft.Column):
         if not self.type_config:
             self.controls.append(
                 ft.Text(
-                    f"Could not load config for {type_name}.", color=ft.colors.ERROR
+                    f"Could not load config for {type_name}.", color=ft.Colors.ERROR
                 )
             )
             return
@@ -65,20 +65,20 @@ class SourceTypeEditor(ft.Column):
                 ft.Text(
                     "Define the fields that make up this source type.",
                     size=12,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 self.fields_list_column,
                 ft.Row(
                     [
                         ft.ElevatedButton(
                             "Add Field",
-                            icon=ft.icons.ADD,
+                            icon=ft.Icons.ADD,
                             on_click=self._on_add_field_clicked,
                         ),
                         ft.Container(expand=True),
                         ft.FilledButton(
                             "Save Changes",
-                            icon=ft.icons.SAVE,
+                            icon=ft.Icons.SAVE,
                             on_click=self._on_save_clicked,
                         ),
                     ]

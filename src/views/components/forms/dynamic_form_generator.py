@@ -209,19 +209,19 @@ class DynamicFormGenerator:
         self.sections["facility"] = self._create_section(
             "Facility Information",
             facility_fields,
-            ft.colors.BLUE_700
+            ft.Colors.BLUE_700
         )
         
         self.sections["project"] = self._create_section(
             "Project Information",
             project_fields + custom_fields,
-            ft.colors.GREEN_700
+            ft.Colors.GREEN_700
         )
         
         self.sections["team"] = self._create_section(
             "Project Team",
             team_fields,
-            ft.colors.PURPLE_700
+            ft.Colors.PURPLE_700
         )
         
         return self.sections
@@ -246,7 +246,7 @@ class DynamicFormGenerator:
                 *rows
             ], spacing=8),
             padding=ft.padding.all(10),
-            border=ft.border.all(1, ft.colors.GREY_300),
+            border=ft.border.all(1, ft.Colors.GREY_300),
             border_radius=5
         )
     

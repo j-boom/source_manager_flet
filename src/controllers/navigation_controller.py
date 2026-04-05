@@ -12,29 +12,29 @@ import flet as ft
 from .base_controller import BaseController
 
 PAGES = [
-    {"name": "home", "icon": ft.icons.HOME_OUTLINED, "view_name": "HomeView"},
+    {"name": "home", "icon": ft.Icons.HOME_OUTLINED, "view_name": "HomeView"},
     {
         "name": "new_project",
-        "icon": ft.icons.CREATE_NEW_FOLDER_OUTLINED,
+        "icon": ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
         "view_name": "NewProjectView",
     },
     {
         "name": "recent_projects",
-        "icon": ft.icons.FOLDER_OPEN_OUTLINED,
+        "icon": ft.Icons.FOLDER_OPEN_OUTLINED,
         "view_name": "RecentProjectsView",
     },
-    {"name": "sources", "icon": ft.icons.BOOK_OUTLINED, "view_name": "SourcesView"},
+    {"name": "sources", "icon": ft.Icons.BOOK_OUTLINED, "view_name": "SourcesView"},
     {
         "name": "reports",
-        "icon": ft.icons.ASSESSMENT_OUTLINED,
+        "icon": ft.Icons.ASSESSMENT_OUTLINED,
         "view_name": "ReportsView",
     },
     {
         "name": "settings",
-        "icon": ft.icons.SETTINGS_OUTLINED,
+        "icon": ft.Icons.SETTINGS_OUTLINED,
         "view_name": "SettingsView",
     },
-    {"name": "help", "icon": ft.icons.HELP_OUTLINE, "view_name": "HelpView"},
+    {"name": "help", "icon": ft.Icons.HELP_OUTLINE, "view_name": "HelpView"},
 ]
 
 SPECIAL_PAGES = {

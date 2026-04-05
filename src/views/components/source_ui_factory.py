@@ -44,7 +44,7 @@ class SourceUIFactory:
             ft.Text(
                 source.source_type, 
                 size=10, 
-                color=ft.colors.BLUE_600,
+                color=ft.Colors.BLUE_600,
                 weight=ft.FontWeight.W_500
             )
         ], spacing=2, tight=True)
@@ -54,7 +54,7 @@ class SourceUIFactory:
             content_row = ft.Row([
                 main_content,
                 ft.IconButton(
-                    icon=ft.icons.ADD_CIRCLE_OUTLINE,
+                    icon=ft.Icons.ADD_CIRCLE_OUTLINE,
                     icon_size=16,
                     tooltip="Add to project",
                     on_click=lambda _: on_add_to_project(source.id)
@@ -88,7 +88,7 @@ class SourceUIFactory:
             ft.Text(
                 f"{source.source_type} - {source.description}", 
                 size=11,  # Smaller description text
-                color=ft.colors.GREY_600
+                color=ft.Colors.GREY_600
             )
         ]
         
@@ -98,7 +98,7 @@ class SourceUIFactory:
                 ft.Text(
                     f"Usage: {source.usage_notes}",
                     size=10,  # Smaller usage notes
-                    color=ft.colors.BLUE_600,
+                    color=ft.Colors.BLUE_600,
                     italic=True
                 )
             )
@@ -116,7 +116,7 @@ class SourceUIFactory:
         if on_edit_usage:
             action_buttons.append(
                 ft.IconButton(
-                    icon=ft.icons.EDIT_NOTE,
+                    icon=ft.Icons.EDIT_NOTE,
                     icon_size=16,
                     tooltip="Edit usage notes",
                     on_click=lambda _: on_edit_usage(source.id)
@@ -126,7 +126,7 @@ class SourceUIFactory:
         if on_remove_from_project:
             action_buttons.append(
                 ft.IconButton(
-                    icon=ft.icons.REMOVE_CIRCLE_OUTLINE,
+                    icon=ft.Icons.REMOVE_CIRCLE_OUTLINE,
                     icon_size=16,
                     tooltip="Remove from project",
                     on_click=lambda _: on_remove_from_project(source.id)
@@ -173,17 +173,17 @@ class SourceUIFactory:
     @staticmethod
     def create_add_source_button(
         on_add_source: Callable[[], None],
-        theme_color: str = ft.colors.BLUE_600
+        theme_color: str = ft.Colors.BLUE_600
     ) -> ft.ElevatedButton:
         """Create a compact add source button for inline placement"""
         return ft.ElevatedButton(
             content=ft.Row([
-                ft.Icon(ft.icons.ADD, size=14),
+                ft.Icon(ft.Icons.ADD, size=14),
                 ft.Text("Add New Source", size=12)
             ], spacing=4, tight=True),
             style=ft.ButtonStyle(
                 bgcolor=theme_color,
-                color=ft.colors.WHITE,
+                color=ft.Colors.WHITE,
                 padding=ft.padding.symmetric(horizontal=12, vertical=6),  # More compact for inline
                 shape=ft.RoundedRectangleBorder(radius=6)
             ),
@@ -192,19 +192,19 @@ class SourceUIFactory:
         )
     
     @staticmethod
-    def create_empty_state_message(message: str, icon: str = ft.icons.INBOX) -> ft.Container:
+    def create_empty_state_message(message: str, icon: str = ft.Icons.INBOX) -> ft.Container:
         """Create an empty state message"""
         return ft.Container(
             content=ft.Column([
                 ft.Icon(
                     icon,
                     size=48,
-                    color=ft.colors.GREY_400
+                    color=ft.Colors.GREY_400
                 ),
                 ft.Text(
                     message,
                     size=14,
-                    color=ft.colors.GREY_500,
+                    color=ft.Colors.GREY_500,
                     text_align=ft.TextAlign.CENTER
                 )
             ],
@@ -223,5 +223,5 @@ class SourceUIFactory:
             display_title,
             size=18,
             weight=ft.FontWeight.BOLD,
-            color=ft.colors.BLUE_700
+            color=ft.Colors.BLUE_700
         )

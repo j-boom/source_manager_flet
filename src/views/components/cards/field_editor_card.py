@@ -128,10 +128,10 @@ class FieldEditorCard(ft.Card):
                         self.form_controls["label"],
                         self.form_controls["display_order"],
                         ft.IconButton(
-                            icon=ft.icons.DELETE_OUTLINE,
+                            icon=ft.Icons.DELETE_OUTLINE,
                             on_click=lambda e: self.on_delete(self),
                             tooltip="Delete Field",
-                            icon_color=ft.colors.ERROR,
+                            icon_color=ft.Colors.ERROR,
                         ),
                     ],
                     spacing=10,
@@ -163,7 +163,7 @@ class FieldEditorCard(ft.Card):
         return ft.Container(
             content,
             padding=15,
-            border=ft.border.all(1, ft.colors.OUTLINE_VARIANT),
+            border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=8,
         )
 

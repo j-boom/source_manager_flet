@@ -39,7 +39,7 @@ class OnDeckCard(BaseCard):
         # Always show the info button
         trailing_buttons.controls.append(
             ft.IconButton(
-                icon=ft.icons.INFO_OUTLINE,
+                icon=ft.Icons.INFO_OUTLINE,
                 tooltip="View source details",
                 on_click=self._show_citation_dialog,
             )
@@ -53,9 +53,9 @@ class OnDeckCard(BaseCard):
                 else "Add to On Deck"
             )
             icon = (
-                ft.icons.ADD_TASK_ROUNDED
+                ft.Icons.ADD_TASK_ROUNDED
                 if self.context == "project_tab"
-                else ft.icons.ADD_CIRCLE_OUTLINE
+                else ft.Icons.ADD_CIRCLE_OUTLINE
             )
 
             trailing_buttons.controls.append(
@@ -68,7 +68,7 @@ class OnDeckCard(BaseCard):
         if self.show_remove_button:
             trailing_buttons.controls.append(
                 ft.IconButton(
-                    icon=ft.icons.REMOVE_CIRCLE_OUTLINE,
+                    icon=ft.Icons.REMOVE_CIRCLE_OUTLINE,
                     tooltip="Remove from On Deck",
                     on_click=self._handle_remove_click,
                 )

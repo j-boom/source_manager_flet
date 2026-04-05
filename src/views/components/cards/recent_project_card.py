@@ -30,7 +30,7 @@ class RecentProjectCard(BaseCard):
         text_content = ft.Column(
             [
                 ft.Text(self.project.display_name, weight=ft.FontWeight.BOLD, size=14),
-                ft.Text(self.project.path, overflow=ft.TextOverflow.ELLIPSIS, italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT),
+                ft.Text(self.project.path, overflow=ft.TextOverflow.ELLIPSIS, italic=True, size=12, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=2,
             alignment=ft.MainAxisAlignment.CENTER,
@@ -40,13 +40,13 @@ class RecentProjectCard(BaseCard):
         action_buttons = ft.Row(
             [
                 ft.IconButton(
-                    icon=ft.icons.OPEN_IN_NEW,
+                    icon=ft.Icons.OPEN_IN_NEW,
                     tooltip="Open project",
                     on_click=self._handle_open_project
                 ),
                 ft.IconButton(
-                    icon=ft.icons.DELETE_OUTLINE,
-                    icon_color=ft.colors.ERROR,
+                    icon=ft.Icons.DELETE_OUTLINE,
+                    icon_color=ft.Colors.ERROR,
                     tooltip="Remove from recent list",
                     on_click=self._handle_remove_project
                 )
@@ -56,7 +56,7 @@ class RecentProjectCard(BaseCard):
         # The main Row that holds all parts of the card
         content_row = ft.Row(
             [
-                ft.Icon(ft.icons.FOLDER_OPEN_OUTLINED, color=ft.colors.PRIMARY, size=28),
+                ft.Icon(ft.Icons.FOLDER_OPEN_OUTLINED, color=ft.Colors.PRIMARY, size=28),
                 text_content,  # The expanding text content
                 action_buttons, # The fixed-width buttons
             ],

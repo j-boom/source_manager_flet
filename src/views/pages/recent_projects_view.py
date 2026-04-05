@@ -40,7 +40,7 @@ class RecentProjectsView(BaseView):
             content=ft.Row(
                 [
                     ft.IconButton(
-                        icon=ft.icons.ARROW_BACK,
+                        icon=ft.Icons.ARROW_BACK,
                         on_click=lambda e: self.controller.navigate_to("home"),
                         tooltip="Back to Home",
                     ),
@@ -52,7 +52,7 @@ class RecentProjectsView(BaseView):
                             ),
                             ft.Text(
                                 f"Your {count} most recently accessed projects",
-                                color=ft.colors.ON_SURFACE_VARIANT,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
                             ),
                         ]
                     ),
@@ -61,7 +61,7 @@ class RecentProjectsView(BaseView):
                 vertical_alignment=ft.CrossAxisAlignment.START,
             ),
             padding=ft.padding.only(bottom=20),
-            border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.OUTLINE_VARIANT)),
+            border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
         )
 
     def _build_content(self, recent_projects: List[RecentProject]) -> ft.Control:
@@ -69,7 +69,7 @@ class RecentProjectsView(BaseView):
         if not recent_projects:
             return self.show_empty_state(
                 message="You haven't opened any projects yet.",
-                icon=ft.icons.HISTORY,
+                icon=ft.Icons.HISTORY,
                 action_text="Browse for a Project",
                 on_action=lambda e: self.controller.navigate_to("new_project"),
             )
@@ -81,7 +81,7 @@ class RecentProjectsView(BaseView):
                             ft.Container(expand=True),  # Spacer
                             ft.OutlinedButton(
                                 text="Clear All",
-                                icon=ft.icons.DELETE_SWEEP_OUTLINED,
+                                icon=ft.Icons.DELETE_SWEEP_OUTLINED,
                                 on_click=self._on_clear_all_clicked,
                                 style=ft.ButtonStyle(color=self.colors.error),
                             ),

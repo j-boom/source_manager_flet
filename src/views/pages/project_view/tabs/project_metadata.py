@@ -22,7 +22,7 @@ class ProjectMetadataTab(BaseTab):
         self.form_fields: Dict[str, ft.Control] = {}
         self.form_container = ft.Container(expand=True)
         self.action_button = ft.ElevatedButton(
-            "edit", icon=ft.icons.EDIT, on_click=self._on_action_button_click
+            "edit", icon=ft.Icons.EDIT, on_click=self._on_action_button_click
         )
         self.logger = logging.getLogger(__name__)
 
@@ -111,10 +111,10 @@ class ProjectMetadataTab(BaseTab):
 
                 # Apply background color for fields
                 if is_editable and hasattr(widget, 'bgcolor'):
-                    widget.bgcolor = ft.colors.TERTIARY_CONTAINER
+                    widget.bgcolor = ft.Colors.TERTIARY_CONTAINER
                     if isinstance(widget, (ft.TextField, ft.Dropdown)):
                         widget.filled=True
-                        widget.border_color = ft.colors.TRANSPARENT
+                        widget.border_color = ft.Colors.TRANSPARENT
                 
                 self.form_fields[field_config.get("name")] = widget
                 column_controls.append(widget)
@@ -163,12 +163,12 @@ class ProjectMetadataTab(BaseTab):
             self._save_metadata()
             self.is_edit_mode = False
             self.action_button.text = "Edit"
-            self.action_button.icon = ft.icons.EDIT
+            self.action_button.icon = ft.Icons.EDIT
         else:
             # Switch to edit mode
             self.is_edit_mode = True
             self.action_button.text = "Save"
-            self.action_button.icon = ft.icons.SAVE
+            self.action_button.icon = ft.Icons.SAVE
 
         self._rebuild_form()
 
@@ -200,6 +200,6 @@ class ProjectMetadataTab(BaseTab):
         self.is_edit_mode = False
         if hasattr(self, "action_button"):
             self.action_button.text = "Edit"
-            self.action_button.icon = ft.icons.EDIT
+            self.action_button.icon = ft.Icons.EDIT
 
         self._rebuild_form()

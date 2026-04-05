@@ -152,7 +152,7 @@ class AppController:
     def show_success_message(self, message):
         """Displays a success message to the user using a SnackBar."""
         logging.info(message)
-        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.GREEN)
+        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.Colors.GREEN)
         self.page.overlay.append(snack_bar)
         snack_bar.open = True
         self.page.update()
@@ -160,7 +160,7 @@ class AppController:
     def show_error_message(self, message):
         """Displays an error message to the user using a SnackBar."""
         logging.error(message)
-        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.RED)
+        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.Colors.RED)
         self.page.overlay.append(snack_bar)
         snack_bar.open = True
         self.page.update()
@@ -168,7 +168,7 @@ class AppController:
     def show_info_message(self, message):
         """Displays an informational message to the user using a SnackBar."""
         logging.info(message)
-        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.colors.BLUE_GREY)
+        snack_bar = ft.SnackBar(ft.Text(message), bgcolor=ft.Colors.BLUE_GREY)
         self.page.overlay.append(snack_bar)
         snack_bar.open = True
         self.page.update()

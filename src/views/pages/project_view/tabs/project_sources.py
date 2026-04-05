@@ -19,7 +19,7 @@ class ProjectSourcesTab(BaseTab):
             expand=True, spacing=5, scroll=ft.ScrollMode.ADAPTIVE
         )
         self.project_actions_menu = ft.PopupMenuButton(
-            icon=ft.icons.MORE_VERT,
+            icon=ft.Icons.MORE_VERT,
             tooltip="Project Actions",
             items=[],  # Items will be populated by _load_boilerplate_sources
         )
@@ -34,7 +34,7 @@ class ProjectSourcesTab(BaseTab):
                     "Sources selected for this project.",
                     italic=True,
                     size=12,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.SECONDARY,
                 ),
                 ft.Divider(),
                 ft.Container(
@@ -56,7 +56,7 @@ class ProjectSourcesTab(BaseTab):
                 ),
                 ft.ElevatedButton(
                     text="Add Source",
-                    icon=ft.icons.ADD_ROUNDED,
+                    icon=ft.Icons.ADD_ROUNDED,
                     on_click=lambda _: self.controller.dialog_controller.open_new_source_dialog(
                         from_project_sources_tab=True
                     ),
@@ -76,7 +76,7 @@ class ProjectSourcesTab(BaseTab):
                     "Sources currently included in this project. (Drag to Reorder)",
                     italic=True,
                     size=12,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.SECONDARY_CONTAINER,
                 ),
                 ft.Divider(),
                 ft.Container(self.project_sources_list, expand=True),
@@ -90,7 +90,7 @@ class ProjectSourcesTab(BaseTab):
                 ft.Container(
                     on_deck_column,
                     padding=10,
-                    bgcolor=ft.colors.SURFACE_VARIANT,
+                    bgcolor=ft.Colors.PRIMARY_CONTAINER,
                     border_radius=8,
                 ),
                 project_sources_column,
@@ -181,7 +181,7 @@ class ProjectSourcesTab(BaseTab):
         menu_items = [
             ft.PopupMenuItem(
                 text="Import sources from another project",
-                icon=ft.icons.CONTENT_COPY,
+                icon=ft.Icons.CONTENT_COPY,
                 on_click=lambda e: self.controller.dialog_controller.open_import_sources_dialog(),
             ),
         ]
@@ -197,7 +197,7 @@ class ProjectSourcesTab(BaseTab):
             menu_items.append(
                 ft.PopupMenuItem(
                     text="Add Boilerplate Source",
-                    icon=ft.icons.ADD_CIRCLE_OUTLINE,
+                    icon=ft.Icons.ADD_CIRCLE_OUTLINE,
                     on_click=self._on_add_boilerplate_clicked,
                 )
             )
@@ -212,17 +212,17 @@ class ProjectSourcesTab(BaseTab):
         """Stores the ID of the source being dragged."""
         self.dragged_source_id = e.control.data
 
-    def _drag_will_accept(self, e: ft.DragTargetAcceptEvent):
+    def _drag_will_accept(self, e: ft.DragTargetEvent):
         """Provides visual feedback by modifying the target control's appearance."""
         e.control.content.content.opacity = 0.5
         e.control.update()
 
-    def _drag_leave(self, e: ft.DragTargetAcceptEvent):
+    def _drag_leave(self, e: ft.DragTargetEvent):
         """Resets the appearance of the target control when the draggable leaves."""
         e.control.content.content.opacity = 1
         e.control.update()
 
-    def _drag_accept(self, e: ft.DragTargetAcceptEvent):
+    def _drag_accept(self, e: ft.DragTargetEvent):
         """Handles the logic for reordering sources when a drop occurs."""
         e.control.content.content.opacity = 1
 

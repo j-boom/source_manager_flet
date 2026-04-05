@@ -20,7 +20,7 @@ class CreateSourceGroupDialog(BaseDialog):
         return [
             self.group_name_field,
             ft.Text("Select sources to include:"),
-            ft.Container(self.sources_checklist, expand=True, height=300, border=ft.border.all(1, ft.colors.OUTLINE), padding=10)
+            ft.Container(self.sources_checklist, expand=True, height=300, border=ft.border.all(1, ft.Colors.OUTLINE), padding=10)
         ]
 
     def _build_actions(self) -> List[ft.Control]:

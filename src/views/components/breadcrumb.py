@@ -29,7 +29,7 @@ class Breadcrumb(ft.Row):
         self.controls.clear()
         for i, part in enumerate(self.crumbs):
             if i > 0:
-                self.controls.append(ft.Text(" / ", color=ft.colors.GREY_500))
+                self.controls.append(ft.Text(" / ", color=ft.Colors.GREY_500))
 
             self.controls.append(
                 ft.TextButton(

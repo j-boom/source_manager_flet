@@ -53,12 +53,12 @@ def main(page: ft.Page):
             ft.Container(
                 content=ft.Column(
                     [
-                        ft.Icon(ft.icons.ERROR_OUTLINE, color="red", size=48),
+                        ft.Icon(ft.Icons.ERROR_OUTLINE, color="red", size=48),
                         ft.Text("Application Startup Failed", size=24, weight=ft.FontWeight.BOLD),
                         ft.Text(
                             "A critical error occurred. Please check the logs for details.",
                             text_align=ft.TextAlign.CENTER,
-                            color=ft.colors.ON_SURFACE_VARIANT
+                            color=ft.Colors.ON_SURFACE_VARIANT
                         ),
                     ],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,

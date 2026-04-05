@@ -27,7 +27,7 @@ class ProjectTypeEditor(ft.Column):
         if not self.project_config:
             self.controls.append(
                 ft.Text(
-                    f"Could not load config for {type_name}.", color=ft.colors.ERROR
+                    f"Could not load config for {type_name}.", color=ft.Colors.ERROR
                 )
             )
             return
@@ -62,7 +62,7 @@ class ProjectTypeEditor(ft.Column):
             read_only=True,
         )
         browse_word_template_button = ft.IconButton(
-            icon=ft.icons.FOLDER_OPEN,
+            icon=ft.Icons.FOLDER_OPEN,
             tooltip="Browse for Word template file",
             on_click=lambda _: self.word_template_path_picker.pick_files(
                 dialog_title="Select Word Template",
@@ -76,7 +76,7 @@ class ProjectTypeEditor(ft.Column):
             read_only=True,
         )
         browse_ppt_template_button = ft.IconButton(
-            icon=ft.icons.FOLDER_OPEN,
+            icon=ft.Icons.FOLDER_OPEN,
             tooltip="Browse for PowerPoint template file",
             on_click=lambda _: self.ppt_template_path_picker.pick_files(
                 dialog_title="Select PowerPoint Template",
@@ -109,14 +109,14 @@ class ProjectTypeEditor(ft.Column):
                 ft.Text(
                     "Define the fields to be collected for this project type.",
                     size=12,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 self.fields_list_column,
                 ft.Row(
                     [
                         ft.ElevatedButton(
                             "Add Field",
-                            icon=ft.icons.ADD,
+                            icon=ft.Icons.ADD,
                             on_click=self._on_add_field_clicked,
                         )
                     ]
@@ -145,7 +145,7 @@ class ProjectTypeEditor(ft.Column):
                     ft.Text("Available Template Placeholders", theme_style=ft.TextThemeStyle.TITLE_SMALL),
                     ft.Container(expand=True),
                     ft.IconButton(
-                        icon=ft.icons.REFRESH,
+                        icon=ft.Icons.REFRESH,
                         on_click=self._update_placeholder_display,
                         tooltip="Refresh list from fields below"
                     )
@@ -153,7 +153,7 @@ class ProjectTypeEditor(ft.Column):
                 ft.Container(
                     content=self.placeholder_chips_row,
                     padding=ft.padding.all(8),
-                    border=ft.border.all(1, ft.colors.OUTLINE_VARIANT),
+                    border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
                     border_radius=8,
                 ),
                 ft.Divider(height=20),
@@ -163,7 +163,7 @@ class ProjectTypeEditor(ft.Column):
                         ft.Container(expand=True),
                         ft.FilledButton(
                             "Save Changes",
-                            icon=ft.icons.SAVE,
+                            icon=ft.Icons.SAVE,
                             on_click=self._on_save_clicked,
                         ),
                     ]
@@ -193,7 +193,7 @@ class ProjectTypeEditor(ft.Column):
         
         if not field_names:
             self.placeholder_chips_row.controls.append(
-                ft.Text("Add fields below and click Refresh to see available placeholders.", italic=True, size=12, color=ft.colors.ON_SURFACE_VARIANT)
+                ft.Text("Add fields below and click Refresh to see available placeholders.", italic=True, size=12, color=ft.Colors.ON_SURFACE_VARIANT)
             )
         else:
             for name in sorted(field_names):

@@ -36,24 +36,24 @@ class CiteSourcesTab(BaseTab):
         )
         self.change_ppt_btn = ft.ElevatedButton(
             "Sync With PowerPoint",
-            icon=ft.icons.SYNC_OUTLINED,
+            icon=ft.Icons.SYNC_OUTLINED,
             on_click=lambda e: self.controller.powerpoint_controller.pick_powerpoint_file(),
         )
         self.available_list = ft.ListView(expand=True, spacing=5)
         self.cited_list = ft.ListView(expand=True, spacing=5)
         self.move_to_cited_btn = ft.IconButton(
-            icon=ft.icons.ARROW_FORWARD,
+            icon=ft.Icons.ARROW_FORWARD,
             on_click=self._move_to_cited,
             tooltip="Cite selected source(s)",
         )
         self.move_to_available_btn = ft.IconButton(
-            icon=ft.icons.ARROW_BACK,
+            icon=ft.Icons.ARROW_BACK,
             on_click=self._move_to_available,
             tooltip="Remove citation(s)",
         )
         self.create_group_btn = ft.ElevatedButton(
             "Create Group",
-            icon=ft.icons.GROUP_ADD,
+            icon=ft.Icons.GROUP_ADD,
             on_click=self._show_create_group_dialog,
         )
 
@@ -75,7 +75,7 @@ class CiteSourcesTab(BaseTab):
         """
         return ft.Column(
             [
-                ft.Icon(name=ft.icons.SLIDESHOW_ROUNDED, size=50),
+                ft.Icon(name=ft.Icons.SLIDESHOW_ROUNDED, size=50),
                 ft.Text(
                     "PowerPoint File Required", style=ft.TextThemeStyle.HEADLINE_SMALL
                 ),
@@ -85,7 +85,7 @@ class CiteSourcesTab(BaseTab):
                 ft.Container(height=10),
                 ft.FilledButton(
                     "Select Presentation File",
-                    icon=ft.icons.ATTACH_FILE,
+                    icon=ft.Icons.ATTACH_FILE,
                     on_click=self._request_pptx_association,
                 ),
             ],
@@ -168,7 +168,7 @@ class CiteSourcesTab(BaseTab):
                 ),
                 ft.Container(
                     list_view,
-                    border=ft.border.all(1, ft.colors.OUTLINE),
+                    border=ft.border.all(1, ft.Colors.OUTLINE),
                     border_radius=8,
                     padding=10,
                     expand=True,

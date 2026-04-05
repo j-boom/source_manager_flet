@@ -15,7 +15,7 @@ class AppFAB:
     
     def __init__(
         self,
-        icon: str = ft.icons.ADD,
+        icon: str = ft.Icons.ADD,
         tooltip: str = "Add",
         on_click: Optional[Callable] = None,
         bgcolor: Optional[str] = None,
@@ -64,11 +64,11 @@ class AppFAB:
             A FloatingActionButton configured for adding sources
         """
         fab = AppFAB(
-            icon=ft.icons.ADD,
+            icon=ft.Icons.ADD,
             tooltip="Add Source",
             on_click=lambda e: controller.show_create_source_dialog(),
-            bgcolor=ft.colors.PRIMARY,
-            foreground_color=ft.colors.ON_PRIMARY,
+            bgcolor=ft.Colors.PRIMARY,
+            foreground_color=ft.Colors.ON_PRIMARY,
         )
         return fab.build()
     

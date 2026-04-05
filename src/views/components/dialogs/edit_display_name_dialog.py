@@ -24,7 +24,7 @@ class EditDisplayNameDialog(BaseDialog):
         )
         
         self.error_text = ft.Text(
-            color=ft.colors.RED_400,
+            color=ft.Colors.RED_400,
             size=14,
             visible=False
         )
@@ -33,18 +33,18 @@ class EditDisplayNameDialog(BaseDialog):
     
     def _build_content(self) -> List[ft.Control]:
         return [
-            ft.Text("Update how you'd like to be addressed in the app.", size=14, color=ft.colors.GREY_600),
+            ft.Text("Update how you'd like to be addressed in the app.", size=14, color=ft.Colors.GREY_600),
             ft.Container(height=15),
             self.display_name_field,
             self.error_text,
             ft.Container(height=10),
-            ft.Text("This will be used for personalization throughout the app.", size=12, color=ft.colors.GREY_500),
+            ft.Text("This will be used for personalization throughout the app.", size=12, color=ft.Colors.GREY_500),
         ]
 
     def _build_actions(self) -> List[ft.Control]:
         return [
             ft.TextButton("Cancel", on_click=self._close_dialog),
-            ft.ElevatedButton("Save", on_click=self._on_save, style=ft.ButtonStyle(color=ft.colors.WHITE, bgcolor=ft.colors.BLUE_700)),
+            ft.ElevatedButton("Save", on_click=self._on_save, style=ft.ButtonStyle(color=ft.Colors.WHITE, bgcolor=ft.Colors.BLUE_700)),
         ]
 
     def _on_save(self, e=None):
